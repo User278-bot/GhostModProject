@@ -2,7 +2,7 @@
   <configuration default="false" name="ghost-project:GhostModServer [run]" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$/GhostModServer" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/ghost-server" />
       <option name="externalSystemIdString" value="GRADLE" />
       <option name="scriptParameters" value="" />
       <option name="taskDescriptions">

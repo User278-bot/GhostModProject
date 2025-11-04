@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":Common"))
+    implementation(project(":ghost-common"))
     implementation("org.java-websocket:Java-WebSocket:${property("websocket_version")}")
     runtimeOnly("org.slf4j:slf4j-simple:${property("slf4j_version")}")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
