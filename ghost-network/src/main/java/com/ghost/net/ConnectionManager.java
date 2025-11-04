@@ -6,13 +6,18 @@ import com.ghost.common.util.SerializationUtil;
 import com.ghost.registry.InMemoryGhostRegistry;
 
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
+
 @SuppressWarnings("unused")
 public class ConnectionManager {
     @Nullable
     private GhostWebSocketClient session = null;
     private final IGhostRegistry GHOST_REGISTRY;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
 
     public ConnectionManager() {
         GHOST_REGISTRY = new InMemoryGhostRegistry();
@@ -24,6 +29,20 @@ public class ConnectionManager {
         }
         session = new GhostWebSocketClient(serverURI, GHOST_REGISTRY);
         session.connect();
+    }
+
+    public boolean connectBlocking(URI servverURI, long timeout, TimeUnit unit) {
+        if (this.isOpen()) {
+            LOGGER.info("Already connected");
+            return true;
+        }
+        session = new GhostWebSocketClient(servverURI, GHOST_REGISTRY);
+        try {
+            return session.connectBlocking(timeout, unit);
+        } catch (Exception ex) {
+            LOGGER.error("Failed to connect:", ex);
+        }
+        return false;
     }
 
     public void disconnect() {

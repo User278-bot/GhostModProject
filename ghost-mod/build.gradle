@@ -41,10 +41,8 @@ dependencies {
 
     implementation(project(":ghost-common"))
     include(project(":ghost-common"))
-
-    implementation("org.java-websocket:Java-WebSocket:${property("websocket_version")}")
-    include("org.java-websocket:Java-WebSocket:${property("websocket_version")}")
-
+    implementation(project(":ghost-network"))
+    include(project(":ghost-network"))
 }
 
 processResources {

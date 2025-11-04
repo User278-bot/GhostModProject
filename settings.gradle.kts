@@ -9,9 +9,10 @@ pluginManagement {
     }
 }
 
-rootProject.name = "GhostModProject_2"
+rootProject.name = "ghost-project"
 
 include("ghost-mod")
 include("ghost-server")
 include("ghost-common")
 include("ghost-fake_client")
+include("ghost-network")
