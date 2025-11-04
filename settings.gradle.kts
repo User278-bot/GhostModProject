@@ -11,5 +11,4 @@ pluginManagement {
 
 rootProject.name = "GhostModProject_2"
 
-include ("GhostMod")
-include("GhostModServer")
+include("GhostMod", "GhostModServer", "Common")

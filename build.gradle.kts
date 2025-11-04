@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     id("java")
 }
@@ -8,15 +10,15 @@ version = "1.0-SNAPSHOT"
 allprojects {
     repositories {
         mavenCentral()
+        maven {
+            name = "Fabric"
+            url = URI("https://maven.fabricmc.net/")
+        }
     }
 }
 
 subprojects {
-    apply {
-        plugin("java")
-    }
-    group = "com.ghost"
-    version = "1.0.0-SNAPSHOT"
+    apply(plugin = "java")
 }
 
 dependencies {
