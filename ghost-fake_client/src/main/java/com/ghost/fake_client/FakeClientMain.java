@@ -26,7 +26,6 @@ public class FakeClientMain {
 
             // --- 依存関係の組み立て ---
             ConnectionManager client = new ConnectionManager();
-            client.connect(serverUri);
 
             LOGGER.info("Connecting to server: {} ...", serverUri);
 
@@ -42,11 +41,11 @@ public class FakeClientMain {
             long startTime = System.currentTimeMillis();
             while (client.isOpen()) {
                 long elapsedTime = System.currentTimeMillis() - startTime;
-                PlayerData data = createDummyData(playerName, playerUuid, elapsedTime);
-                String json = SerializationUtil.serialize(data);
 
+                PlayerData data = createDummyData(playerName, playerUuid, elapsedTime);
                 client.sendPlayerData(data);
 
+                String json = SerializationUtil.serialize(data);
                 LOGGER.info("Sent: {}", json);
 
                 // 3. 200ミリ秒 (5回/秒) ごとに送信
