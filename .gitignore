@@ -79,3 +79,4 @@ Thumbs.db
 # =========================================
 # Kotlin build cache
 .kotlin/
+/qodana.yaml
