@@ -11,12 +11,19 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 
 public class ClientEventHandler {
-    private ClientEventHandler() {
+    private final ConnectionManager connectionManager;
+    private final PlayerDataSender playerDataSender;
+    private final GhostRenderer ghostRenderer;
+
+    public ClientEventHandler(final ConnectionManager connectionManager, final PlayerDataSender playerDataSender, final GhostRenderer ghostRenderer) {
+        this.connectionManager = connectionManager;
+        this.playerDataSender = playerDataSender;
+        this.ghostRenderer = ghostRenderer;
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientEventHandler.class);
 
-    public static void registerEvents(final ConnectionManager connectionManager, final PlayerDataSender playerDataSender, final GhostRenderer ghostRenderer) {
+    public void registerEvents() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (client.isLocalServer()) {
                 LOGGER.info("Joined a single play world. Connecting to GhostServer...");

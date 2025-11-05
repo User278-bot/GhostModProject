@@ -19,7 +19,7 @@ public class GhostModClient implements ClientModInitializer {
     private final ConnectionManager connection;
     private final GhostRenderer ghostRenderer;
     private final PlayerDataSender playerDataSender;
-
+    private final ClientEventHandler clientEventHandler;
 
     public static EntityType<GhostPlayerEntity> GHOST_PLAYER;
 
@@ -27,6 +27,7 @@ public class GhostModClient implements ClientModInitializer {
         connection = new ConnectionManager(GHOST_REGISTRY);
         ghostRenderer = new GhostRenderer(connection.getGhostRegistry());
         playerDataSender = new PlayerDataSender(connection);
+        clientEventHandler = new ClientEventHandler(connection, playerDataSender, ghostRenderer);
     }
 
     @Override
@@ -34,7 +35,7 @@ public class GhostModClient implements ClientModInitializer {
         // This entrypoint is suitable for setting up client-specific logic, such as rendering.
         LOGGER.info("Initializing GhostModClient...");
 
-        ClientEventHandler.registerEvents(connection, playerDataSender, ghostRenderer);
+        clientEventHandler.registerEvents();
         EntityRegistration.register();
     }
 }
