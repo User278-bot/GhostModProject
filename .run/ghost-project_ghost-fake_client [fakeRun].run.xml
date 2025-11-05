@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ghost-project:ghost-fake_client [run]" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="ghost-project:ghost-fake_client [fakeRun]" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$/ghost-fake_client" />

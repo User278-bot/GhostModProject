@@ -3,8 +3,10 @@ package com.ghost.fake_client;
 import com.ghost.common.dto.PlayerData;
 import com.ghost.common.dto.Vec2Dto;
 import com.ghost.common.dto.Vec3Dto;
+import com.ghost.common.registry.IGhostRegistry;
 import com.ghost.common.util.SerializationUtil;
 import com.ghost.net.ConnectionManager;
+import com.ghost.registry.InMemoryGhostRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FakeClientMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(FakeClientMain.class);
+    private static final IGhostRegistry GHOST_REGISTRY = new InMemoryGhostRegistry();
 
     public static void main(String[] args) {
         try {
@@ -25,7 +28,7 @@ public class FakeClientMain {
             LOGGER.info("Starting test client: {} (UUID: {})", playerName, playerUuid);
 
             // --- 依存関係の組み立て ---
-            ConnectionManager client = new ConnectionManager();
+            ConnectionManager client = new ConnectionManager(GHOST_REGISTRY);
 
             LOGGER.info("Connecting to server: {} ...", serverUri);
 

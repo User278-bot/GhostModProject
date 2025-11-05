@@ -3,7 +3,6 @@ package com.ghost.net;
 import com.ghost.common.dto.PlayerData;
 import com.ghost.common.registry.IGhostRegistry;
 import com.ghost.common.util.SerializationUtil;
-import com.ghost.registry.InMemoryGhostRegistry;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
@@ -19,8 +18,8 @@ public class ConnectionManager {
     private final IGhostRegistry GHOST_REGISTRY;
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
 
-    public ConnectionManager() {
-        GHOST_REGISTRY = new InMemoryGhostRegistry();
+    public ConnectionManager(IGhostRegistry ghostRegistry) {
+        GHOST_REGISTRY = ghostRegistry;
     }
 
     public void connect(URI serverURI) {
