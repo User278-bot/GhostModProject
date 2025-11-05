@@ -3,14 +3,8 @@ package com.ghost.entity;
 import com.ghost.common.dto.PlayerData;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.RemotePlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 
 import java.util.UUID;
 

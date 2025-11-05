@@ -4,29 +4,18 @@ import java.net.URI;
 import java.util.*;
 
 import com.ghost.common.dto.PlayerData;
-import com.ghost.common.dto.Vec2Dto;
-import com.ghost.common.dto.Vec3Dto;
 import com.ghost.converter.PlayerDataConverter;
 import com.ghost.entity.GhostPlayerEntity;
+import com.ghost.init.EntityRegistration;
 import com.ghost.net.ConnectionManager;
-import com.mojang.authlib.GameProfile;
+import com.ghost.renderer.GhostRenderer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.core.Registry;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 
-import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +30,7 @@ public class GhostModClient implements ClientModInitializer {
     private static final int FORCE_DURATION = 40;
     @Nullable
     private PlayerData lastSentData = null;
+    private GhostRenderer ghostRenderer = new GhostRenderer(connection.getGhostRegistry());
 
     public static EntityType<GhostPlayerEntity> GHOST_PLAYER;
 
@@ -88,35 +78,10 @@ public class GhostModClient implements ClientModInitializer {
                 connection.sendPlayerData(current_data);
                 lastSentData = current_data;
             }
+            ghostRenderer.onTick(world);
         });
-        GHOST_PLAYER = Registry.register(Registry.ENTITY_TYPE, new ResourceLocation("ghostmod", "ghost_player"),
-                FabricEntityTypeBuilder
-                        .<GhostPlayerEntity>create(MobCategory.MISC,
-                                (type, world) -> {
-                                    // EntityTypeの登録時点では、特定のGameProfileは存在しない。
-                                    // そのため、ダミーのGameProfileで初期化する必要がある。
-                                    // 実際のGameProfileは、エンティティがスポーンする際に設定する。
-                                    GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
-                                    PlayerData dummyData = new PlayerData(
-                                            Vec3Dto.ZERO,
-                                            Vec2Dto.ZERO,
-                                            "0000",
-                                            "dummy",
-                                            "DUMMY",
-                                            "dummy:dimension"
-                                    );
 
-                                    return new GhostPlayerEntity((ClientLevel) world, dummyData);
-                                })
-                        .dimensions(EntityDimensions.fixed(0.6f, 1.8f)) // プレイヤーと同じサイズ
-                        .build());
-        EntityRendererRegistry.register(GHOST_PLAYER,
-                (context) -> {
-                    // Minecraft標準のPlayerEntityRendererをそのまま使う
-                    // "slim" はアレックス（腕が細い）モデルを使うかどうか
-                    return new PlayerRenderer(context, false);
-                });
-
+        EntityRegistration.register();
     }
 
 
