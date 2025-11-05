@@ -40,3 +40,4 @@ public class GhostModClient implements ClientModInitializer {
 /// クリエ時に多分当たり判定がある（飛行時）
 /// クライアント切断時にエンティティを消す
 /// サーバーの範囲に基づく送信
+/// /summon に登録されている

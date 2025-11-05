@@ -4,7 +4,9 @@ import com.ghost.common.dto.PlayerData;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.phys.AABB;
 
 import java.util.UUID;
 
@@ -16,7 +18,6 @@ public class GhostPlayerEntity extends RemotePlayer {
     // このゴーストのUUIDを保持する
     private final String ghostUuid;
 
-    // Playerを継承するために、ダミーの引数を渡す必要がある
     public GhostPlayerEntity(ClientLevel world, PlayerData data) {
         super(
                 world,
@@ -73,4 +74,25 @@ public class GhostPlayerEntity extends RemotePlayer {
     public boolean isCreative() {
         return true; // isCreativeでないと腕や足が揺れないことがある
     }
+    // --- 当たり判定と物理挙動の無効化 ---
+
+    /**
+     * このエンティティが他のエンティティを押しのけることができるか。
+     * @return falseを返すことで、押しのけを無効化する。
+     */
+    @Override
+    public boolean isPushable() {
+        return false;
+    }
+
+    /**
+     * 他のエンティティによって押しのけられるか。
+     * LivingEntityでオーバーライドされているので、こちらも設定する。
+     */
+    @Override
+    protected void doPush(Entity entity) {
+        // 何もしない
+    }
+
+
 }
