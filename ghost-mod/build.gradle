@@ -43,6 +43,7 @@ dependencies {
     include(project(":ghost-common"))
     implementation(project(":ghost-network"))
     include(project(":ghost-network"))
+    include("org.java-websocket:Java-WebSocket:${property("websocket_version")}")
 }
 
 processResources {
