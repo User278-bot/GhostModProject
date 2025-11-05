@@ -20,7 +20,7 @@ public class GhostPlayerEntity extends RemotePlayer {
     public GhostPlayerEntity(ClientLevel world, PlayerData data) {
         super(
                 world,
-                new GameProfile(UUID.fromString(data.uuid()),data.name()),
+                new GameProfile(UUID.fromString(data.uuid()), data.name()),
                 null
         );
         this.ghostUuid = data.uuid();
@@ -28,22 +28,26 @@ public class GhostPlayerEntity extends RemotePlayer {
     }
 
     // GhostRegistryから受け取った最新のデータで、エンティティの状態を更新するメソッド
-    public void updateFromData(PlayerData data) {
-        // 位置をセット
-        this.setPos(data.pos().x(), data.pos().y(), data.pos().z());
+    public void updateFromData(final PlayerData data) {
+        final int interpolationSteps = 4;
 
-        // 向きをセット
-        this.setYRot(data.rot().x()); // Yaw
-        this.setXRot(data.rot().y()); // Pitch
+        // ★ Minecraftの滑らかな移動メソッドを呼び出す
+        this.lerpTo(
+                data.pos().x(),
+                data.pos().y(),
+                data.pos().z(),
+                data.rot().y(), // ★ YawはY軸周りの回転
+                data.rot().x(), // ★ PitchはX軸周りの回転
+                interpolationSteps,
+                false // テレポートはしない
+        );
+        try {
+            Pose newPose = Pose.valueOf(data.pose());
+            this.setPose(newPose);
+        } catch (IllegalArgumentException e) {
+            // 不正なポーズ名が送られてきた場合は無視する
+        }
 
-        // ポーズをセット
-        // PlayerPoseDtoからMinecraftのPoseへの変換が必要
-        this.setPose(Pose.valueOf(data.pose()));
-
-        // スムージングのために前Tickの位置情報も更新する
-        this.xo = this.getX();
-        this.yo = this.getY();
-        this.zo = this.getZ();
     }
 
     public String getGhostUuid() {
@@ -55,6 +59,8 @@ public class GhostPlayerEntity extends RemotePlayer {
     @Override
     public void tick() {
         // 何もしない
+        super.tick();
+        //this.calculateEntityAnimation(this, false);
     }
 
     @Override
