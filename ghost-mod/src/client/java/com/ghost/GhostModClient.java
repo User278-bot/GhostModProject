@@ -34,3 +34,9 @@ public class GhostModClient implements ClientModInitializer {
         EntityRegistration.register();
     }
 }
+
+/// 現状の問題点
+/// デバッグメニューの当たり判定に表示される
+/// クリエ時に多分当たり判定がある（飛行時）
+/// クライアント切断時にエンティティを消す
+/// サーバーの範囲に基づく送信

@@ -41,6 +41,7 @@ public class GhostPlayerEntity extends RemotePlayer {
                 interpolationSteps,
                 false // テレポートはしない
         );
+        this.lerpHeadTo(data.rot().y(), interpolationSteps);
         try {
             Pose newPose = Pose.valueOf(data.pose());
             this.setPose(newPose);
