@@ -6,7 +6,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.phys.AABB;
 
 import java.util.UUID;
 
@@ -30,6 +29,9 @@ public class GhostPlayerEntity extends RemotePlayer {
 
     // GhostRegistryから受け取った最新のデータで、エンティティの状態を更新するメソッド
     public void updateFromData(final PlayerData data) {
+        if (data == null) {
+            return;
+        }
         final int interpolationSteps = 4;
 
         // ★ Minecraftの滑らかな移動メソッドを呼び出す
@@ -76,23 +78,14 @@ public class GhostPlayerEntity extends RemotePlayer {
     }
     // --- 当たり判定と物理挙動の無効化 ---
 
-    /**
-     * このエンティティが他のエンティティを押しのけることができるか。
-     * @return falseを返すことで、押しのけを無効化する。
-     */
     @Override
     public boolean isPushable() {
         return false;
     }
 
-    /**
-     * 他のエンティティによって押しのけられるか。
-     * LivingEntityでオーバーライドされているので、こちらも設定する。
-     */
     @Override
     protected void doPush(Entity entity) {
         // 何もしない
     }
-
 
 }
