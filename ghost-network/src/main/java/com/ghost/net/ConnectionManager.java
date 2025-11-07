@@ -2,7 +2,7 @@ package com.ghost.net;
 
 import com.ghost.common.dto.PlayerData;
 import com.ghost.common.registry.IGhostRegistry;
-import com.ghost.common.util.SerializationUtil;
+import com.ghost.util.SerializationUtil;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
@@ -64,7 +64,8 @@ public class ConnectionManager {
 
     public void sendPlayerData(PlayerData current_data) {
         if (session != null && session.isOpen()) {
-            final String msg = SerializationUtil.serialize(current_data);
+            var packet = new GhostPacket<>(MessageType.UPDATE, current_data);
+            final String msg = SerializationUtil.serializePacket(packet);
             session.send(msg);
         }
     }

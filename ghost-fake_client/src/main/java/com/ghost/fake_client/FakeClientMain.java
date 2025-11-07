@@ -1,18 +1,20 @@
 package com.ghost.fake_client;
 
+import com.ghost.net.GhostPacket;
 import com.ghost.common.dto.PlayerData;
 import com.ghost.common.dto.Vec2Dto;
 import com.ghost.common.dto.Vec3Dto;
 import com.ghost.common.registry.IGhostRegistry;
-import com.ghost.common.util.SerializationUtil;
+import com.ghost.util.SerializationUtil;
 import com.ghost.net.ConnectionManager;
 import com.ghost.registry.InMemoryGhostRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static com.ghost.net.MessageType.UPDATE;
 
 public class FakeClientMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(FakeClientMain.class);
@@ -22,9 +24,8 @@ public class FakeClientMain {
         try {
             // --- 接続情報の準備 ---
             URI serverUri = new URI("ws://localhost:8887");
-            String playerName = "TestBot-" + (int) (Math.random() * 1000);
-            String playerUuid = UUID.randomUUID().toString();
-
+            String playerName = "TestBot-Soth1754" + (int) (Math.random() * 1000);
+            String playerUuid = "36945147-4e98-48e7-abee-23469a298984";
             LOGGER.info("Starting test client: {} (UUID: {})", playerName, playerUuid);
 
             // --- 依存関係の組み立て ---
@@ -48,7 +49,8 @@ public class FakeClientMain {
                 PlayerData data = createDummyData(playerName, playerUuid, elapsedTime);
                 client.sendPlayerData(data);
 
-                String json = SerializationUtil.serialize(data);
+                var packet = new GhostPacket<>(UPDATE, data);
+                String json = SerializationUtil.serializePacket(packet);
                 LOGGER.info("Sent: {}", json);
 
                 // 3. 200ミリ秒 (5回/秒) ごとに送信
