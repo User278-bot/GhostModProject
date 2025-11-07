@@ -2,6 +2,7 @@ package com.ghost.entity;
 
 import com.ghost.common.dto.PlayerData;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.world.entity.Entity;
@@ -20,7 +21,9 @@ public class GhostPlayerEntity extends RemotePlayer {
     public GhostPlayerEntity(ClientLevel world, PlayerData data) {
         super(
                 world,
-                new GameProfile(UUID.fromString(data.uuid()), data.name()),
+                Minecraft.getInstance().getMinecraftSessionService().fillProfileProperties(
+                        new GameProfile(UUID.fromString(data.uuid()), data.name()),
+                        true),
                 null
         );
         this.ghostUuid = data.uuid();
