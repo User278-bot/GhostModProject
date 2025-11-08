@@ -1,12 +1,12 @@
 package com.ghost.fake_client;
 
-import com.ghost.net.GhostPacket;
+import com.ghost.net.GhostSyncService;
+import com.ghost.net.packet.GhostPacket;
 import com.ghost.common.dto.PlayerData;
 import com.ghost.common.dto.Vec2Dto;
 import com.ghost.common.dto.Vec3Dto;
 import com.ghost.common.registry.IGhostRegistry;
 import com.ghost.util.SerializationUtil;
-import com.ghost.net.ConnectionManager;
 import com.ghost.registry.InMemoryGhostRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import static com.ghost.net.MessageType.UPDATE;
+import static com.ghost.net.packet.MessageType.UPDATE;
 
 public class FakeClientMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(FakeClientMain.class);
@@ -29,12 +29,12 @@ public class FakeClientMain {
             LOGGER.info("Starting test client: {} (UUID: {})", playerName, playerUuid);
 
             // --- 依存関係の組み立て ---
-            ConnectionManager client = new ConnectionManager(GHOST_REGISTRY);
+            var ghostSyncService = new GhostSyncService(GHOST_REGISTRY);
 
             LOGGER.info("Connecting to server: {} ...", serverUri);
 
             // 接続が完了するまで最大5秒間待機する
-            boolean connected = client.connectBlocking(serverUri, 5, TimeUnit.SECONDS);
+            var connected = ghostSyncService.connectBlocking(serverUri, 5, TimeUnit.SECONDS);
 
             if (!connected) {
                 LOGGER.error("Failed to connect to the server. Exiting.");
@@ -43,15 +43,15 @@ public class FakeClientMain {
 
             // --- メインループ：定期的にデータを送信 ---
             long startTime = System.currentTimeMillis();
-            while (client.isOpen()) {
+            while (ghostSyncService.isOpen()) {
                 long elapsedTime = System.currentTimeMillis() - startTime;
 
                 PlayerData data = createDummyData(playerName, playerUuid, elapsedTime);
-                client.sendPlayerData(data);
-
                 var packet = new GhostPacket<>(UPDATE, data);
-                String json = SerializationUtil.serializePacket(packet);
-                LOGGER.info("Sent: {}", json);
+                ghostSyncService.sendPacket(packet);
+
+                var msg = SerializationUtil.serializePacket(packet);
+                LOGGER.info("Sent: {}", msg);
 
                 // 3. 200ミリ秒 (5回/秒) ごとに送信
                 Thread.sleep(200);

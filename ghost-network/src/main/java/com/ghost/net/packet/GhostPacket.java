@@ -1,4 +1,4 @@
-package com.ghost.net;
+package com.ghost.net.packet;
 
 import org.jetbrains.annotations.Nullable;
 

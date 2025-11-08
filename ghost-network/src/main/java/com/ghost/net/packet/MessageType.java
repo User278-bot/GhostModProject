@@ -1,4 +1,4 @@
-package com.ghost.net;
+package com.ghost.net.packet;
 
 public enum MessageType {
     /**
@@ -22,5 +22,6 @@ public enum MessageType {
      * Sent to all clients when a player leaves the server.
      * This message will contain the UUID of the player who left.
      */
-    LEAVE
+    LEAVE,
+    UNRECOGNIZED
 }

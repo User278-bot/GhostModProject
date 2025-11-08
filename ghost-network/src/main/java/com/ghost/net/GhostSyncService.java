@@ -1,7 +1,7 @@
 package com.ghost.net;
 
-import com.ghost.common.dto.PlayerData;
 import com.ghost.common.registry.IGhostRegistry;
+import com.ghost.net.packet.GhostPacket;
 import com.ghost.util.SerializationUtil;
 
 import org.jetbrains.annotations.Nullable;
@@ -12,21 +12,21 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
-public class ConnectionManager {
+public class GhostSyncService {
     @Nullable
     private GhostWebSocketClient session = null;
-    private final IGhostRegistry GHOST_REGISTRY;
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
+    private final IGhostRegistry ghostRegistry;
+    private static final Logger LOGGER = LoggerFactory.getLogger(GhostSyncService.class);
 
-    public ConnectionManager(IGhostRegistry ghostRegistry) {
-        GHOST_REGISTRY = ghostRegistry;
+    public GhostSyncService(IGhostRegistry ghostRegistry) {
+        this.ghostRegistry = ghostRegistry;
     }
 
     public void connect(URI serverURI) {
         if (this.isOpen()) {
             return;
         }
-        session = new GhostWebSocketClient(serverURI, GHOST_REGISTRY);
+        session = new GhostWebSocketClient(serverURI, ghostRegistry);
         session.connect();
     }
 
@@ -35,7 +35,7 @@ public class ConnectionManager {
             LOGGER.info("Already connected");
             return true;
         }
-        session = new GhostWebSocketClient(servverURI, GHOST_REGISTRY);
+        session = new GhostWebSocketClient(servverURI, ghostRegistry);
         try {
             return session.connectBlocking(timeout, unit);
         } catch (Exception ex) {
@@ -51,20 +51,12 @@ public class ConnectionManager {
         }
     }
 
-    public IGhostRegistry getGhostRegistry() {
-        return this.GHOST_REGISTRY;
-    }
-
     public boolean isOpen() {
-        if (session == null) {
-            return false;
-        }
-        return session.isOpen();
+        return session != null && session.isOpen();
     }
 
-    public void sendPlayerData(PlayerData current_data) {
+    public <T> void sendPacket(GhostPacket<T> packet) {
         if (session != null && session.isOpen()) {
-            var packet = new GhostPacket<>(MessageType.UPDATE, current_data);
             final String msg = SerializationUtil.serializePacket(packet);
             session.send(msg);
         }

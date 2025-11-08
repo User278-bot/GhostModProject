@@ -9,8 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Objects;
-import java.util.List;
 
 public class GhostWebSocketClient extends WebSocketClient {
 
@@ -30,30 +28,36 @@ public class GhostWebSocketClient extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
-        LOGGER.info("Received message: {}", message);
-        var type = SerializationUtil.peekMessageType(message);
-        switch (Objects.requireNonNull(type)) {
-            case JOIN:
-            case UPDATE:
-                var updatePacket = SerializationUtil.deserializeUpdatePacket(message);
-                GHOST_REGISTRY.updateGhost(updatePacket.getData());
-                break;
-            case LEAVE:
-                var levePacket = SerializationUtil.deserializeLeavePacket(message);
-                GHOST_REGISTRY.removeGhost(levePacket.getData());
-                break;
-            case INITIAL_SYNC:
-                GhostPacket<List<PlayerData>> syncPacket = SerializationUtil.deserializeInitialSyncPacket(message);
-                List<PlayerData> initialGhosts = syncPacket.getData();
+        try {
+            var packet = SerializationUtil.deserializePacket(message);
+            var type = packet.getType();
+            var data = packet.getData();
 
-                if (initialGhosts != null) {
-                    LOGGER.info("Received initial sync with {} ghosts.", initialGhosts.size());
-                    // リストの各PlayerDataでRegistryを更新する
-                    for (PlayerData data : initialGhosts) {
-                        GHOST_REGISTRY.updateGhost(data);
+            switch (type) {
+                case UPDATE:
+                    if (data != null) {
+                        // dataElementを直接 PlayerData にデシリアライズ
+                        PlayerData playerData = SerializationUtil.parsePlayerData(data);
+                        GHOST_REGISTRY.updateGhost(playerData);
                     }
-                }
-                break;
+                    break;
+                case LEAVE:
+                    if (data != null) {
+                        String uuid = SerializationUtil.parseUUID(data);
+                        GHOST_REGISTRY.removeGhost(uuid);
+                    }
+                    break;
+                case INITIAL_SYNC:
+                    if (data != null) {
+                        var list = SerializationUtil.parsePlayerDataList(data);
+                        for (PlayerData playerData : list) {
+                            GHOST_REGISTRY.updateGhost(playerData);
+                        }
+                    }
+                    break;
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Failed to process WebSocket message: {}", message, ex);
         }
     }
 

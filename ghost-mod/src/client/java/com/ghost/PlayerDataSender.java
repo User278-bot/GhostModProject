@@ -2,7 +2,9 @@ package com.ghost;
 
 import com.ghost.common.dto.PlayerData;
 import com.ghost.converter.PlayerDataConverter;
-import com.ghost.net.ConnectionManager;
+import com.ghost.net.GhostSyncService;
+import com.ghost.net.packet.GhostPacket;
+import com.ghost.net.packet.MessageType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.jetbrains.annotations.Nullable;
@@ -12,18 +14,15 @@ import java.util.Objects;
 public class PlayerDataSender {
     @Nullable
     private PlayerData lastSentData = null;
-    private final ConnectionManager connectionManager;
+    private final GhostSyncService ghostSyncService;
     private static final int duration = 1;      // >0
     private static final int FORCE_DURATION = 40;
 
-    public PlayerDataSender(ConnectionManager connectionManager) {
-        this.connectionManager = connectionManager;
+    public PlayerDataSender(GhostSyncService ghostSyncService) {
+        this.ghostSyncService = ghostSyncService;
     }
 
     public void sendPlayerData(ClientLevel world) {
-        if (!connectionManager.isOpen()) {
-            return;
-        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return;
@@ -37,7 +36,8 @@ public class PlayerDataSender {
         final boolean isForceSendTime = (world.getGameTime() % FORCE_DURATION == 0);
 
         if (isStateChanged || isForceSendTime) {
-            connectionManager.sendPlayerData(current_data);
+            final var packet = new GhostPacket<>(MessageType.UPDATE, current_data);
+            ghostSyncService.sendPacket(packet);
             lastSentData = current_data;
         }
     }
