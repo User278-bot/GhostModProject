@@ -32,7 +32,7 @@ public class GhostWebSocketClient extends WebSocketClient {
             var packet = SerializationUtil.deserializePacket(message);
             var type = packet.getType();
             var data = packet.getData();
-
+            LOGGER.info("type: {},data: {}", type, data);
             switch (type) {
                 case UPDATE:
                     if (data != null) {

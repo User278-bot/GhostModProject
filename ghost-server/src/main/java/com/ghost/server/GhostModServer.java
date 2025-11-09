@@ -1,5 +1,9 @@
 package com.ghost.server;
 
+import com.ghost.common.dto.PlayerData;
+import com.ghost.net.packet.GhostPacket;
+import com.ghost.net.packet.MessageType;
+import com.ghost.util.SerializationUtil;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -7,15 +11,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class GhostModServer extends WebSocketServer {
 
     // 接続中のクライアントをスレッドセーフに管理するためのセット
-    private static final Set<WebSocket> connections = Collections.synchronizedSet(new HashSet<>());
-    private static final Logger logger = LoggerFactory.getLogger(GhostModServer.class);
+    private static final Map<WebSocket, PlayerData> playerDataMap = new ConcurrentHashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(GhostModServer.class);
 
     public GhostModServer(int port) {
         super(new InetSocketAddress(port));
@@ -24,31 +28,52 @@ public class GhostModServer extends WebSocketServer {
     @Override
     public void onStart() {
         // サーバーが起動したときの処理
-        logger.info("Server started on port: {}", getPort());
+        LOGGER.info("Server started on port: {}", getPort());
         setConnectionLostTimeout(100); // 接続タイムアウトの設定（秒）
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         // 新しいクライアントが接続したときの処理
-        connections.add(conn);
-        logger.info("New player connected: {}", conn.getRemoteSocketAddress());
+        LOGGER.info("New player connected: {}", conn.getRemoteSocketAddress());
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         // クライアントが切断したときの処理
-        connections.remove(conn);
-        logger.info("Player disconnected: {} (Code: {}, Reason: {}, Remote: {})", conn.getRemoteSocketAddress(), code, reason, remote);
+        var disconnectedPlayer = playerDataMap.remove(conn);
+        if (disconnectedPlayer != null) {
+            LOGGER.info("Player {} disconnected: {} (Code: {}, Reason: {}, Remote: {})", disconnectedPlayer.name(), conn.getRemoteSocketAddress(), code, reason, remote);
+            sendLeavePacket(disconnectedPlayer);
+        } else {
+            LOGGER.warn("Disconnected a client that had not sent any data: {}", conn.getRemoteSocketAddress());
+        }
     }
 
     @Override
     public void onMessage(WebSocket conn, String message) {
         // クライアントからメッセージ（プレイヤー情報など）を受信したときの処理
-        logger.info("Message from {}: {}", conn.getRemoteSocketAddress(), message);
+        LOGGER.info("Message from {}: {}", conn.getRemoteSocketAddress(), message);
 
-        // ★重要：受信したメッセージを、送信元以外の全クライアントに転送（ブロードキャスト）する
-        broadcast(message, conn);
+        var packet = SerializationUtil.deserializePacket(message);
+        if (packet == null || packet.getType() != MessageType.UPDATE) {
+            LOGGER.warn("Received invalid packet from {}", conn.getRemoteSocketAddress());
+            return;
+        }
+        var playerData = SerializationUtil.parsePlayerData(packet.getData());
+        if (playerData == null) {
+            LOGGER.warn("Failed to parse PlayerData from {}", conn.getRemoteSocketAddress());
+            return;
+        }
+        var previous = playerDataMap.put(conn, playerData);
+        if (previous == null) {
+            sendInitialData(conn);
+            var joinedPlayer = SerializationUtil.parsePlayerData(packet.getData());
+            sendJoinPacket(conn, joinedPlayer);
+        } else {
+            // ★重要：受信したメッセージを、送信元以外の全クライアントに転送（ブロードキャスト）する
+            broadcast(message, conn);
+        }
     }
 
     @Override
@@ -56,10 +81,10 @@ public class GhostModServer extends WebSocketServer {
         // エラーが発生したときの処理
         // ex.toString() の代わりにexを直接渡すことで、スタックトレースがログに出力され、デバッグが容易になります。
         if (conn != null) {
-            logger.error("An error occurred on connection {}:", conn.getRemoteSocketAddress(), ex);
-            connections.remove(conn); // エラーが発生した接続は削除するのが安全です
+            LOGGER.error("An error occurred on connection {}:", conn.getRemoteSocketAddress(), ex);
+            playerDataMap.remove(conn);
         } else {
-            logger.error("An error occurred:", ex);
+            LOGGER.error("An error occurred:", ex);
         }
     }
 
@@ -71,6 +96,7 @@ public class GhostModServer extends WebSocketServer {
      */
     public void broadcast(String message, WebSocket exclude) {
         // スレッドセーフなSetを安全にループするため、synchronizedブロックで囲みます
+        var connections = this.getConnections();
         synchronized (connections) {
             for (WebSocket conn : connections) {
                 if (conn != null && conn.isOpen() && !conn.equals(exclude)) {
@@ -80,13 +106,43 @@ public class GhostModServer extends WebSocketServer {
         }
     }
 
+    private void sendInitialData(WebSocket newConnection) {
+
+        //newConnection.sendFrame();
+        var excludePlayers = playerDataMap.entrySet().stream()
+                .filter(
+                        (entry) -> !entry.getKey().equals(newConnection))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toSet());
+        if (excludePlayers.isEmpty()) {
+            return;
+        }
+
+        var packet = new GhostPacket<>(MessageType.INITIAL_SYNC, excludePlayers);
+        var msg = SerializationUtil.serializePacket(packet);
+        newConnection.send(msg);
+    }
+
+    private void sendLeavePacket(final PlayerData playerData) {
+        var leavePacket = new GhostPacket<>(MessageType.LEAVE, playerData.uuid());
+        var msg = SerializationUtil.serializePacket(leavePacket);
+        broadcast(msg);
+    }
+
+    private void sendJoinPacket(WebSocket conn, PlayerData joinedPlayer) {
+        var joinPacket = new GhostPacket<>(MessageType.JOIN, joinedPlayer);
+        var msg = SerializationUtil.serializePacket(joinPacket);
+        broadcast(msg, conn);
+        LOGGER.info("Player '{}' joined.", joinedPlayer.name());
+    }
+
     public static void main(String[] args) {
         int port = 8887; // サーバーが使用するポート番号
         try {
             GhostModServer server = new GhostModServer(port);
             server.start(); // サーバーを起動
-        } catch (Exception e) {
-            logger.error("Failed to start WebSocket server", e);
+        } catch (Exception ex) {
+            LOGGER.error("Failed to start WebSocket server", ex);
         }
     }
 }
