@@ -23,7 +23,7 @@ public class GhostSyncService {
     }
 
     public void connect(URI serverURI) {
-        if (this.isOpen()) {
+        if (this.isConnected()) {
             return;
         }
         session = new GhostWebSocketClient(serverURI, ghostRegistry);
@@ -31,7 +31,7 @@ public class GhostSyncService {
     }
 
     public boolean connectBlocking(URI servverURI, long timeout, TimeUnit unit) {
-        if (this.isOpen()) {
+        if (this.isConnected()) {
             LOGGER.info("Already connected");
             return true;
         }
@@ -51,7 +51,7 @@ public class GhostSyncService {
         }
     }
 
-    public boolean isOpen() {
+    public boolean isConnected() {
         return session != null && session.isOpen();
     }
 

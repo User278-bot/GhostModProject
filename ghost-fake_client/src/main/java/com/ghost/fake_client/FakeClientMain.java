@@ -43,7 +43,7 @@ public class FakeClientMain {
 
             // --- メインループ：定期的にデータを送信 ---
             long startTime = System.currentTimeMillis();
-            while (ghostSyncService.isOpen()) {
+            while (ghostSyncService.isConnected()) {
                 long elapsedTime = System.currentTimeMillis() - startTime;
 
                 PlayerData data = createDummyData(playerName, playerUuid, elapsedTime);
