@@ -1,41 +1,43 @@
 {
-	"schemaVersion": 1,
-	"id": "ghostmod",
-	"version": "${version}",
-	"name": "GhostMod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
-	"authors": [
-		"Me!"
-	],
-	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
-	},
-	"license": "All rights reserved @authors",
-	"icon": "assets/ghostmod/icon.png",
-	"environment": "*",
-	"entrypoints": {
-		"main": [
-          "com.ghost.GhostModMain"
-		],
-		"client": [
-			"com.ghost.GhostModClient"
-		]
-	},
-	"mixins": [
-		"ghostmod.mixins.json",
-		{
-			"config": "ghostmod.client.mixins.json",
-			"environment": "client"
-		}
-	],
-	"depends": {
-		"fabricloader": ">=0.17.3",
-		"minecraft": "~1.19.2",
-		"java": ">=17",
-		"fabric-api": "*"
-	},
-	"suggests": {
-		"another-mod": "*"
-	}
+  "schemaVersion": 1,
+  "id": "ghostmod",
+  "version": "${version}",
+  "name": "GhostMod",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "authors": [
+    "Me!"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "All rights reserved @authors",
+  "icon": "assets/ghostmod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.ghost.GhostModMain"
+    ],
+    "client": [
+      "com.ghost.GhostModClient"
+    ],
+    "modmenu": [
+    ]
+  },
+  "mixins": [
+    "ghostmod.mixins.json",
+    {
+      "config": "ghostmod.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.3",
+    "minecraft": "~1.19.2",
+    "java": ">=17",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
 }

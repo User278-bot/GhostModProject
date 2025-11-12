@@ -1,5 +1,3 @@
-import java.net.URI
-
 plugins {
     id("java")
 }
@@ -10,10 +8,6 @@ version = "1.0-SNAPSHOT"
 allprojects {
     repositories {
         mavenCentral()
-        maven {
-            name = "Fabric"
-            url = URI("https://maven.fabricmc.net/")
-        }
     }
 }
 
