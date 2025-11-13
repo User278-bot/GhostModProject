@@ -1,0 +1,14 @@
+{
+  "title.ghostmod.config": "ゴーストシンクの設定",
+  "category.ghostmod.network": "ネットワーク",
+  "option.ghostmod.serverUri": "サーバーアドレス",
+  "tooltip.ghostmod.serverUri": "ゴーストサーバーへのURI.",
+  "option.ghostmod.serverPort": "ポート",
+  "tooltip.ghostmod.serverPort": "ウェブソケット通信に使用するポート",
+  "option.ghostmod.status": "ステータス: %s",
+  "text.ghostmod.status.connected": "接続済み",
+  "text.ghostmod.status.disconnected": "切断されました",
+  "option.ghostmod.connection": "接続コントロール",
+  "option.ghostmod.connection.connect": "接続",
+  "option.ghostmod.connection.disconnect": "切断"
+}

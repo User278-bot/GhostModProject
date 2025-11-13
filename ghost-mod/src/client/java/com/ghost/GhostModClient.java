@@ -3,6 +3,7 @@ package com.ghost;
 import com.ghost.common.registry.IGhostRegistry;
 import com.ghost.init.ClientEventHandler;
 import com.ghost.init.EntityRegistration;
+import com.ghost.net.GhostSyncService;
 import com.ghost.registry.InMemoryGhostRegistry;
 import com.ghost.renderer.GhostRenderer;
 import net.fabricmc.api.ClientModInitializer;
@@ -14,9 +15,11 @@ public class GhostModClient implements ClientModInitializer {
     private static final IGhostRegistry GHOST_REGISTRY = new InMemoryGhostRegistry();
     private final ClientEventHandler clientEventHandler;
 
+    public static final GhostSyncService GHOST_SYNC_SERVICE = new GhostSyncService(GHOST_REGISTRY);
+
     public GhostModClient() {
         GhostRenderer ghostRenderer = new GhostRenderer(GHOST_REGISTRY);
-        clientEventHandler = new ClientEventHandler(GHOST_REGISTRY, ghostRenderer);
+        clientEventHandler = new ClientEventHandler(GHOST_REGISTRY, GHOST_SYNC_SERVICE, ghostRenderer);
     }
 
     @Override

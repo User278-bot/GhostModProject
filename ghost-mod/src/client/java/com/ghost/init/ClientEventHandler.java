@@ -17,9 +17,9 @@ public class ClientEventHandler {
     private final GhostRenderer ghostRenderer;
     private final GhostSyncService ghostSyncService;
 
-    public ClientEventHandler(final IGhostRegistry ghostRegistry, final GhostRenderer ghostRenderer) {
+    public ClientEventHandler(final IGhostRegistry ghostRegistry, final GhostSyncService ghostSyncService, final GhostRenderer ghostRenderer) {
         this.ghostRenderer = ghostRenderer;
-        this.ghostSyncService = new GhostSyncService(ghostRegistry);
+        this.ghostSyncService = ghostSyncService;
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);
     }
 
