@@ -43,17 +43,20 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric API. This is technically optional, but you probably want it anyway.
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
+    modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
+    modClientImplementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
         exclude(group: "net.fabricmc.fabric-api")
+        exclude(group: "net.fabricmc", module: "fabric-loader")
     }
-    modApi("com.terraformersmc:modmenu:${project.mod_menu_version}")
-
+    modApi("com.terraformersmc:modmenu:${project.mod_menu_version}") {
+        exclude(group: "net.fabricmc.fabric-api")
+        exclude(group: "net.fabricmc", module: "fabric-loader")
+    }
     implementation(project(":ghost-common"))
     include(project(":ghost-common"))
     implementation(project(":ghost-network"))
     include(project(":ghost-network"))
-    include("org.java-websocket:Java-WebSocket:${property("websocket_version")}")
+    include("org.java-websocket:Java-WebSocket:${project.websocket_version}")
 }
 
 processResources {

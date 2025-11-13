@@ -22,6 +22,7 @@
       "com.ghost.GhostModClient"
     ],
     "modmenu": [
+      "com.ghost.config.GhostConfig"
     ]
   },
   "mixins": [
