@@ -6,12 +6,19 @@ import com.terraformersmc.modmenu.api.ModMenuApi;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public class ModMenuIntegration implements ModMenuApi {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModMenuIntegration.class);
+    private boolean pre_connected = false;
 
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
@@ -20,22 +27,23 @@ public class ModMenuIntegration implements ModMenuApi {
 
     private Screen createConfigScreen(Screen parent) {
         // 設定データクラスのインスタンスを取得
-        GhostConfig config = GhostConfig.getInstance();
+        final GhostConfig config = GhostConfig.getInstance();
 
         // 1. ConfigBuilderの初期化
-        ConfigBuilder builder = ConfigBuilder.create()
+        final ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(Component.translatable("title.ghostmod.config"));
+                .setTitle(Component.translatable("title.ghostmod.config"))
+                .setDoesConfirmSave(false)
+                .setAlwaysShowTabs(false);
         // .setSavingRunnable(() -> { /* TODO: ファイルへの保存処理 */ });
 
         // 2. 「Network」カテゴリを作成
-        ConfigCategory networkCategory = builder.getOrCreateCategory(Component.translatable("category.ghostmod.network"));
+        final ConfigCategory networkCategory = builder.getOrCreateCategory(Component.translatable("category.ghostmod.network"));
 
         // 3. エントリー（UI要素）を作成するためのビルダーを取得
-        ConfigEntryBuilder entryBuilder = builder.entryBuilder();
+        final ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
         // 4. 各設定項目をカテゴリに追加していく
-
         // --- サーバー設定 ---
         networkCategory.addEntry(entryBuilder.startStrField(
                         Component.translatable("option.ghostmod.serverUri"),
@@ -68,23 +76,12 @@ public class ModMenuIntegration implements ModMenuApi {
                         Component.translatable("option.ghostmod.connection"),
                         GhostModClient.GHOST_SYNC_SERVICE.isConnected()
                 )
-                .setYesNoTextSupplier(connected ->
-                        Component.translatable(connected ? "option.ghostmod.connection.disconnect" : "option.ghostmod.connection.connect")
-                )
-                .setSaveConsumer(shouldConnect -> {
-                    // このトグルは保存時に一度だけ呼ばれる
-                    if (shouldConnect) {
-                        try {
-                            URI uri = new URI(config.getFullWebSocketUri());
-                            GhostModClient.GHOST_SYNC_SERVICE.connect(uri);
-                        } catch (Exception ex) {
-                            // TODO: ユーザーにエラーを通知する
+                .setYesNoTextSupplier((connected) ->
+                        {
+                            connectPushButton(connected, config, parent);
+                            return Component.translatable(connected ? "option.ghostmod.connection.disconnect" : "option.ghostmod.connection.connect");
                         }
-                    } else {
-                        GhostModClient.GHOST_SYNC_SERVICE.disconnect();
-                    }
-                })
-                .requireRestart() // この設定を変更したらゲームの再起動が必要であることを示す（画面のリロードのため）
+                )
                 .build());
 
         // 5. ConfigBuilderからScreenをビルドして返す
@@ -99,5 +96,28 @@ public class ModMenuIntegration implements ModMenuApi {
         ).withStyle(style ->
                 style.withColor(isConnected ? 0x55FF55 : 0xFF5555) // 緑 or 赤
         );
+    }
+
+    private void connectPushButton(boolean connected, GhostConfig config, Screen parent) {
+        if (!Objects.equals(connected, this.pre_connected)) {
+            LOGGER.info("toggle state connected: {}", connected);
+            if (connected) {
+                try {
+                    URI uri = new URI(config.getFullWebSocketUri());
+                    var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri, 3, TimeUnit.SECONDS);
+                    if (isConnected) {
+                        LOGGER.info("Successfully to connect server");
+                    } else {
+                        LOGGER.error("Failed to connect server");
+                    }
+                } catch (Exception ex) {
+                    LOGGER.error("Failed to saving config:", ex);
+                }
+            } else {
+                GhostModClient.GHOST_SYNC_SERVICE.disconnect();
+            }
+            Minecraft.getInstance().setScreen(createConfigScreen(parent));
+        }
+        this.pre_connected = connected;
     }
 }

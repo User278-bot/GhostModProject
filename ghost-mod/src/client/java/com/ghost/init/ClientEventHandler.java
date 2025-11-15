@@ -9,9 +9,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-import java.net.URI;
-
 public class ClientEventHandler {
     private final PlayerDataSender playerDataSender;
     private final GhostRenderer ghostRenderer;
@@ -26,18 +23,6 @@ public class ClientEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientEventHandler.class);
 
     public void registerEvents() {
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            if (client.isLocalServer()) {
-                LOGGER.info("Joined a single play world. Connecting to GhostServer...");
-                try {
-                    //後にメニューから変更可能にするが、mvp環境のため直打ち
-                    final URI serverUri = URI.create("ws://localhost:8887");
-                    ghostSyncService.connect(serverUri);
-                } catch (Exception ex) {
-                    LOGGER.error("Failed to connect GhostServer.", ex);
-                }
-            }
-        });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ghostSyncService.disconnect();
         });
