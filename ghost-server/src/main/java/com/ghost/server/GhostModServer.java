@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class GhostModServer extends WebSocketServer {
 
@@ -66,7 +67,7 @@ public class GhostModServer extends WebSocketServer {
         }
         var previous = playerDataMap.put(conn, playerData);
         if (previous == null) {
-            sendInitialData(conn);
+            sendInitialPaket(conn);
             var joinedPlayer = SerializationUtil.parsePlayerData(packet.getData());
             sendJoinPacket(conn, joinedPlayer);
         } else {
@@ -105,14 +106,17 @@ public class GhostModServer extends WebSocketServer {
         }
     }
 
-    private void sendInitialData(WebSocket newConnection) {
-        // 初期データ送信時点では`newConnection`のデータは`playerDataMap`には登録されていないことが前提
-        var existingPlayers = playerDataMap.values();
-        if (existingPlayers.isEmpty()) {
+    private void sendInitialPaket(WebSocket newConnection) {
+        var excludePlayers = playerDataMap.entrySet().stream()
+                .filter(
+                        (entry) -> !entry.getKey().equals(newConnection))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toSet());
+        if (excludePlayers.isEmpty()) {
             return;
         }
 
-        var packet = new GhostPacket<>(MessageType.INITIAL_SYNC, existingPlayers);
+        var packet = new GhostPacket<>(MessageType.INITIAL_SYNC, excludePlayers);
         var msg = SerializationUtil.serializePacket(packet);
         newConnection.send(msg);
     }
