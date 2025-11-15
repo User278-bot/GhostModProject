@@ -7,7 +7,10 @@
 ただし、アニメーションや行動予測などのクライアント側の処理には影響があるかもしれません。
 
 # ビルド
-Gitリポジトリ内の`ghost-mod`ディレクトリにあるgradlewを実行します。
+Gitリポジトリ内のgradlewを以下のように実行します。成果物は各サブディレクトリ内の`build/libs`内に出力されます。
+```Console
+.\gradlew build
+```
 
 # 利用方法
 現在対応しているバージョンは `Minecraft 1.19.2` のみです。
@@ -15,7 +18,7 @@ Gitリポジトリ内の`ghost-mod`ディレクトリにあるgradlewを実行�
 通常通りFabricModを導入して`GhostMod-<version>.jar`のような名前のMod本体をModsフォルダーの中に入れてください。依存関係に`FabricApi`、`ModMenu`、`Cloth Config API`が必要です。
 ## サーバーの起動
 以下のようなコマンドでサーバーソフトウェアを起動してください。起動には Java16 以降が必要です。
-```Terminal
+```Console
 java -jar GhostModServer-1.0.0.jar
 ```
 正常に起動すると`[WebSocketSelector-39] INFO com.ghost.server.GhostModServer - Server started on port: 8887`のようなメッセージが出力されます。
