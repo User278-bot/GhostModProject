@@ -19,7 +19,7 @@ public class GhostModClient implements ClientModInitializer {
 
     public GhostModClient() {
         GhostRenderer ghostRenderer = new GhostRenderer(GHOST_REGISTRY);
-        clientEventHandler = new ClientEventHandler(GHOST_REGISTRY, GHOST_SYNC_SERVICE, ghostRenderer);
+        clientEventHandler = new ClientEventHandler(GHOST_SYNC_SERVICE, ghostRenderer);
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.ghost.init;
 
 import com.ghost.PlayerDataSender;
-import com.ghost.common.registry.IGhostRegistry;
 import com.ghost.config.GhostConfig;
 import com.ghost.renderer.GhostRenderer;
 import com.ghost.net.GhostSyncService;
@@ -17,7 +16,7 @@ public class ClientEventHandler {
     private final GhostRenderer ghostRenderer;
     private final GhostSyncService ghostSyncService;
 
-    public ClientEventHandler(final IGhostRegistry ghostRegistry, final GhostSyncService ghostSyncService, final GhostRenderer ghostRenderer) {
+    public ClientEventHandler(final GhostSyncService ghostSyncService, final GhostRenderer ghostRenderer) {
         this.ghostRenderer = ghostRenderer;
         this.ghostSyncService = ghostSyncService;
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);
