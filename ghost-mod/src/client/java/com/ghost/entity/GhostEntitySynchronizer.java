@@ -5,7 +5,6 @@ import com.ghost.common.registry.IGhostRegistry;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import org.slf4j.Logger;
@@ -22,7 +21,6 @@ public class GhostEntitySynchronizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(GhostEntitySynchronizer.class);
     private final IGhostRegistry ghostRegistry;
     private static final AtomicInteger nextEntityId = new AtomicInteger(Integer.MIN_VALUE / 2);
-    private Map<UUID, PlayerInfo> ghostInfo = new HashMap<>();
 
     public GhostEntitySynchronizer(IGhostRegistry ghostRegistry) {
         this.ghostRegistry = ghostRegistry;

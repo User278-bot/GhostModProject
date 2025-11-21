@@ -1,6 +1,6 @@
 package com.ghost.init;
 
-import com.ghost.PlayerDataSender;
+import com.ghost.client.PlayerDataSender;
 import com.ghost.config.GhostConfig;
 import com.ghost.entity.GhostEntitySynchronizer;
 import com.ghost.net.GhostSyncService;
@@ -16,7 +16,8 @@ public class ClientEventHandler {
     private final GhostEntitySynchronizer ghostEntitySynchronizer;
     private final GhostSyncService ghostSyncService;
 
-    public ClientEventHandler(final GhostSyncService ghostSyncService, final GhostEntitySynchronizer ghostEntitySynchronizer) {
+    public ClientEventHandler(final GhostSyncService ghostSyncService,
+            final GhostEntitySynchronizer ghostEntitySynchronizer) {
         this.ghostEntitySynchronizer = ghostEntitySynchronizer;
         this.ghostSyncService = ghostSyncService;
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);

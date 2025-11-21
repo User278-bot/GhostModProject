@@ -8,6 +8,8 @@ import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 
+import java.util.concurrent.CompletableFuture;
+
 // Playerエンティティを継承すると多くの機能を使えるが、
 // 描画だけなら、より軽量な Entity を継承する方がシンプルな場合もある。
 // ここではPlayerを継承して、見た目の互換性を高める。
@@ -15,9 +17,10 @@ public class GhostPlayerEntity extends RemotePlayer {
 
     // このゴーストのUUIDを保持する
     private final String ghostUuid;
+    private static final int INTERPOLATION_STEPS = 4;
 
     public GhostPlayerEntity(final ClientLevel world, final GameProfile profile, final PlayerData data,
-            java.util.concurrent.CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
+            CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
         super(world, profile, null);
         this.ghostUuid = data.uuid();
         updateFromData(data);
@@ -34,7 +37,6 @@ public class GhostPlayerEntity extends RemotePlayer {
         if (data == null) {
             return;
         }
-        final int interpolationSteps = 4;
 
         // ★ Minecraftの滑らかな移動メソッドを呼び出す
         this.lerpTo(
@@ -43,10 +45,10 @@ public class GhostPlayerEntity extends RemotePlayer {
                 data.pos().z(),
                 data.rot().y(), // ★ YawはY軸周りの回転
                 data.rot().x(), // ★ PitchはX軸周りの回転
-                interpolationSteps,
+                INTERPOLATION_STEPS,
                 false // テレポートはしない
         );
-        this.lerpHeadTo(data.rot().y(), interpolationSteps);
+        this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
         try {
             Pose newPose = Pose.valueOf(data.pose());
             this.setPose(newPose);

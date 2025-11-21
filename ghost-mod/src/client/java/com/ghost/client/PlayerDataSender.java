@@ -1,4 +1,4 @@
-package com.ghost;
+package com.ghost.client;
 
 import com.ghost.common.dto.PlayerData;
 import com.ghost.converter.PlayerDataConverter;
@@ -12,11 +12,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 public class PlayerDataSender {
+    private static final int SEND_INTERVAL = 1;
+    private static final int FORCE_SEND_INTERVAL = 40;
+    private static final double POSITION_THRESHOLD_SQR = 0.01 * 0.01;
+    private static final float ROTATION_THRESHOLD_SQR = 1.0f;
+
     @Nullable
     private PlayerData lastSentData = null;
     private final GhostSyncService ghostSyncService;
-    private static final int duration = 1;      // >0
-    private static final int FORCE_DURATION = 40;
 
     public PlayerDataSender(GhostSyncService ghostSyncService) {
         this.ghostSyncService = ghostSyncService;
@@ -30,10 +33,10 @@ public class PlayerDataSender {
 
         final PlayerData current_data = PlayerDataConverter.fromPlayer(mc.player);
         // 1. 状態が変化したかどうかを判定
-        final boolean isStateChanged = hasPlayerStateChanged(current_data) && world.getGameTime() % duration == 0;
+        final boolean isStateChanged = hasPlayerStateChanged(current_data) && world.getGameTime() % SEND_INTERVAL == 0;
 
         // 2. 強制送信のタイミングかどうかを判定
-        final boolean isForceSendTime = (world.getGameTime() % FORCE_DURATION == 0);
+        final boolean isForceSendTime = (world.getGameTime() % FORCE_SEND_INTERVAL == 0);
 
         if (isStateChanged || isForceSendTime) {
             final var packet = new GhostPacket<>(MessageType.UPDATE, current_data);
@@ -48,13 +51,13 @@ public class PlayerDataSender {
             return true;
         }
 
-        // 位置が0.01ブロック以上動いたか
-        if (lastSentData.pos().distanceToSqr(currentData.pos()) > 0.01 * 0.01) {
+        // 位置が一定以上動いたか
+        if (lastSentData.pos().distanceToSqr(currentData.pos()) > POSITION_THRESHOLD_SQR) {
             return true;
         }
 
         // 向きが変わったか
-        if (lastSentData.rot().distanceToSqr(currentData.rot()) > 1f) {
+        if (lastSentData.rot().distanceToSqr(currentData.rot()) > ROTATION_THRESHOLD_SQR) {
             return true;
         }
 
