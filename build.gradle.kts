@@ -2,8 +2,28 @@ plugins {
     id("java")
 }
 
+import java.io.ByteArrayOutputStream
+
+fun getGitVersion(): String {
+    return try {
+        val stdout = ByteArrayOutputStream()
+        val result = project.exec {
+            commandLine("git", "describe", "--tags")
+            standardOutput = stdout
+            isIgnoreExitValue = true
+        }
+        if (result.exitValue == 0) {
+            stdout.toString().trim().removePrefix("v")
+        } else {
+            project.findProperty("mod_version")?.toString() ?: "0.0.0-SNAPSHOT"
+        }
+    } catch (e: Exception) {
+        project.findProperty("mod_version")?.toString() ?: "0.0.0-SNAPSHOT"
+    }
+}
+
 group = "com.ghost"
-version = "1.0-SNAPSHOT"
+version = getGitVersion()
 
 allprojects {
     repositories {
