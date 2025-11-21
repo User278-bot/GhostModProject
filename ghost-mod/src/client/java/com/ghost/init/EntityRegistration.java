@@ -33,31 +33,28 @@ public final class EntityRegistration {
                 Registry.ENTITY_TYPE,
                 new ResourceLocation("ghostmod", "ghost_player"),
                 FabricEntityTypeBuilder.<GhostPlayerEntity>create(
-                                MobCategory.MISC,
-                                (type, world) -> {
-                                    GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
-                                    PlayerData dummyData = new PlayerData(
-                                            Vec3Dto.ZERO,
-                                            Vec2Dto.ZERO,
-                                            "0000",
-                                            "dummy",
-                                            "DUMMY",
-                                            "dummy:dimension"
-                                    );
+                        MobCategory.MISC,
+                        (type, world) -> {
+                            GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
+                            PlayerData dummyData = new PlayerData(
+                                    Vec3Dto.ZERO,
+                                    Vec2Dto.ZERO,
+                                    "0000",
+                                    "dummy",
+                                    "DUMMY",
+                                    "dummy:dimension");
 
-                                    return new GhostPlayerEntity((ClientLevel) world, dummyData);
-                                })
+                            return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData, null);
+                        })
                         .dimensions(EntityDimensions.fixed(0.6f, 1.8f)) // プレイヤーと同じサイズ
-                        .build()
-        );
+                        .build());
         EntityRendererRegistry.register(
                 GHOST_PLAYER,
                 (context) -> {
                     // Minecraft標準のPlayerEntityRendererをそのまま使う
                     // "slim" はアレックス（腕が細い）モデルを使うかどうか
                     return new PlayerRenderer(context, false);
-                }
-        );
+                });
 
     }
 }

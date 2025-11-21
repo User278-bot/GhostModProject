@@ -15,7 +15,6 @@ public class GhostWebSocketClient extends WebSocketClient {
     private final static Logger LOGGER = LoggerFactory.getLogger(GhostWebSocketClient.class);
     private final IGhostRegistry GHOST_REGISTRY;
 
-
     public GhostWebSocketClient(URI serverURI, IGhostRegistry registry) {
         super(serverURI);
         GHOST_REGISTRY = registry;
@@ -32,7 +31,7 @@ public class GhostWebSocketClient extends WebSocketClient {
             var packet = SerializationUtil.deserializePacket(message);
             var type = packet.getType();
             var data = packet.getData();
-            LOGGER.info("type: {},data: {}", type, data);
+            LOGGER.debug("type: {},data: {}", type, data);
             switch (type) {
                 case UPDATE:
                     if (data != null) {
@@ -54,6 +53,8 @@ public class GhostWebSocketClient extends WebSocketClient {
                             GHOST_REGISTRY.updateGhost(playerData);
                         }
                     }
+                    break;
+                default:
                     break;
             }
         } catch (Exception ex) {

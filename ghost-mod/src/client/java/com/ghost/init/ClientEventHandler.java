@@ -2,7 +2,7 @@ package com.ghost.init;
 
 import com.ghost.PlayerDataSender;
 import com.ghost.config.GhostConfig;
-import com.ghost.renderer.GhostRenderer;
+import com.ghost.entity.GhostEntitySynchronizer;
 import com.ghost.net.GhostSyncService;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -13,11 +13,11 @@ import java.net.URI;
 
 public class ClientEventHandler {
     private final PlayerDataSender playerDataSender;
-    private final GhostRenderer ghostRenderer;
+    private final GhostEntitySynchronizer ghostEntitySynchronizer;
     private final GhostSyncService ghostSyncService;
 
-    public ClientEventHandler(final GhostSyncService ghostSyncService, final GhostRenderer ghostRenderer) {
-        this.ghostRenderer = ghostRenderer;
+    public ClientEventHandler(final GhostSyncService ghostSyncService, final GhostEntitySynchronizer ghostEntitySynchronizer) {
+        this.ghostEntitySynchronizer = ghostEntitySynchronizer;
         this.ghostSyncService = ghostSyncService;
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);
     }
@@ -42,7 +42,7 @@ public class ClientEventHandler {
         });
         ClientTickEvents.END_WORLD_TICK.register((world) -> {
             playerDataSender.sendPlayerData(world);
-            ghostRenderer.onTick(world);
+            ghostEntitySynchronizer.onTick(world);
         });
     }
 }

@@ -5,7 +5,7 @@ import com.ghost.init.ClientEventHandler;
 import com.ghost.init.EntityRegistration;
 import com.ghost.net.GhostSyncService;
 import com.ghost.registry.InMemoryGhostRegistry;
-import com.ghost.renderer.GhostRenderer;
+import com.ghost.entity.GhostEntitySynchronizer;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +18,8 @@ public class GhostModClient implements ClientModInitializer {
     public static final GhostSyncService GHOST_SYNC_SERVICE = new GhostSyncService(GHOST_REGISTRY);
 
     public GhostModClient() {
-        GhostRenderer ghostRenderer = new GhostRenderer(GHOST_REGISTRY);
-        clientEventHandler = new ClientEventHandler(GHOST_SYNC_SERVICE, ghostRenderer);
+        GhostEntitySynchronizer ghostEntitySynchronizer = new GhostEntitySynchronizer(GHOST_REGISTRY);
+        clientEventHandler = new ClientEventHandler(GHOST_SYNC_SERVICE, ghostEntitySynchronizer);
     }
 
     @Override

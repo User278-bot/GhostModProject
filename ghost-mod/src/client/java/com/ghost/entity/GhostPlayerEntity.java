@@ -8,8 +8,6 @@ import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 
-import java.util.UUID;
-
 // Playerエンティティを継承すると多くの機能を使えるが、
 // 描画だけなら、より軽量な Entity を継承する方がシンプルな場合もある。
 // ここではPlayerを継承して、見た目の互換性を高める。
@@ -18,16 +16,17 @@ public class GhostPlayerEntity extends RemotePlayer {
     // このゴーストのUUIDを保持する
     private final String ghostUuid;
 
-    public GhostPlayerEntity(ClientLevel world, PlayerData data) {
-        super(
-                world,
-                Minecraft.getInstance().getMinecraftSessionService().fillProfileProperties(
-                        new GameProfile(UUID.fromString(data.uuid()), data.name()),
-                        true),
-                null
-        );
+    public GhostPlayerEntity(final ClientLevel world, final GameProfile profile, final PlayerData data,
+            java.util.concurrent.CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
+        super(world, profile, null);
         this.ghostUuid = data.uuid();
         updateFromData(data);
+
+        if (skinFuture != null) {
+            skinFuture.thenAcceptAsync(location -> {
+                this.skinLocation = location;
+            }, Minecraft.getInstance());
+        }
     }
 
     // GhostRegistryから受け取った最新のデータで、エンティティの状態を更新するメソッド
@@ -67,7 +66,7 @@ public class GhostPlayerEntity extends RemotePlayer {
     public void tick() {
         // 何もしない
         super.tick();
-        //this.calculateEntityAnimation(this, false);
+        // this.calculateEntityAnimation(this, false);
     }
 
     @Override
@@ -91,4 +90,11 @@ public class GhostPlayerEntity extends RemotePlayer {
         // 何もしない
     }
 
+    // --- Skin Handling ---
+    private volatile net.minecraft.resources.ResourceLocation skinLocation = null;
+
+    @Override
+    public net.minecraft.resources.ResourceLocation getSkinTextureLocation() {
+        return skinLocation != null ? skinLocation : super.getSkinTextureLocation();
+    }
 }
