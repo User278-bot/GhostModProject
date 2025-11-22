@@ -32,7 +32,7 @@
 - [Cloth Config API](https://modrinth.com/mod/cloth-config)
 
 ### 2. サーバーの起動
-`ghost-server/build/libs/GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。
+`ghost-server/build/libs/GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。`--port <port>` でポートを指定できます（省略可）。
 
 ```bash
 java -jar GhostModServer-<version>.jar
