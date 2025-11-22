@@ -1,32 +1,70 @@
-プロジェクトは Gemini 及び Google AI Studio を使用し作成されました。プロジェクトにはAI生成のコードが含まれています。
+# Ghost Mod Project
 
-# 概要
-このModおよびサーバーソフトウェアは一人用の配布マップを擬似的にマルチプレイすることを目的として開発されました。
+**Ghost Mod** は、一人用の配布マップなどを擬似的にマルチプレイ化するための Minecraft Mod およびサーバーソフトウェアです。
 
-各プレイヤーのデータを元にクライアントワールドにプレイヤーをスポーンさせます。このプレイヤーエンティティーはMinecraftサーバーには送信されないため、コマンドの対象やダメージ処理などのサーバー側の処理への影響はありません。
-ただし、アニメーションや行動予測などのクライアント側の処理には影響があるかもしれません。
+各プレイヤーの位置情報をリアルタイムで同期し、他のプレイヤーのクライアント上に「ゴースト（幻影）」として表示します。
+このゴーストはクライアントサイドのみに存在するエンティティであり、サーバー側のロジック（コマンドブロックやダメージ判定など）には一切干渉しません。これにより、配布マップのギミックを壊すことなく、友達と一緒に探索を楽しむことができます。
 
-# ビルド
-Gitリポジトリ内のgradlewを以下のように実行します。成果物は各サブディレクトリ内の`build/libs`内に出力されます。
-```Console
-.\gradlew build
+> [!NOTE]
+> 本プロジェクトは **Antigravity** および **Google AI Studio** を活用して開発されており、コードの大部分はAIによって生成されています。
+
+## 動作環境
+- **Minecraft Version**: 1.19.2
+- **Mod Loader**: Fabric
+- **Java Version**: Java 17
+
+## ビルド方法
+プロジェクトのルートディレクトリで以下のコマンドを実行してください。
+成果物（JARファイル）は各モジュールの `build/libs` ディレクトリに出力されます。
+
+```bash
+./gradlew build
 ```
 
-# 利用方法
-現在対応しているバージョンは `Minecraft 1.19.2` のみです。
-## Modの導入
-通常通りFabricModを導入して`GhostMod-<version>.jar`のような名前のMod本体をModsフォルダーの中に入れてください。依存関係に`FabricApi`、`ModMenu`、`Cloth Config API`が必要です。
-## サーバーの起動
-以下のようなコマンドでサーバーソフトウェアを起動してください。起動には Java16 以降が必要です。
-```Console
-java -jar GhostModServer-1.0.0.jar
+## 導入方法
+
+### 1. Modの導入 (クライアント)
+`ghost-mod/build/libs/ghost-mod-<version>.jar` を Minecraft の `mods` フォルダに配置してください。
+
+**必須依存 Mod:**
+- [Fabric API](https://modrinth.com/mod/fabric-api)
+- [Mod Menu](https://modrinth.com/mod/modmenu)
+- [Cloth Config API](https://modrinth.com/mod/cloth-config)
+
+### 2. サーバーの起動
+`ghost-server/build/libs/GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。
+
+```bash
+java -jar GhostModServer-<version>.jar
 ```
-正常に起動すると`[WebSocketSelector-39] INFO com.ghost.server.GhostModServer - Server started on port: 8887`のようなメッセージが出力されます。
+デフォルトではポート `8887` で待機します。
 
-## サーバーに接続/切断する
-Modを導入したMinecraftを起動してください。ModMenuからGhostModを探し、右上のボタンからGhostModの設定に入ります。
-設定項目にサーバーアドレス、ポートがあるので、それぞれを設定してください。現在サーバーアプリケーションのポートは変更不可能なため、デフォルトの8887を使用してください。
-サーバーアドレスを設定したのち、任意のローカルワールドへ入ると自動的にサーバーへの接続が行われます。ワールドから出ると自動的に切断されます。
+## 使い方
+1.  Modを導入した状態で Minecraft を起動します。
+2.  Mod Menu から **Ghost Mod** の設定画面を開き、サーバーのアドレス（例: `ws://localhost:8887`）を入力します。
+3.  シングルプレイのワールドに入ると、自動的にサーバーに接続されます。
+4.  同じサーバーに接続している他のプレイヤーが、ワールド内にゴーストとして表示されます。
 
-## サーバーへ再接続する
-何らかのワールドを開いている場合、設定の接続トグルボタンが有効化されます。このボタンからワールドにいる間も接続、切断、再設定を行うことができます。
+## 開発者向け情報
+
+### デバッグ環境の起動
+PowerShellスクリプトを使用して、サーバー・クライアント・FakeClientを一括で起動できます。
+
+```powershell
+# デバッグ環境の起動
+.\start-debug.ps1
+
+# デバッグ環境の終了
+.\stop-debug.ps1
+```
+
+### FakeClient
+負荷テストや同期確認のために、ダミーのプレイヤーデータを送信する `FakeClient` が用意されています。
+
+```bash
+./gradlew :ghost-fake_client:run --args="--uuid <UUID> --uri <URI>"
+```
+
+## ライセンス
+本プロジェクトは [MIT License](LICENSE) の下で公開されています。
+AI生成コードを含むため、無保証（AS IS）であることをご留意ください。
