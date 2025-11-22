@@ -22,13 +22,12 @@ fun getGitVersion(): String {
     }
 }
 
-group = "com.ghost"
-version = getGitVersion()
-
 allprojects {
     repositories {
         mavenCentral()
     }
+    group = "com.ghost"
+    version = getGitVersion()
 }
 
 subprojects {

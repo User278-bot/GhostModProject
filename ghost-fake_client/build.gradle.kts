@@ -6,9 +6,6 @@ plugins {
     application
 }
 
-group = "com.ghost"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
@@ -35,7 +32,7 @@ tasks.withType<ShadowJar> {
     // 出力されるJARファイル名のベース部分を指定
     archiveBaseName.set("FakeClientMain")
     // バージョン番号を指定
-    archiveVersion.set("1.0.0")
+    archiveVersion.set("${project.version}")
     // ファイル名に `-all` や `-shadow` といった接尾辞が付かないようにする
     archiveClassifier.set("")
 

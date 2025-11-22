@@ -8,9 +8,6 @@ plugins {
     application
 }
 
-group = "com.ghost"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
