@@ -8,6 +8,7 @@ import com.ghost.common.dto.Vec3Dto;
 import com.ghost.common.registry.IGhostRegistry;
 import com.ghost.util.SerializationUtil;
 import com.ghost.registry.InMemoryGhostRegistry;
+import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,10 +23,27 @@ public class FakeClientMain {
 
     public static void main(String[] args) {
         try {
+            // --- コマンドライン引数の定義 ---
+            Options options = new Options();
+            options.addOption(Option.builder().longOpt("uuid").hasArg().desc("Player UUID").build());
+            options.addOption(Option.builder().longOpt("uri").hasArg().desc("Server URI").build());
+
+            // --- 引数の解析 ---
+            CommandLineParser parser = new DefaultParser();
+            CommandLine cmd;
+            try {
+                cmd = parser.parse(options, args);
+            } catch (ParseException e) {
+                LOGGER.error("Failed to parse command line arguments: {}", e.getMessage());
+                return;
+            }
+
             // --- 接続情報の準備 ---
-            URI serverUri = new URI("ws://localhost:8887");
-            String playerName = "TestBot-Soth1754" + (int) (Math.random() * 1000);
-            String playerUuid = "36945147-4e98-48e7-abee-23469a298984";
+            String playerUuid = cmd.getOptionValue("uuid", java.util.UUID.randomUUID().toString());
+            String serverUriString = cmd.getOptionValue("uri", "ws://localhost:8887");
+
+            URI serverUri = new URI(serverUriString);
+            String playerName = "TestBot-" + playerUuid.substring(0, 8);
             LOGGER.info("Starting test client: {} (UUID: {})", playerName, playerUuid);
 
             // --- 依存関係の組み立て ---
