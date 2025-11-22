@@ -9,6 +9,7 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.cli.*;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -43,7 +44,8 @@ public class GhostModServer extends WebSocketServer {
         // クライアントが切断したときの処理
         var disconnectedPlayer = playerDataMap.remove(conn);
         if (disconnectedPlayer != null) {
-            LOGGER.info("Player {} disconnected: {} (Code: {}, Reason: {}, Remote: {})", disconnectedPlayer.name(), conn.getRemoteSocketAddress(), code, reason, remote);
+            LOGGER.info("Player {} disconnected: {} (Code: {}, Reason: {}, Remote: {})", disconnectedPlayer.name(),
+                    conn.getRemoteSocketAddress(), code, reason, remote);
             sendLeavePacket(disconnectedPlayer);
         } else {
             LOGGER.warn("Disconnected a client that had not sent any data: {}", conn.getRemoteSocketAddress());
@@ -135,7 +137,27 @@ public class GhostModServer extends WebSocketServer {
     }
 
     public static void main(String[] args) {
-        int port = 8887; // サーバーが使用するポート番号
+        int port = 8887; // デフォルトポート
+
+        // --- コマンドライン引数の定義 ---
+        Options options = new Options();
+        options.addOption(Option.builder().longOpt("port").hasArg().desc("Server Port").build());
+
+        // --- 引数の解析 ---
+        CommandLineParser parser = new DefaultParser();
+        try {
+            CommandLine cmd = parser.parse(options, args);
+            if (cmd.hasOption("port")) {
+                port = Integer.parseInt(cmd.getOptionValue("port"));
+            }
+        } catch (ParseException e) {
+            LOGGER.error("Failed to parse command line arguments: {}", e.getMessage());
+            return;
+        } catch (NumberFormatException e) {
+            LOGGER.error("Invalid port number format.");
+            return;
+        }
+
         try {
             GhostModServer server = new GhostModServer(port);
             server.start(); // サーバーを起動
