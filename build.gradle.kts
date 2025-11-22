@@ -8,17 +8,19 @@ fun getGitVersion(): String {
     return try {
         val stdout = ByteArrayOutputStream()
         val result = project.exec {
-            commandLine("git", "describe", "--tags")
+            commandLine("git", "describe", "--tags", "--exact-match")
             standardOutput = stdout
             isIgnoreExitValue = true
         }
         if (result.exitValue == 0) {
+            // タグと完全一致する場合 (例: v1.0.0 -> 1.0.0)
             stdout.toString().trim().removePrefix("v")
         } else {
-            project.findProperty("mod_version")?.toString() ?: "0.0.0-SNAPSHOT"
+            // タグと一致しない場合 (開発中) -> 固定バージョン
+            "dev-SNAPSHOT"
         }
     } catch (e: Exception) {
-        project.findProperty("mod_version")?.toString() ?: "0.0.0-SNAPSHOT"
+        "dev-SNAPSHOT"
     }
 }
 
