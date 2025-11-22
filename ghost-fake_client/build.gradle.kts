@@ -30,7 +30,7 @@ application {
 
 tasks.withType<ShadowJar> {
     // 出力されるJARファイル名のベース部分を指定
-    archiveBaseName.set("FakeClientMain")
+    archiveBaseName.set("GhostFakeClient")
     // バージョン番号を指定
     archiveVersion.set("${project.version}")
     // ファイル名に `-all` や `-shadow` といった接尾辞が付かないようにする
@@ -39,6 +39,6 @@ tasks.withType<ShadowJar> {
     // 生成されるJARのマニフェストファイルに、メインクラスを指定する
     // これにより `java -jar` コマンドで直接実行できるようになる
     manifest {
-        attributes["Main-Class"] = "com.ghost.FakeClientMain"
+        attributes["Main-Class"] = "com.ghost.fake_client.FakeClientMain"
     }
 }
