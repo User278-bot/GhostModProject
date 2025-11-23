@@ -11,7 +11,7 @@
 ## 動作環境
 - **Minecraft Version**: 1.19.2
 - **Mod Loader**: Fabric
-- **Java Version**: Java 17
+- **Java Version**: Java 21
 
 ## ビルド方法
 プロジェクトのルートディレクトリで以下のコマンドを実行してください。
