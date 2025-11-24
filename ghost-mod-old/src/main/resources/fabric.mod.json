@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "${id}",
+  "id": "ghostmod",
   "version": "${version}",
-  "name": "${name}",
+  "name": "GhostMod",
   "description": "This is an example description! Tell everyone what your mod is about!",
   "authors": [
     "Me!"
@@ -26,8 +26,12 @@
     ]
   },
   "mixins": [
+    "ghostmod.mixins.json",
+    {
+      "config": "ghostmod.client.mixins.json",
+      "environment": "client"
+    }
   ],
-  "accessWidener": "template.accesswidener",
   "depends": {
     "fabricloader": ">=0.17.3",
     "minecraft": "~1.19.2",

@@ -11,8 +11,8 @@ pluginManagement {
 
 rootProject.name = "ghost-project"
 
-include("ghost-mod")
-include("ghost-server")
-include("ghost-common")
-include("ghost-fake_client")
-include("ghost-network")
+includeBuild("ghost-mod")
+//include("ghost-server")
+//includeBuild("ghost-common")
+//include("ghost-fake_client")
+//includeBuild("ghost-network")
