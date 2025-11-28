@@ -21,7 +21,11 @@ public class GhostPlayerEntity extends RemotePlayer {
 
     public GhostPlayerEntity(final ClientLevel world, final GameProfile profile, final PlayerData data,
             CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
-        super(world, profile, null);
+        /*? >=1.20.1 {*/
+        super(world, profile);
+        /*?} else {*/
+         /*super(world, profile, null); 
+        *///?}
         this.ghostUuid = data.uuid();
         updateFromData(data);
 

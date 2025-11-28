@@ -17,7 +17,11 @@ public final class PlayerDataConverter {
                 player.getStringUUID(),
                 player.getName().getString(),
                 player.getPose().toString(),
-                player.level.dimension().location().toString()
+                /*? >=1.20.1 {*/
+                player.level().dimension().location().toString()
+        /*?} else {*/
+         /*player.level.dimension().location().toString() 
+        *///?}
         );
     }
 }

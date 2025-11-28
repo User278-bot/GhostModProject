@@ -19,6 +19,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
+/*? >=1.19.3 {*/
+import net.minecraft.core.registries.BuiltInRegistries;
+//?}
+
 public final class EntityRegistration {
     private EntityRegistration() {
     }
@@ -30,7 +34,11 @@ public final class EntityRegistration {
     public static void register() {
         LOGGER.info("Registering entity types...");
         GHOST_PLAYER = Registry.register(
-                Registry.ENTITY_TYPE,
+                /*? >=1.19.3 {*/
+                BuiltInRegistries.ENTITY_TYPE,
+                /*?} else {*/
+                 /*Registry.ENTITY_TYPE, 
+                *///?}
                 new ResourceLocation("ghostmod", "ghost_player"),
                 FabricEntityTypeBuilder.<GhostPlayerEntity>create(
                         MobCategory.MISC,
