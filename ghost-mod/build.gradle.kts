@@ -47,8 +47,6 @@ dependencies {
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
 
-    modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
-
 
     modImplementation("me.shedaniel.cloth:cloth-config-fabric:${project.property("cloth_config_version")}") {
         exclude(group = "net.fabricmc.fabric-api")
