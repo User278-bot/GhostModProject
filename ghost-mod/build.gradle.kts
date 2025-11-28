@@ -1,3 +1,6 @@
+import dev.kikugie.stonecutter.STONECUTTER
+import dev.kikugie.stonecutter.data.StonecutterProject
+
 plugins {
     id("fabric-loom")
 
@@ -55,18 +58,14 @@ dependencies {
         exclude(group= "net.fabricmc.fabric-api")
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
-    //implementation("com.ghost:ghost-common:dev")
-    //implementation("com.ghost:ghost-common:dev")
-    //include("com.ghost:ghost-common:dev")
-    //include(project(":ghost-common:"))
-    implementation("com.ghost:ghost-network:1.0-SNAPSHOT")
-    //include(project("ghost-network"))
+    implementation(project(":ghost-network"))
 }
 
 loom {
     splitEnvironmentSourceSets()
-    fabricModJsonPath = rootProject.file("src/main/resources/fabric.mod.json") // Useful for interface injection
-    accessWidenerPath = rootProject.file("src/main/resources/template.accesswidener")
+
+    fabricModJsonPath = (project.parent ?: project).file("src/main/resources/fabric.mod.json") // Useful for interface injection
+    accessWidenerPath = (project.parent ?: project).file("src/main/resources/template.accesswidener")
 
     decompilerOptions.named("vineflower") {
         options.put("mark-corresponding-synthetics", "1") // Adds names to lambdas - useful for mixins
