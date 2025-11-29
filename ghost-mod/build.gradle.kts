@@ -44,8 +44,6 @@ dependencies {
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
 
-    modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
-
 
     modImplementation("me.shedaniel.cloth:cloth-config-fabric:${project.property("cloth_config_version")}") {
         exclude(group = "net.fabricmc.fabric-api")
@@ -55,12 +53,7 @@ dependencies {
         exclude(group= "net.fabricmc.fabric-api")
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
-    //implementation("com.ghost:ghost-common:dev")
-    //implementation("com.ghost:ghost-common:dev")
-    //include("com.ghost:ghost-common:dev")
-    //include(project(":ghost-common:"))
-    implementation("com.ghost:ghost-network:1.0-SNAPSHOT")
-    //include(project("ghost-network"))
+    implementation("com.ghost:ghost-network:${rootProject.property("ghost-network_version")}")
 }
 
 loom {

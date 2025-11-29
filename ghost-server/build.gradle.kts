@@ -8,16 +8,19 @@ plugins {
     application
 }
 
+version=project.property("ghost-server.version")as String
+group=project.property("ghost-server.group")as String
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation(project(":ghost-common"))
-    implementation(project(":ghost-network"))
-    implementation("org.java-websocket:Java-WebSocket:${property("websocket_version")}")
-    implementation("commons-cli:commons-cli:1.6.0")
-    runtimeOnly("org.slf4j:slf4j-simple:${property("slf4j_version")}")
+    implementation(("com.ghost:ghost-network:${property("ghost-network.version")}"))
+    implementation("org.java-websocket:Java-WebSocket:${property("websocket.version")}")
+    implementation("commons-cli:commons-cli:${property("commons-cli.version")}")
+    runtimeOnly("org.slf4j:slf4j-simple:${property("slf4j.version")}")
+
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

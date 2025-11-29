@@ -10,11 +10,13 @@ repositories {
     mavenCentral()
 }
 
+version =project.property("ghost_fake_client_version") as String
+group =project.property("ghost_fake_client_group") as String
+
 dependencies {
-    implementation(project(":ghost-common"))
-    implementation(project(":ghost-network"))
-    implementation("commons-cli:commons-cli:1.6.0")
-    runtimeOnly("org.slf4j:slf4j-simple:${property("slf4j_version")}")
+    implementation("com.ghost:ghost-network:${project.property("ghost_network_version")}")
+    implementation("commons-cli:commons-cli:${project.property("commons_cli")}")
+    runtimeOnly("org.slf4j:slf4j-simple:${project.property("slf4j_version")}")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -32,7 +34,7 @@ tasks.withType<ShadowJar> {
     // 出力されるJARファイル名のベース部分を指定
     archiveBaseName.set("GhostFakeClient")
     // バージョン番号を指定
-    archiveVersion.set("${project.version}")
+    archiveVersion.set(project.property("ghost_fake_client_version") as String)
     // ファイル名に `-all` や `-shadow` といった接尾辞が付かないようにする
     archiveClassifier.set("")
 

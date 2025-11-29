@@ -22,6 +22,5 @@ stonecutter {
 
 rootProject.name = "ghost-mod"
 
-//includeBuild("../ghost-common")
 includeBuild("../ghost-network")
 
