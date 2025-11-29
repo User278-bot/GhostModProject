@@ -11,7 +11,6 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":ghost-common"))
     implementation(project(":ghost-network"))
     implementation("commons-cli:commons-cli:1.6.0")
     runtimeOnly("org.slf4j:slf4j-simple:${rootProject.property("slf4j_version")}")
