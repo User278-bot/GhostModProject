@@ -79,7 +79,7 @@ loom {
     runConfigs.all {
         ideConfigGenerated(true)
         vmArgs("-Dmixin.debug.export=true") // Exports transformed classes for debugging
-        runDir = "../../run" // Shares the run directory between versions
+        runDir = "./run" // Shares the run directory between versions
     }
 }
 
