@@ -3,7 +3,7 @@ import org.gradle.api.tasks.JavaExec
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("java")
+    id("ghost-java-conventions")
     id("com.gradleup.shadow") version "9.2.2"
     application
 }
@@ -21,10 +21,6 @@ dependencies {
 
 application {
     mainClass.set("com.ghost.server.GhostModServer")
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
 
 tasks.withType<JavaCompile> {
