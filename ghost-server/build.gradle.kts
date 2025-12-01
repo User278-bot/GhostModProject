@@ -11,12 +11,11 @@ plugins {
 dependencies {
     implementation(project(":ghost-common"))
     implementation(project(":ghost-network"))
-    implementation("org.java-websocket:Java-WebSocket:${rootProject.property("websocket_version")}")
-    implementation("commons-cli:commons-cli:1.6.0")
-    runtimeOnly("org.slf4j:slf4j-simple:${rootProject.property("slf4j_version")}")
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation(libs.websocket)
+    implementation(libs.commons.cli)
+    runtimeOnly(libs.slf4j.simple)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.bundles.test)
 }
 
 application {

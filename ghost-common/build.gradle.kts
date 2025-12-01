@@ -3,11 +3,10 @@ plugins {
 }
 
 dependencies {
-    api("com.google.code.gson:gson:${rootProject.property("gson_version")}")
-    api("org.slf4j:slf4j-api:${rootProject.property("slf4j_version")}")
+    api(libs.gson)
+    api(libs.slf4j.api)
 
-    compileOnly("org.jetbrains:annotations:26.0.2")
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    compileOnly(libs.jetbrains.annotations)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.bundles.test)
 }

@@ -4,11 +4,10 @@ plugins {
 
 dependencies {
     api(project(":ghost-common"))
-    api("org.java-websocket:Java-WebSocket:${rootProject.property("websocket_version")}")
-    implementation("org.slf4j:slf4j-api:${rootProject.property("slf4j_version")}")
+    api(libs.websocket)
+    implementation(libs.slf4j.api)
     
-    compileOnly("org.jetbrains:annotations:26.0.2")
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    compileOnly(libs.jetbrains.annotations)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.bundles.test)
 }

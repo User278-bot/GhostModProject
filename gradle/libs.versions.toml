@@ -1,0 +1,36 @@
+[versions]
+# Common Libraries
+gson = "2.8.9"
+websocket = "1.6.0"
+slf4j = "2.0.17"
+junit = "5.10.0"
+
+# Other Dependencies
+commons-cli = "1.6.0"
+jetbrains-annotations = "26.0.2"
+
+[libraries]
+# Google Gson
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+
+# WebSocket
+websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "websocket" }
+
+# SLF4J
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+# Commons
+commons-cli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
+
+# Annotations
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
+
+# JUnit (Platform)
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[bundles]
+# テスト用の依存関係をバンドル
+test = ["junit-jupiter", "junit-platform-launcher"]
