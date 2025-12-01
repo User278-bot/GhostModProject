@@ -1,4 +1,4 @@
-package com.ghost.net.packet;
+package com.ghost.api.packet;
 
 public enum MessageType {
     /**

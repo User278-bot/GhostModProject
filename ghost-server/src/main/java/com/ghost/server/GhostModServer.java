@@ -1,8 +1,8 @@
 package com.ghost.server;
 
-import com.ghost.common.dto.PlayerData;
-import com.ghost.net.packet.GhostPacket;
-import com.ghost.net.packet.MessageType;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.packet.GhostPacket;
+import com.ghost.api.packet.MessageType;
 import com.ghost.util.SerializationUtil;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;

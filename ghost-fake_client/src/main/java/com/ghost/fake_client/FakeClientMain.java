@@ -1,11 +1,11 @@
 package com.ghost.fake_client;
 
 import com.ghost.net.GhostSyncService;
-import com.ghost.net.packet.GhostPacket;
-import com.ghost.common.dto.PlayerData;
-import com.ghost.common.dto.Vec2Dto;
-import com.ghost.common.dto.Vec3Dto;
-import com.ghost.common.registry.IGhostRegistry;
+import com.ghost.api.packet.GhostPacket;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.dto.Vec2Dto;
+import com.ghost.api.dto.Vec3Dto;
+import com.ghost.api.registry.IGhostRegistry;
 import com.ghost.util.SerializationUtil;
 import com.ghost.registry.InMemoryGhostRegistry;
 import org.apache.commons.cli.*;
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import static com.ghost.net.packet.MessageType.UPDATE;
+import static com.ghost.api.packet.MessageType.UPDATE;
 
 public class FakeClientMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(FakeClientMain.class);

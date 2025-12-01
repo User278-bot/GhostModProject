@@ -1,5 +1,6 @@
 package com.ghost.common.dto;
 
+import com.ghost.api.dto.Vec3Dto;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

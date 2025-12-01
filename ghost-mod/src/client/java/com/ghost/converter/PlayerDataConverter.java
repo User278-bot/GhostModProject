@@ -1,7 +1,7 @@
 package com.ghost.converter;
 
-import com.ghost.common.dto.PlayerData;
-import com.ghost.common.dto.Vec2Dto;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.dto.Vec2Dto;
 import net.minecraft.world.entity.player.Player;
 
 import static com.ghost.converter.McDtoConverter.fromMc;

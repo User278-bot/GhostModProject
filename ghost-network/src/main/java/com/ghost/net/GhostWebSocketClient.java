@@ -1,7 +1,7 @@
 package com.ghost.net;
 
-import com.ghost.common.dto.PlayerData;
-import com.ghost.common.registry.IGhostRegistry;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.registry.IGhostRegistry;
 import com.ghost.util.SerializationUtil;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;

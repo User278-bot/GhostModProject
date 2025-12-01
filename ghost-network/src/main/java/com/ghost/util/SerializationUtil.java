@@ -1,7 +1,7 @@
 package com.ghost.util;
 
-import com.ghost.net.packet.GhostPacket;
-import com.ghost.common.dto.PlayerData;
+import com.ghost.api.packet.GhostPacket;
+import com.ghost.api.dto.PlayerData;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;

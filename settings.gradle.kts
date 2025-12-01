@@ -37,7 +37,7 @@ rootProject.name = "ghost-project"
 
 include("ghost-mod")
 include("ghost-server")
-include("ghost-common")
+include("ghost-api")
 include("ghost-fake_client")
 include("ghost-network")
 

@@ -9,7 +9,6 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":ghost-common"))
     implementation(project(":ghost-network"))
     implementation(libs.websocket)
     implementation(libs.commons.cli)

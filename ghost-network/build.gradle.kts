@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":ghost-common"))
+    api(project(":ghost-api"))
     api(libs.websocket)
     implementation(libs.slf4j.api)
     

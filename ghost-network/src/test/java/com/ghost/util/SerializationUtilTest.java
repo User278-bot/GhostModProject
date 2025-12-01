@@ -1,10 +1,10 @@
 package com.ghost.util;
 
-import com.ghost.common.dto.PlayerData;
-import com.ghost.common.dto.Vec2Dto;
-import com.ghost.common.dto.Vec3Dto;
-import com.ghost.net.packet.GhostPacket;
-import com.ghost.net.packet.MessageType;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.dto.Vec2Dto;
+import com.ghost.api.dto.Vec3Dto;
+import com.ghost.api.packet.GhostPacket;
+import com.ghost.api.packet.MessageType;
 import com.google.gson.JsonElement;
 import org.junit.jupiter.api.Test;
 

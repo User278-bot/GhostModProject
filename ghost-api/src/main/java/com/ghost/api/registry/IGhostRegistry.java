@@ -1,6 +1,6 @@
-package com.ghost.common.registry; // or com.ghost.repository
+package com.ghost.api.registry; // or com.ghost.repository
 
-import com.ghost.common.dto.PlayerData;
+import com.ghost.api.dto.PlayerData;
 import java.util.Collection;
 import java.util.Optional;
 

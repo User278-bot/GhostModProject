@@ -1,10 +1,10 @@
 package com.ghost.client;
 
-import com.ghost.common.dto.PlayerData;
+import com.ghost.api.dto.PlayerData;
 import com.ghost.converter.PlayerDataConverter;
 import com.ghost.net.GhostSyncService;
-import com.ghost.net.packet.GhostPacket;
-import com.ghost.net.packet.MessageType;
+import com.ghost.api.packet.GhostPacket;
+import com.ghost.api.packet.MessageType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.jetbrains.annotations.Nullable;

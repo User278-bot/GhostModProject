@@ -1,4 +1,4 @@
-package com.ghost.common.dto;
+package com.ghost.api.dto;
 
 import java.util.Objects;
 
