@@ -6,10 +6,6 @@ plugins {
     application
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(project(":ghost-network"))
     implementation("commons-cli:commons-cli:1.6.0")

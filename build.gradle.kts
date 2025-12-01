@@ -3,9 +3,6 @@ plugins {
 }
 
 allprojects {
-    repositories {
-        mavenCentral()
-    }
     group = "com.ghost"
     version = "dev"
 }

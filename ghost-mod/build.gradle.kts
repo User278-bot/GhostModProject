@@ -23,9 +23,9 @@ repositories {
      * Restricts dependency search of the given [groups] to the [maven URL][url],
      * improving the setup speed.
      */
-
-    maven ("https://maven.shedaniel.me/" )
-    maven ("https://maven.terraformersmc.com/releases/")
+    maven("https://maven.fabricmc.net/") { name = "Fabric" }
+    maven("https://maven.shedaniel.me/")
+    maven("https://maven.terraformersmc.com/releases/")
 
     fun strictMaven(url: String, alias: String, vararg groups: String) = exclusiveContent {
         forRepository { maven(url) { name = alias } }

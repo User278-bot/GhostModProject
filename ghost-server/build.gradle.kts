@@ -8,10 +8,6 @@ plugins {
     application
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(project(":ghost-common"))
     implementation(project(":ghost-network"))
