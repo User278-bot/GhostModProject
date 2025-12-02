@@ -8,9 +8,9 @@ plugins {
     // id("me.modmuss50.mod-publish-plugin")
 }
 
-val baseVersion = project.version
-ext["mod.version"] = baseVersion
+val baseVersion = VersionResolver.resolveVersionFromTag("mod/v") ?: "dev"
 
+ext["mod.version"] = baseVersion
 version = "$baseVersion+${stonecutter.current.version}"
 base.archivesName = property("mod.id") as String
 
