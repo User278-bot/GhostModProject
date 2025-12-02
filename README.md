@@ -8,42 +8,75 @@
 > [!NOTE]
 > 本プロジェクトは **Antigravity** および **Google AI Studio** を活用して開発されており、コードの大部分はAIによって生成されています。
 
+## プロジェクト構成
+本プロジェクトは以下のモジュールで構成されています。
+
+- **ghost-mod**: Minecraft Mod 本体 (Fabric)。Stonecutter を使用して複数バージョンに対応しています。
+- **ghost-server**: 同期用の中継サーバー (Java Application)。
+- **ghost-fake_client**: 負荷テスト・デバッグ用のダミーライアント。
+- **ghost-api**: 共通のパケット定義やデータ構造。
+
 ## 動作環境
-- **Minecraft Version**: 1.19.2
+- **Minecraft Version**: [対応バージョン](#対応バージョン)を参照
 - **Mod Loader**: Fabric
 - **Java Version**: Java 21
 
+## 対応バージョン
+- Minecraft 1.19.2
+- Minecraft 1.20.1
+
+## 成果物のダウンロード
+Modとサーバーソフトウェアについては右側の[Release](https://github.com/User278-bot/GhostModProject/releases)ページからビルド済み成果物をダウンロードできます。
+
 ## ビルド方法
 プロジェクトのルートディレクトリで以下のコマンドを実行してください。
-成果物（JARファイル）は各モジュールの `build/libs` ディレクトリに出力されます。
 
 ```bash
 ./gradlew build
 ```
 
+### 成果物の出力先
+
+ビルドが成功すると、以下の場所に成果物 (JARファイル) が生成されます。
+
+#### Mod (ghost-mod)
+バージョンごとに以下のディレクトリに出力されます。
+- `ghost-mod/versions/1.19.2/build/libs/ghostmod-0.1.0+1.19.2.jar`
+- `ghost-mod/versions/1.20.1/build/libs/ghostmod-0.1.0+1.20.1.jar`
+
+#### Server (ghost-server)
+- `ghost-server/build/libs/GhostModServer-0.1.0.jar`
+※ `GhostModServer-*.jar` (ファイルサイズが大きい方) が実行可能なサーバーアプリケーションです。
+
 ## 導入方法
 
 ### 1. Modの導入 (クライアント)
-`ghost-mod/build/libs/ghost-mod-<version>.jar` を Minecraft の `mods` フォルダに配置してください。
-
-**必須依存 Mod:**
-- [Fabric API](https://modrinth.com/mod/fabric-api)
-- [Mod Menu](https://modrinth.com/mod/modmenu)
-- [Cloth Config API](https://modrinth.com/mod/cloth-config)
+1.  `ghostmod-<version>+<mc_version>.jar` を Minecraft の `mods` フォルダに配置してください。
+2.  以下の前提 Mod も合わせて導入してください。
+    - [Fabric API](https://modrinth.com/mod/fabric-api)
+    - [Mod Menu](https://modrinth.com/mod/modmenu)
+    - [Cloth Config API](https://modrinth.com/mod/cloth-config)
 
 ### 2. サーバーの起動
-`ghost-server/build/libs/GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。`--port <port>` でポートを指定できます（省略可）。
+`GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。
 
 ```bash
-java -jar GhostModServer-<version>.jar
+java -jar GhostModServer-0.1.0.jar
 ```
-デフォルトではポート `8887` で待機します。
+デフォルトではポート `8887` で待機します。ポートを変更したい場合は `--port` オプションを使用してください。
+
+```bash
+java -jar GhostModServer-0.1.0.jar --port 9000
+```
 
 ## 使い方
-1.  Modを導入した状態で Minecraft を起動します。
-2.  Mod Menu から **Ghost Mod** の設定画面を開き、サーバーのアドレス（例: `ws://localhost:8887`）を入力します。
-3.  シングルプレイのワールドに入ると、自動的にサーバーに接続されます。
-4.  同じサーバーに接続している他のプレイヤーが、ワールド内にゴーストとして表示されます。
+1.  サーバーを起動しておきます（ローカルで遊ぶ場合は自分のPCで、離れた友達と遊ぶ場合はVPSなどで）。
+2.  Modを導入した状態で Minecraft を起動します。
+3.  Mod Menu から **Ghost Mod** の設定画面を開き、サーバーのアドレスを入力します。
+    - ローカルの場合: `ws://localhost:8887`
+    - リモートの場合: `ws://<サーバーのIPアドレス>:8887`
+4.  シングルプレイのワールドに入ると、自動的にサーバーに接続されます。
+5.  同じサーバーに接続している他のプレイヤーが、ワールド内にゴーストとして表示されます。
 
 ## 開発者向け情報
 
