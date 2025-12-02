@@ -8,7 +8,10 @@ plugins {
     // id("me.modmuss50.mod-publish-plugin")
 }
 
-version = "${property("mod.version")}+${stonecutter.current.version}"
+val baseVersion = project.version
+ext["mod.version"] = baseVersion
+
+version = "$baseVersion+${stonecutter.current.version}"
 base.archivesName = property("mod.id") as String
 
 val requiredJava = when {
