@@ -1,9 +1,5 @@
 # Ghost Mod Project
 
-[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases?q=mod%2Fv)
-[![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases?q=server%2Fv)
-[![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases?q=client%2Fv)
-
 **Ghost Mod** は、一人用の配布マップなどを擬似的にマルチプレイ化するための Minecraft Mod およびサーバーソフトウェアです。
 
 各プレイヤーの位置情報をリアルタイムで同期し、他のプレイヤーのクライアント上に「ゴースト（幻影）」として表示します。
@@ -30,7 +26,11 @@
 - Minecraft 1.20.1
 
 ## 成果物のダウンロード
-Modとサーバーソフトウェアについては右側の[Release](https://github.com/User278-bot/GhostModProject/releases)ページからビルド済み成果物をダウンロードできます。
+以下のリンクから最新版がダウンロードできます。
+
+[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases?q=[mod])
+[![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases?q=[server])
+[![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases?q=[fakeclient])
 
 ## ビルド方法
 プロジェクトのルートディレクトリで以下のコマンドを実行してください。
