@@ -60,6 +60,8 @@ dependencies {
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
     implementation(project(":ghost-network"))
+    include(project(":ghost-network"))
+    include(project(":ghost-api"))
 }
 
 loom {
