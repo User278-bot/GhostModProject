@@ -28,8 +28,6 @@ public class GhostEntitySynchronizer {
 
     private void updateGhosts(ClientLevel level, Map<String, GhostPlayerEntity> existingGhosts,
             Collection<PlayerData> latestGhosts) {
-        // LOGGER.info("Updating ghosts: existing={}, latest={}", existingGhosts.size(),
-        // latestGhosts.size());
         for (PlayerData data : latestGhosts) {
             if (existingGhosts.containsKey(data.uuid())) {
                 // 既にエンティティが存在する場合 -> 状態を更新

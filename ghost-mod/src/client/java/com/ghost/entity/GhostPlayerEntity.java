@@ -2,6 +2,7 @@ package com.ghost.entity;
 
 import com.ghost.api.dto.PlayerData;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
@@ -100,6 +101,7 @@ public class GhostPlayerEntity extends RemotePlayer {
     private volatile net.minecraft.resources.ResourceLocation skinLocation = null;
 
     @Override
+    @MethodsReturnNonnullByDefault
     public net.minecraft.resources.ResourceLocation getSkinTextureLocation() {
         return skinLocation != null ? skinLocation : super.getSkinTextureLocation();
     }
