@@ -62,6 +62,10 @@ dependencies {
     implementation(project(":ghost-network"))
     include(project(":ghost-network"))
     include(project(":ghost-api"))
+    
+    // 外部ライブラリも明示的にincludeが必要（Loomのincludeは推移的ではない）
+    // ghost-networkが依存しているWebSocketライブラリを含める
+    include(libs.websocket)
 }
 
 loom {
