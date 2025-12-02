@@ -8,6 +8,9 @@ plugins {
     application
 }
 
+val serverVersion = VersionResolver.resolveVersionFromTag("server/v") ?: "dev"
+version = serverVersion
+
 dependencies {
     implementation(project(":ghost-network"))
     implementation(libs.websocket)

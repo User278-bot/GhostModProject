@@ -3,7 +3,9 @@ name: Auto Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'mod/v*'
+      - 'server/v*'
+      - 'client/v*'
 
 permissions:
   contents: write
@@ -18,20 +20,41 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract version from tag
-        id: version
+      - name: Determine component and version
+        id: component
         run: |
           TAG=${GITHUB_REF#refs/tags/}
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
           
-          # Check if this is a prerelease (contains -alpha, -beta, -rc, etc.)
-          if [[ "$TAG" =~ -alpha|-beta|-rc ]]; then
+          # コンポーネントとバージョンを抽出
+          if [[ "$TAG" =~ ^mod/v(.+)$ ]]; then
+            COMPONENT="mod"
+            VERSION="${BASH_REMATCH[1]}"
+            RELEASE_NAME="[Mod] v${VERSION}"
+          elif [[ "$TAG" =~ ^server/v(.+)$ ]]; then
+            COMPONENT="server"
+            VERSION="${BASH_REMATCH[1]}"
+            RELEASE_NAME="[Server] v${VERSION}"
+          elif [[ "$TAG" =~ ^client/v(.+)$ ]]; then
+            COMPONENT="client"
+            VERSION="${BASH_REMATCH[1]}"
+            RELEASE_NAME="[FakeClient] v${VERSION}"
+          else
+            echo "Unknown tag format: $TAG"
+            exit 1
+          fi
+          
+          echo "component=$COMPONENT" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          
+          # プレリリースチェック
+          if [[ "$VERSION" =~ -alpha|-beta|-rc ]]; then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "Detected prerelease tag: $TAG"
+            echo "Detected prerelease: $RELEASE_NAME"
           else
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
-            echo "Detected stable release tag: $TAG"
+            echo "Detected stable release: $RELEASE_NAME"
           fi
 
       - name: Setup JDK 21
@@ -43,19 +66,28 @@ jobs:
       - name: Make gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Build Mod
+        if: steps.component.outputs.component == 'mod'
+        run: ./gradlew :ghost-mod:build
+
+      - name: Build Server
+        if: steps.component.outputs.component == 'server'
+        run: ./gradlew :ghost-server:build
+
+      - name: Build FakeClient
+        if: steps.component.outputs.component == 'client'
+        run: ./gradlew :ghost-fake_client:build
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ steps.version.outputs.tag }}
-          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.component.outputs.release_name }}
+          tag_name: ${{ steps.component.outputs.tag }}
           draft: false
-          prerelease: ${{ steps.version.outputs.is_prerelease == 'true' }}
+          prerelease: ${{ steps.component.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
           files: |
-            ghost-mod/versions/*/build/libs/ghostmod-*.jar
-            !ghost-mod/versions/*/build/libs/ghostmod-*-sources.jar
-            ghost-server/build/libs/GhostModServer-*.jar
-            ghost-fake_client/build/libs/GhostFakeClient-*.jar
+            ${{ steps.component.outputs.component == 'mod' && 'ghost-mod/versions/*/build/libs/ghostmod-*.jar' || '' }}
+            ${{ steps.component.outputs.component == 'mod' && '!ghost-mod/versions/*/build/libs/ghostmod-*-sources.jar' || '' }}
+            ${{ steps.component.outputs.component == 'server' && 'ghost-server/build/libs/GhostModServer-*.jar' || '' }}
+            ${{ steps.component.outputs.component == 'client' && 'ghost-fake_client/build/libs/GhostFakeClient-*.jar' || '' }}

@@ -1,5 +1,9 @@
 # Ghost Mod Project
 
+[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases?q=mod%2Fv)
+[![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases?q=server%2Fv)
+[![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases?q=client%2Fv)
+
 **Ghost Mod** は、一人用の配布マップなどを擬似的にマルチプレイ化するための Minecraft Mod およびサーバーソフトウェアです。
 
 各プレイヤーの位置情報をリアルタイムで同期し、他のプレイヤーのクライアント上に「ゴースト（幻影）」として表示します。

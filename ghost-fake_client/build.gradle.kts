@@ -6,6 +6,9 @@ plugins {
     application
 }
 
+val clientVersion = VersionResolver.resolveVersionFromTag("client/v") ?: "dev"
+version = clientVersion
+
 dependencies {
     implementation(project(":ghost-network"))
     implementation(libs.commons.cli)
