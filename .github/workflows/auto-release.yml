@@ -62,21 +62,13 @@ jobs:
         with:
           java-version: '21'
           distribution: 'microsoft'
+          cache: 'gradle'
 
       - name: Make gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build Mod
-        if: steps.component.outputs.component == 'mod'
-        run: ./gradlew :ghost-mod:build
-
-      - name: Build Server
-        if: steps.component.outputs.component == 'server'
-        run: ./gradlew :ghost-server:build
-
-      - name: Build FakeClient
-        if: steps.component.outputs.component == 'client'
-        run: ./gradlew :ghost-fake_client:build
+      - name: Build with Gradle
+        run: ./gradlew build
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
