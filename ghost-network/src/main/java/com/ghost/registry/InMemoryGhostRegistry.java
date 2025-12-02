@@ -1,7 +1,7 @@
 package com.ghost.registry;
 
-import com.ghost.common.dto.PlayerData;
-import com.ghost.common.registry.IGhostRegistry;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.registry.IGhostRegistry;
 
 import java.util.Collection;
 import java.util.List;

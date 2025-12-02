@@ -28,7 +28,7 @@ jobs:
         with:
           name: Artifacts
           path: |
-            ghost-mod/build/libs/ghostmod-*.jar
-            !ghost-mod/build/libs/ghostmod-*-sources.jar
+            ghost-mod/versions/*/build/libs/ghostmod-*.jar
+            !ghost-mod/versions/*/build/libs/ghostmod-*-sources.jar
             ghost-server/build/libs/GhostModServer-*.jar
             ghost-fake_client/build/libs/GhostFakeClient-*.jar

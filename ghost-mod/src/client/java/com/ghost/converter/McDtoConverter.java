@@ -1,7 +1,7 @@
 package com.ghost.converter;
 
-import com.ghost.common.dto.Vec3Dto;
-import com.ghost.common.dto.Vec2Dto;
+import com.ghost.api.dto.Vec3Dto;
+import com.ghost.api.dto.Vec2Dto;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.Vec2;
 

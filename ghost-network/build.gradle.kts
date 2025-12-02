@@ -1,12 +1,13 @@
 plugins {
-    id("java-library")
+    id("ghost-java-conventions")
 }
 
 dependencies {
-    api(project(":ghost-common"))
-    api("org.java-websocket:Java-WebSocket:${property("websocket_version")}")
-    implementation("org.slf4j:slf4j-api:${property("slf4j_version")}")
+    api(project(":ghost-api"))
+    api(libs.websocket)
+    implementation(libs.slf4j.api)
+    
+    compileOnly(libs.jetbrains.annotations)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.bundles.test)
 }
-
-group = "com.ghost"
-version = "1.0-SNAPSHOT"

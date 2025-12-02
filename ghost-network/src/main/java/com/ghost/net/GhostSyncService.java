@@ -1,7 +1,7 @@
 package com.ghost.net;
 
-import com.ghost.common.registry.IGhostRegistry;
-import com.ghost.net.packet.GhostPacket;
+import com.ghost.api.registry.IGhostRegistry;
+import com.ghost.api.packet.GhostPacket;
 import com.ghost.util.SerializationUtil;
 
 import org.jetbrains.annotations.Nullable;

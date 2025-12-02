@@ -1,7 +1,7 @@
 package com.ghost.entity;
 
-import com.ghost.common.dto.PlayerData;
-import com.ghost.common.registry.IGhostRegistry;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.registry.IGhostRegistry;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;

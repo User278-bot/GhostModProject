@@ -1,8 +1,8 @@
 package com.ghost.registry;
 
-import com.ghost.common.dto.PlayerData;
-import com.ghost.common.dto.Vec2Dto;
-import com.ghost.common.dto.Vec3Dto;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.dto.Vec2Dto;
+import com.ghost.api.dto.Vec3Dto;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.ghost;
 
-import com.ghost.common.registry.IGhostRegistry;
+import com.ghost.api.registry.IGhostRegistry;
 import com.ghost.init.ClientEventHandler;
 import com.ghost.init.EntityRegistration;
 import com.ghost.net.GhostSyncService;
