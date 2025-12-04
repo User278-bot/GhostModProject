@@ -6,12 +6,10 @@ import com.ghost.init.EntityRegistration;
 import com.ghost.net.GhostSyncService;
 import com.ghost.registry.InMemoryGhostRegistry;
 import com.ghost.entity.GhostEntitySynchronizer;
+import com.mojang.logging.LogUtils;
 import net.fabricmc.api.ClientModInitializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GhostModClient implements ClientModInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GhostModClient.class);
     private static final IGhostRegistry GHOST_REGISTRY = new InMemoryGhostRegistry();
     private final ClientEventHandler clientEventHandler;
 
@@ -25,7 +23,7 @@ public class GhostModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         // This entrypoint is suitable for setting up client-specific logic, such as rendering.
-        LOGGER.info("Initializing GhostModClient...");
+        LogUtils.getLogger().info("Initializing GhostModClient...");
 
         clientEventHandler.registerEvents();
         EntityRegistration.register();
