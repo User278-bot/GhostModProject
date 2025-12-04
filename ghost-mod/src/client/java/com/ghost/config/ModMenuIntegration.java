@@ -1,6 +1,7 @@
 package com.ghost.config;
 
 import com.ghost.GhostModClient; // GhostModClientのインスタンスにアクセスするため
+import com.mojang.logging.LogUtils;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
@@ -17,7 +18,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class ModMenuIntegration implements ModMenuApi {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModMenuIntegration.class);
     private boolean pre_connected = false;
 
     @Override
@@ -94,18 +94,18 @@ public class ModMenuIntegration implements ModMenuApi {
 
     private void connectPushButton(boolean connected, GhostConfig config, Screen parent) {
         if (!Objects.equals(connected, this.pre_connected)) {
-            LOGGER.info("toggle state connected: {}", connected);
+            LogUtils.getLogger().info("toggle state connected: {}", connected);
             if (connected) {
                 try {
                     URI uri = new URI(config.getFullWebSocketUri());
                     var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri, 3, TimeUnit.SECONDS);
                     if (isConnected) {
-                        LOGGER.info("Successfully to connect server");
+                        LogUtils.getLogger().info("Successfully to connect server");
                     } else {
-                        LOGGER.error("Failed to connect server");
+                        LogUtils.getLogger().error("Failed to connect server");
                     }
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to saving config:", ex);
+                    LogUtils.getLogger().error("Failed to saving config:", ex);
                 }
             } else {
                 GhostModClient.GHOST_SYNC_SERVICE.disconnect();

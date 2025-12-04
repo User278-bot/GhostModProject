@@ -3,12 +3,11 @@ package com.ghost.entity;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.api.registry.IGhostRegistry;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GhostEntitySynchronizer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GhostEntitySynchronizer.class);
     private final IGhostRegistry ghostRegistry;
     private static final AtomicInteger nextEntityId = new AtomicInteger(Integer.MIN_VALUE / 2);
 
@@ -27,9 +25,7 @@ public class GhostEntitySynchronizer {
     }
 
     private void updateGhosts(ClientLevel level, Map<String, GhostPlayerEntity> existingGhosts,
-            Collection<PlayerData> latestGhosts) {
-        // LOGGER.info("Updating ghosts: existing={}, latest={}", existingGhosts.size(),
-        // latestGhosts.size());
+                              Collection<PlayerData> latestGhosts) {
         for (PlayerData data : latestGhosts) {
             if (existingGhosts.containsKey(data.uuid())) {
                 // 既にエンティティが存在する場合 -> 状態を更新
@@ -40,7 +36,7 @@ public class GhostEntitySynchronizer {
                 existingGhosts.remove(data.uuid());
             } else {
                 // エンティティが存在しない場合 -> 新しくスポーン
-                LOGGER.debug("Spawning new ghost: uuid={}, name={}", data.uuid(), data.name());
+                LogUtils.getLogger().debug("Spawning new ghost: uuid={}, name={}", data.uuid(), data.name());
 
                 // スキン情報の非同期取得を開始 (Futureを作成)
                 var skinFuture = fetchSkinLocation(data.uuid(), data.name());
@@ -56,14 +52,14 @@ public class GhostEntitySynchronizer {
                 // newGhost.setUUID(UUID.fromString(data.uuid()));
 
                 level.addPlayer(newGhost.getId(), newGhost);
-                LOGGER.debug("Added ghost to level: id={}, uuid={}", newGhost.getId(), newGhost.getUUID());
+                LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(), newGhost.getUUID());
             }
         }
     }
 
     private void removeGhosts(Map<String, GhostPlayerEntity> ghostsToRemove) {
         for (GhostPlayerEntity ghostToRemove : ghostsToRemove.values()) {
-            LOGGER.debug("Removing ghost: uuid={}", ghostToRemove.getGhostUuid());
+            LogUtils.getLogger().debug("Removing ghost: uuid={}", ghostToRemove.getGhostUuid());
             ghostToRemove.discard(); // or .remove()
         }
     }
@@ -119,7 +115,7 @@ public class GhostEntitySynchronizer {
                     return textureFuture.join();
                 }
             } catch (Exception e) {
-                LOGGER.error("Failed to load skin for ghost: {}", name, e);
+                LogUtils.getLogger().error("Failed to load skin for ghost: {}", name, e);
             }
             return null;
         });

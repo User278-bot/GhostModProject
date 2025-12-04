@@ -5,6 +5,7 @@ import com.ghost.api.dto.Vec2Dto;
 import com.ghost.api.dto.Vec3Dto;
 import com.ghost.entity.GhostPlayerEntity;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -14,8 +15,6 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.core.Registry;
 import net.minecraft.world.entity.MobCategory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
@@ -27,17 +26,17 @@ public final class EntityRegistration {
     private EntityRegistration() {
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EntityRegistration.class);
+    //private static final Logger LOGGER = LoggerFactory.getLogger(EntityRegistration.class);
 
     public static EntityType<GhostPlayerEntity> GHOST_PLAYER;
 
     public static void register() {
-        LOGGER.info("Registering entity types...");
+        LogUtils.getLogger().info("Registering entity types...");
         GHOST_PLAYER = Registry.register(
                 /*? >=1.19.3 {*/
                 BuiltInRegistries.ENTITY_TYPE,
                 /*?} else {*/
-                 /*Registry.ENTITY_TYPE, 
+                 /*Registry.ENTITY_TYPE,
                 *///?}
                 new ResourceLocation("ghostmod", "ghost_player"),
                 FabricEntityTypeBuilder.<GhostPlayerEntity>create(

@@ -1,6 +1,3 @@
-import dev.kikugie.stonecutter.STONECUTTER
-import dev.kikugie.stonecutter.data.StonecutterProject
-
 plugins {
     id("fabric-loom")
 
