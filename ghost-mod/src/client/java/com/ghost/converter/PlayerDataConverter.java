@@ -3,6 +3,7 @@ package com.ghost.converter;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.api.dto.Vec2Dto;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.PlayerModelPart;
 
 import static com.ghost.converter.McDtoConverter.fromMc;
 
@@ -11,6 +12,13 @@ public final class PlayerDataConverter {
     }
 
     public static PlayerData fromPlayer(Player player) {
+        byte skinParts = 0;
+        for (PlayerModelPart part : PlayerModelPart.values()) {
+            if (player.isModelPartShown(part)) {
+                skinParts |= (byte) part.getMask();
+            }
+        }
+
         return new PlayerData(
                 fromMc(player.position()),
                 new Vec2Dto(player.getXRot(), player.getYHeadRot()),
@@ -18,10 +26,10 @@ public final class PlayerDataConverter {
                 player.getName().getString(),
                 player.getPose().toString(),
                 /*? >=1.20.1 {*/
-                player.level().dimension().location().toString()
-                 /*?} else {*/
-                /*player.level.dimension().location().toString()
-                *///?}
-        );
+                player.level().dimension().location().toString(),
+                /*?} else {*/
+                /*player.level.dimension().location().toString(),
+                 *///?}
+                skinParts);
     }
 }

@@ -8,6 +8,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -61,6 +62,8 @@ public class GhostPlayerEntity extends RemotePlayer {
             // 不正なポーズ名が送られてきた場合は無視する
         }
 
+        // Skin Parts Synchronization
+        this.entityData.set(Player.DATA_PLAYER_MODE_CUSTOMISATION, data.skinParts());
     }
 
     public String getGhostUuid() {
