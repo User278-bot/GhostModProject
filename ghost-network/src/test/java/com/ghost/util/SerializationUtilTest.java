@@ -21,7 +21,8 @@ class SerializationUtilTest {
                 "uuid-123",
                 "TestPlayer",
                 "STANDING",
-                "minecraft:overworld");
+                "minecraft:overworld",
+                (byte) 127);
         GhostPacket<PlayerData> packet = new GhostPacket<>(MessageType.UPDATE, originalData);
 
         // 実行: シリアライズ
