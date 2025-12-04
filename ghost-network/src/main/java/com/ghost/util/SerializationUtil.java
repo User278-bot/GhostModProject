@@ -6,15 +6,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.Type;
 import java.util.List;
 
 public final class SerializationUtil {
     private static final Gson GSON = new Gson();
-    private static final Logger LOGGER = LoggerFactory.getLogger(SerializationUtil.class);
 
     private SerializationUtil() {
     }
