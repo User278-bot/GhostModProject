@@ -10,8 +10,6 @@ import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Objects;
@@ -34,11 +32,12 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setParentScreen(parent)
                 .setTitle(Component.translatable("title.ghostmod.config"))
                 .setDoesConfirmSave(false)
-                .setAlwaysShowTabs(false);
-        // .setSavingRunnable(() -> { /* TODO: ファイルへの保存処理 */ });
+                .setAlwaysShowTabs(false)
+                .setSavingRunnable(config::save);
 
         // 2. 「Network」カテゴリを作成
-        final ConfigCategory networkCategory = builder.getOrCreateCategory(Component.translatable("category.ghostmod.network"));
+        final ConfigCategory networkCategory = builder
+                .getOrCreateCategory(Component.translatable("category.ghostmod.network"));
 
         // 3. エントリー（UI要素）を作成するためのビルダーを取得
         final ConfigEntryBuilder entryBuilder = builder.entryBuilder();
@@ -46,14 +45,14 @@ public class ModMenuIntegration implements ModMenuApi {
         // 4. 各設定項目をカテゴリに追加していく
         // --- サーバー設定 ---
         networkCategory.addEntry(entryBuilder.startStrField(
-                        Component.translatable("option.ghostmod.serverUri"), config.getServerUri()).setDefaultValue("ws://localhost")
+                Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
+                .setDefaultValue("ws://localhost")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverUri"))
                 .setSaveConsumer(config::setServerUri) // 保存時に config.setServerUri() を呼ぶ
                 .build());
 
         networkCategory.addEntry(entryBuilder.startIntField(
-                        Component.translatable("option.ghostmod.serverPort"), config.getServerPort()
-                )
+                Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
                 .setDefaultValue(8887)
                 .setMin(1)
                 .setMax(65535)
@@ -64,19 +63,18 @@ public class ModMenuIntegration implements ModMenuApi {
         // --- 接続管理 ---
         // 接続状態インジケーター（説明テキストとして表示）
         networkCategory.addEntry(entryBuilder.startTextDescription(
-                        // ★ GhostModClientのインスタンス経由でServiceの状態を取得
-                        Component.translatable("option.ghostmod.status", getStatusText())
-                )
+                // ★ GhostModClientのインスタンス経由でServiceの状態を取得
+                Component.translatable("option.ghostmod.status", getStatusText()))
                 .build());
 
         // 再接続ボタン
         var reconnectButton = entryBuilder.startBooleanToggle(
-                        Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
+                Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
                 .setYesNoTextSupplier((connected) -> {
-                            connectPushButton(connected, config, parent);
-                            return Component.translatable(connected ? "option.ghostmod.connection.disconnect" : "option.ghostmod.connection.connect");
-                        }
-                )
+                    connectPushButton(connected, config, parent);
+                    return Component.translatable(
+                            connected ? "option.ghostmod.connection.disconnect" : "option.ghostmod.connection.connect");
+                })
                 .build();
         reconnectButton.setEditable(Minecraft.getInstance().hasSingleplayerServer());
         networkCategory.addEntry(reconnectButton);
@@ -88,8 +86,10 @@ public class ModMenuIntegration implements ModMenuApi {
     // 接続状態を示すテキストを返すヘルパーメソッド
     private Component getStatusText() {
         boolean isConnected = GhostModClient.GHOST_SYNC_SERVICE.isConnected();
-        return Component.translatable(isConnected ? "text.ghostmod.status.connected" : "text.ghostmod.status.disconnected").withStyle(style -> style.withColor(isConnected ? 0x55FF55 : 0xFF5555) // 緑 or 赤
-        );
+        return Component
+                .translatable(isConnected ? "text.ghostmod.status.connected" : "text.ghostmod.status.disconnected")
+                .withStyle(style -> style.withColor(isConnected ? 0x55FF55 : 0xFF5555) // 緑 or 赤
+                );
     }
 
     private void connectPushButton(boolean connected, GhostConfig config, Screen parent) {
