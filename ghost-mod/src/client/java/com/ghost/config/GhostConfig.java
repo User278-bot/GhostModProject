@@ -47,7 +47,7 @@ public class GhostConfig {
 
     // 組み立てた完全なURIを取得するヘルパーメソッド
     public String getFullWebSocketUri() {
-        return getServerUri() + ":" + getServerPort();
+        return "ws://" + getServerUri() + ":" + getServerPort();
     }
 
     // --- ファイル永続化メソッド ---

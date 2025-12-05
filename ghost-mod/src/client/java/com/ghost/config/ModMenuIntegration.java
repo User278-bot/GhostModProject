@@ -46,7 +46,7 @@ public class ModMenuIntegration implements ModMenuApi {
         // --- サーバー設定 ---
         networkCategory.addEntry(entryBuilder.startStrField(
                 Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
-                .setDefaultValue("ws://localhost")
+                .setDefaultValue("localhost")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverUri"))
                 .setSaveConsumer(config::setServerUri) // 保存時に config.setServerUri() を呼ぶ
                 .build());
