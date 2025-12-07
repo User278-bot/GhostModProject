@@ -16,9 +16,6 @@
   "icon": "assets/ghostmod/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "com.ghost.GhostModMain"
-    ],
     "client": [
       "com.ghost.GhostModClient"
     ],
