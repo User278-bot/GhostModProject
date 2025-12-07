@@ -102,14 +102,13 @@ public class GhostEntitySynchronizer {
                 if (updatedProfile != null) {
                     CompletableFuture<ResourceLocation> textureFuture = new CompletableFuture<>();
 
-                    Minecraft.getInstance().execute(() -> {
-                        Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
-                                (type, location, profile1) -> {
-                                    if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
-                                        textureFuture.complete(location);
-                                    }
-                                }, true);
-                    });
+                    Minecraft.getInstance().execute(() ->
+                            Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
+                                    (type, location, profile1) -> {
+                                        if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
+                                            textureFuture.complete(location);
+                                        }
+                                    }, true));
 
                     // タイムアウトなどを考慮すべきだが、今回は簡易実装
                     return textureFuture.join();

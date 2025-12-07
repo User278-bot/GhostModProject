@@ -10,5 +10,8 @@
   "text.ghostmod.status.disconnected": "Disconnected",
   "option.ghostmod.connection": "Connection Control",
   "option.ghostmod.connection.connect": "CONNECT",
-  "option.ghostmod.connection.disconnect": "DISCONNECT"
+  "option.ghostmod.connection.disconnect": "DISCONNECT",
+  "option.ghostmod.connectedUri": "Connected to: %s",
+  "toast.ghostmod.connected.title": "Ghost Mod",
+  "toast.ghostmod.connected.description": "Connected to server"
 }
