@@ -10,6 +10,7 @@ import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.StringListEntry;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -83,13 +84,20 @@ public class ModMenuIntegration implements ModMenuApi {
         networkCategory.addEntry(serverPortEntry);
 
         // --- 接続管理 ---
-        // 接続状態インジケーター（説明テキストとして表示）
+        // 接続状態インジケーター
         networkCategory.addEntry(entryBuilder.startTextDescription(
-                // ★ GhostModClientのインスタンス経由でServiceの状態を取得
                 Component.translatable("option.ghostmod.status", getStatusText()))
                 .build());
 
-        // 再接続ボタン
+        // 接続先URI表示（接続中の場合のみ）
+        URI connectedUri = GhostModClient.GHOST_SYNC_SERVICE.getConnectedUri();
+        if (connectedUri != null) {
+            networkCategory.addEntry(entryBuilder.startTextDescription(
+                    Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
+                    .build());
+        }
+
+        // 接続/切断ボタン
         var reconnectButton = entryBuilder.startBooleanToggle(
                 Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
                 .setYesNoTextSupplier((connected) -> {
@@ -121,6 +129,16 @@ public class ModMenuIntegration implements ModMenuApi {
                 serverPortEntry.getValue());
     }
 
+    // トースト通知を表示するヘルパーメソッド
+    public static void showConnectionSuccessToast() {
+        Minecraft.getInstance().getToasts().addToast(
+                SystemToast.multiline(
+                        Minecraft.getInstance(),
+                        SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
+                        Component.translatable("toast.ghostmod.connected.title"),
+                        Component.translatable("toast.ghostmod.connected.description")));
+    }
+
     private void connectPushButton(boolean connected, Screen parent) {
         if (!Objects.equals(connected, this.pre_connected)) {
             LogUtils.getLogger().info("toggle state connected: {}", connected);
@@ -131,16 +149,14 @@ public class ModMenuIntegration implements ModMenuApi {
                     URI uri = new URI(currentSnapshot.getFullWebSocketUri());
                     var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri, 3, TimeUnit.SECONDS);
                     if (isConnected) {
-                        // 接続成功時: スナップショットを設定に反映して保存
-                        GhostConfig config = GhostConfig.getInstance();
-                        config.restoreFrom(currentSnapshot);
-                        config.save();
-                        pendingSnapshot = null;
-                        LogUtils.getLogger().info("Successfully connected to server. Settings saved.");
+                        // 接続成功: トースト通知のみ、保存はしない（保存は明示的にSaveボタンで行う）
+                        showConnectionSuccessToast();
+                        pendingSnapshot = currentSnapshot;
+                        LogUtils.getLogger().info("Successfully connected to server.");
                     } else {
                         // 接続失敗時: 入力値を保持して画面リフレッシュ後も維持
                         pendingSnapshot = currentSnapshot;
-                        LogUtils.getLogger().error("Failed to connect server. Settings not saved.");
+                        LogUtils.getLogger().error("Failed to connect server.");
                     }
                 } catch (Exception ex) {
                     // エラー時も入力値を保持

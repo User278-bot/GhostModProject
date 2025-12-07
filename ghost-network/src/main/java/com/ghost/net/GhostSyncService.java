@@ -55,6 +55,15 @@ public class GhostSyncService {
         return session != null && session.isOpen();
     }
 
+    /**
+     * 現在接続中のサーバーURIを取得します。
+     * 接続していない場合はnullを返します。
+     */
+    @Nullable
+    public URI getConnectedUri() {
+        return session != null && session.isOpen() ? session.getURI() : null;
+    }
+
     public <T> void sendPacket(GhostPacket<T> packet) {
         if (session != null && session.isOpen()) {
             final String msg = SerializationUtil.serializePacket(packet);

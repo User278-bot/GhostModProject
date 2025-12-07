@@ -10,5 +10,8 @@
   "text.ghostmod.status.disconnected": "切断されました",
   "option.ghostmod.connection": "接続コントロール",
   "option.ghostmod.connection.connect": "接続",
-  "option.ghostmod.connection.disconnect": "切断"
+  "option.ghostmod.connection.disconnect": "切断",
+  "option.ghostmod.connectedUri": "接続先: %s",
+  "toast.ghostmod.connected.title": "Ghost Mod",
+  "toast.ghostmod.connected.description": "サーバーに接続しました"
 }

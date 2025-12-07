@@ -19,7 +19,7 @@ public class ClientEventHandler {
     private final GhostSyncService ghostSyncService;
 
     public ClientEventHandler(final GhostSyncService ghostSyncService,
-                              final GhostEntitySynchronizer ghostEntitySynchronizer) {
+            final GhostEntitySynchronizer ghostEntitySynchronizer) {
         this.ghostEntitySynchronizer = ghostEntitySynchronizer;
         this.ghostSyncService = ghostSyncService;
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);
@@ -33,6 +33,12 @@ public class ClientEventHandler {
                     GhostConfig config = GhostConfig.getInstance();
                     URI serverUri = new URI(config.getFullWebSocketUri());
                     ghostSyncService.connect(serverUri);
+                    // 接続成功をスケジュールして確認（非同期接続のため）
+                    client.execute(() -> {
+                        if (ghostSyncService.isConnected()) {
+                            com.ghost.config.ModMenuIntegration.showConnectionSuccessToast();
+                        }
+                    });
                 } catch (Exception ex) {
                     LogUtils.getLogger().error("Failed to auto-connect to GhostServer.", ex);
                 }
