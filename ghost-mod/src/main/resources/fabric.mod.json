@@ -3,15 +3,16 @@
   "id": "${id}",
   "version": "${version}",
   "name": "${name}",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "description": "A Minecraft Mod that displays other players as client-side ghosts, enabling pseudo-multiplayer for singleplayer maps without affecting server-side logic.",
   "authors": [
-    "Me!"
+    "User278-bot"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/User278-bot/GhostModProject",
+    "sources": "https://github.com/User278-bot/GhostModProject",
+    "issues": "https://github.com/User278-bot/GhostModProject/issues"
   },
-  "license": "All rights reserved @authors",
+  "license": "MIT",
   "icon": "assets/ghostmod/icon.png",
   "environment": "*",
   "entrypoints": {
@@ -32,8 +33,5 @@
     "minecraft": "${minecraft}",
     "java": ">=${java}",
     "fabric-api": "*"
-  },
-  "suggests": {
-    "another-mod": "*"
   }
 }
