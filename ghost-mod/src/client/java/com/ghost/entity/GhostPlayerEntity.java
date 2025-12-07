@@ -32,9 +32,7 @@ public class GhostPlayerEntity extends RemotePlayer {
         updateFromData(data);
 
         if (skinFuture != null) {
-            skinFuture.thenAcceptAsync(location -> {
-                this.skinLocation = location;
-            }, Minecraft.getInstance());
+            skinFuture.thenAcceptAsync(location -> this.skinLocation = location, Minecraft.getInstance());
         }
     }
 

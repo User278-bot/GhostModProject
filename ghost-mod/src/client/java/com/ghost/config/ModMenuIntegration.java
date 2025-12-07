@@ -39,10 +39,6 @@ public class ModMenuIntegration implements ModMenuApi {
         // 設定データクラスのインスタンスを取得
         final GhostConfig config = GhostConfig.getInstance();
 
-        // 初期値: pendingSnapshotがあればそれを使用、なければ保存済み設定からスナップショットを作成
-        final GhostConfig.ConfigSnapshot initialSnapshot = (pendingSnapshot != null) ? pendingSnapshot
-                : config.createSnapshot();
-
         // 1. ConfigBuilderの初期化
         final ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
@@ -64,23 +60,31 @@ public class ModMenuIntegration implements ModMenuApi {
 
         // 4. 各設定項目をカテゴリに追加していく
         // --- サーバー設定 ---
-        // エントリを作成して参照を保持（getValue()でリアルタイムな値を取得可能）
+        // エントリは保存済み設定値で作成（Cloth Configの変更検知の基準となる）
         serverUriEntry = entryBuilder.startStrField(
-                Component.translatable("option.ghostmod.serverUri"), initialSnapshot.serverUri())
+                Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
                 .setDefaultValue("localhost")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverUri"))
                 .setSaveConsumer(config::setServerUri)
                 .build();
+        // pendingがあれば表示値を更新（変更検知が有効になりSaveボタンが活性化）
+        if (pendingSnapshot != null) {
+            serverUriEntry.setValue(pendingSnapshot.serverUri());
+        }
         networkCategory.addEntry(serverUriEntry);
 
         serverPortEntry = entryBuilder.startIntField(
-                Component.translatable("option.ghostmod.serverPort"), initialSnapshot.serverPort())
+                Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
                 .setDefaultValue(8887)
                 .setMin(1)
                 .setMax(65535)
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverPort"))
                 .setSaveConsumer(config::setServerPort)
                 .build();
+        // pendingがあれば表示値を更新
+        if (pendingSnapshot != null) {
+            serverPortEntry.setValue(String.valueOf(pendingSnapshot.serverPort()));
+        }
         networkCategory.addEntry(serverPortEntry);
 
         // --- 接続管理 ---
