@@ -36,23 +36,24 @@ public final class EntityRegistration {
                 /*? >=1.19.3 {*/
                 BuiltInRegistries.ENTITY_TYPE,
                 /*?} else {*/
-                 /*Registry.ENTITY_TYPE,
-                *///?}
+                /*Registry.ENTITY_TYPE,
+                 *///?}
                 new ResourceLocation("ghostmod", "ghost_player"),
                 FabricEntityTypeBuilder.<GhostPlayerEntity>create(
-                        MobCategory.MISC,
-                        (type, world) -> {
-                            GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
-                            PlayerData dummyData = new PlayerData(
-                                    Vec3Dto.ZERO,
-                                    Vec2Dto.ZERO,
-                                    "0000",
-                                    "dummy",
-                                    "DUMMY",
-                                    "dummy:dimension");
+                                MobCategory.MISC,
+                                (type, world) -> {
+                                    GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
+                                    PlayerData dummyData = new PlayerData(
+                                            Vec3Dto.ZERO,
+                                            Vec2Dto.ZERO,
+                                            "0000",
+                                            "dummy",
+                                            "DUMMY",
+                                            "dummy:dimension",
+                                            (byte) 127);
 
-                            return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData, null);
-                        })
+                                    return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData, null);
+                                })
                         .dimensions(EntityDimensions.fixed(0.6f, 1.8f)) // プレイヤーと同じサイズ
                         .build());
         EntityRendererRegistry.register(

@@ -47,7 +47,7 @@ public class GhostConfig {
 
     // 組み立てた完全なURIを取得するヘルパーメソッド
     public String getFullWebSocketUri() {
-        return getServerUri() + ":" + getServerPort();
+        return "ws://" + getServerUri() + ":" + getServerPort();
     }
 
     // --- ファイル永続化メソッド ---
@@ -94,6 +94,38 @@ public class GhostConfig {
             LogUtils.getLogger().error("Failed to load configuration from file: {}", CONFIG_FILE, e);
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to parse configuration file (using defaults): {}", CONFIG_FILE, e);
+        }
+    }
+
+    // --- Mementoパターン: スナップショット機能 ---
+
+    /**
+     * 現在の設定状態をスナップショットとして取得します。
+     * 設定画面での編集作業中に一時的な値を保持するために使用します。
+     */
+    public ConfigSnapshot createSnapshot() {
+        return new ConfigSnapshot(serverUri, serverPort);
+    }
+
+    /**
+     * スナップショットから設定を復元します。
+     * 接続成功時などに一時的な値を永続化する前に呼び出します。
+     */
+    public void restoreFrom(ConfigSnapshot snapshot) {
+        this.serverUri = snapshot.serverUri();
+        this.serverPort = snapshot.serverPort();
+    }
+
+    /**
+     * 設定値を保持する不変のスナップショット。
+     * 編集中の設定値を一時的に保持し、接続テストなどに使用します。
+     */
+    public record ConfigSnapshot(String serverUri, int serverPort) {
+        /**
+         * WebSocket接続用の完全なURIを組み立てます。
+         */
+        public String getFullWebSocketUri() {
+            return "ws://" + serverUri + ":" + serverPort;
         }
     }
 }

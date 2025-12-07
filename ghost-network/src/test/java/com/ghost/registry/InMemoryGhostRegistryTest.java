@@ -20,8 +20,8 @@ class InMemoryGhostRegistryTest {
 
     /**
      * @BeforeEach: 各テストメソッド（@Test）が実行される「前」に毎回呼ばれます。
-     *              ここでテスト対象のインスタンスを初期化することで、
-     *              常にクリーンな状態でテストを開始できます。
+     * ここでテスト対象のインスタンスを初期化することで、
+     * 常にクリーンな状態でテストを開始できます。
      */
     @BeforeEach
     void setUp() {
@@ -30,7 +30,7 @@ class InMemoryGhostRegistryTest {
 
     /**
      * @Test: このメソッドがテストケースであることを示します。
-     *        メソッド名は「何をテストしているか」が分かるように命名するのが一般的です。
+     * メソッド名は「何をテストしているか」が分かるように命名するのが一般的です。
      */
     @Test
     void initialState_ShouldBeEmpty() {
@@ -73,7 +73,8 @@ class InMemoryGhostRegistryTest {
                 "uuid-1",
                 "Player1",
                 "STANDING",
-                "minecraft:overworld");
+                "minecraft:overworld",
+                (byte) 127);
 
         // 実行 (Act)
         registry.updateGhost(updatedData);
@@ -123,6 +124,7 @@ class InMemoryGhostRegistryTest {
                 uuid,
                 name,
                 "STANDING",
-                "minecraft:overworld");
+                "minecraft:overworld",
+                (byte) 127);
     }
 }

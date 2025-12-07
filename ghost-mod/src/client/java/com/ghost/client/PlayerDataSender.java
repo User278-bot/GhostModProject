@@ -26,6 +26,7 @@ public class PlayerDataSender {
     }
 
     public void sendPlayerData(ClientLevel world) {
+        // sendPlayer の引数が直感的ではない可能性。一応全ての情報は Minecraft のインスタンスから取得可能ではある
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return;
@@ -63,6 +64,10 @@ public class PlayerDataSender {
 
         // ポーズが変わったか
         if (!Objects.equals(lastSentData.pose(), currentData.pose())) {
+            return true;
+        }
+
+        if (lastSentData.skinParts() != currentData.skinParts()) {
             return true;
         }
 
