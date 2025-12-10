@@ -9,8 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
 public class PlayerDataSender {
     private static final int SEND_INTERVAL = 1;
     private static final int FORCE_SEND_INTERVAL = 40;
