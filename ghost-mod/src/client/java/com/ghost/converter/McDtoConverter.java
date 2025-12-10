@@ -5,7 +5,6 @@ import com.ghost.api.dto.Vec2Dto;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.Vec2;
-import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("unused")
 public final class McDtoConverter {

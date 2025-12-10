@@ -1,8 +1,6 @@
 package com.ghost.init;
 
 import com.ghost.api.dto.PlayerData;
-import com.ghost.api.dto.Vec2Dto;
-import com.ghost.api.dto.Vec3Dto;
 import com.ghost.entity.GhostPlayerEntity;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
