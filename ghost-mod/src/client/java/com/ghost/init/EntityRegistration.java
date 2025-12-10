@@ -1,6 +1,8 @@
 package com.ghost.init;
 
 import com.ghost.api.dto.PlayerData;
+import com.ghost.api.dto.Vec2Dto;
+import com.ghost.api.dto.Vec3Dto;
 import com.ghost.entity.GhostPlayerEntity;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
@@ -41,7 +43,14 @@ public final class EntityRegistration {
                                 MobCategory.MISC,
                                 (type, world) -> {
                                     GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
-                                    PlayerData dummyData = new PlayerData();
+                                    PlayerData dummyData = new PlayerData(
+                                            Vec3Dto.ZERO,
+                                            Vec2Dto.ZERO,
+                                            "0000",
+                                            "dummy",
+                                            "DUMMY",
+                                            "dummy:dimension",
+                                            (byte) 127);
 
                                     return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData, null);
                                 })

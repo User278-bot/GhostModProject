@@ -17,8 +17,6 @@ public final class PlayerData {
     private final String pose;
     private final String dimension;
     private final byte skinParts;
-    private final String swingArm;
-    private final int swingTime;
 
     /**
      * The main constructor to create a full PlayerData object.
@@ -31,17 +29,8 @@ public final class PlayerData {
      * @param dimension Player's current dimension (e.g., "minecraft:overworld").
      * @param skinParts Bitmask of enabled skin parts.
      */
-    public PlayerData(
-            Vec3Dto pos,
-            Vec2Dto rot,
-            String uuid,
-            String name,
-            String pose,
-            String dimension,
-            byte skinParts,
-            String swingArm,
-            int swingTime
-    ) {
+    public PlayerData(Vec3Dto pos, Vec2Dto rot, String uuid, String name, String pose, String dimension,
+                      byte skinParts) {
         this.pos = pos;
         this.rot = rot;
         this.uuid = uuid;
@@ -49,8 +38,6 @@ public final class PlayerData {
         this.pose = pose;
         this.dimension = dimension;
         this.skinParts = skinParts;
-        this.swingArm = swingArm;
-        this.swingTime = swingTime;
     }
 
     /**
@@ -59,7 +46,7 @@ public final class PlayerData {
      * NullPointerExceptions.
      */
     public PlayerData() {
-        this(Vec3Dto.ZERO, Vec2Dto.ZERO, "", "", "STANDING", "", (byte) 127, "MAIN_HAND", 0);
+        this(Vec3Dto.ZERO, Vec2Dto.ZERO, "", "", "STANDING", "", (byte) 127);
     }
 
     // --- Accessors (Getters) ---
@@ -92,14 +79,6 @@ public final class PlayerData {
         return this.skinParts;
     }
 
-    public int swingTime() {
-        return this.swingTime;
-    }
-
-    public String swingArm() {
-        return this.swingArm;
-    }
-
     // --- Utility Methods (equals, hashCode, toString) ---
 
     @Override
@@ -115,14 +94,12 @@ public final class PlayerData {
                 Objects.equals(name, that.name) &&
                 Objects.equals(pose, that.pose) &&
                 Objects.equals(dimension, that.dimension) &&
-                skinParts == that.skinParts &&
-                Objects.equals(swingArm, that.swingArm) &&
-                swingTime == that.swingTime;
+                skinParts == that.skinParts;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pos, rot, uuid, name, pose, dimension, skinParts, swingArm, swingTime);
+        return Objects.hash(pos, rot, uuid, name, pose, dimension, skinParts);
     }
 
     @Override
@@ -134,9 +111,7 @@ public final class PlayerData {
                 ", name='" + name + '\'' +
                 ", pose='" + pose + '\'' +
                 ", dimension='" + dimension + '\'' +
-                ", skinParts=" + skinParts + '\'' +
-                ", swingArm=" + swingArm + '\'' +
-                ", swingTime=" + swingTime +
+                ", skinParts=" + skinParts +
                 '}';
     }
 }
