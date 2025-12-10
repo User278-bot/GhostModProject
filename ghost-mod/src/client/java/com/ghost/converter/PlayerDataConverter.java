@@ -30,6 +30,8 @@ public final class PlayerDataConverter {
                 /*?} else {*/
                 /*player.level.dimension().location().toString(),
                  *///?}
-                skinParts);
+                skinParts,
+                fromMc(player.swingingArm),
+                player.swingTime);
     }
 }

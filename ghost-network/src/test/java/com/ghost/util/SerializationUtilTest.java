@@ -22,7 +22,9 @@ class SerializationUtilTest {
                 "TestPlayer",
                 "STANDING",
                 "minecraft:overworld",
-                (byte) 127);
+                (byte) 127,
+                "MAIN_HAND",
+                0);
         GhostPacket<PlayerData> packet = new GhostPacket<>(MessageType.UPDATE, originalData);
 
         // 実行: シリアライズ

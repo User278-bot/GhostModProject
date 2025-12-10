@@ -2,6 +2,7 @@ package com.ghost.converter;
 
 import com.ghost.api.dto.Vec3Dto;
 import com.ghost.api.dto.Vec2Dto;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.Vec2;
 
@@ -12,6 +13,10 @@ public final class McDtoConverter {
 
     public static Vec3Dto fromMc(Vec3 vec3) {
         return new Vec3Dto(vec3.x, vec3.y, vec3.z);
+    }
+
+    public static String fromMc(InteractionHand hand) {
+        return hand != null ? hand.name() : InteractionHand.MAIN_HAND.name();
     }
 
     public static Vec2Dto fromMc(Vec2 vec2) {
