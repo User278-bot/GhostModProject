@@ -14,8 +14,6 @@ import java.util.Objects;
 public class PlayerDataSender {
     private static final int SEND_INTERVAL = 1;
     private static final int FORCE_SEND_INTERVAL = 40;
-    private static final double POSITION_THRESHOLD_SQR = 0.01 * 0.01;
-    private static final float ROTATION_THRESHOLD_SQR = 1.0f;
 
     @Nullable
     private PlayerData lastSentData = null;
@@ -52,26 +50,6 @@ public class PlayerDataSender {
             return true;
         }
 
-        // 位置が一定以上動いたか
-        if (lastSentData.pos().distanceToSqr(currentData.pos()) > POSITION_THRESHOLD_SQR) {
-            return true;
-        }
-
-        // 向きが変わったか
-        if (lastSentData.rot().distanceToSqr(currentData.rot()) > ROTATION_THRESHOLD_SQR) {
-            return true;
-        }
-
-        // ポーズが変わったか
-        if (!Objects.equals(lastSentData.pose(), currentData.pose())) {
-            return true;
-        }
-
-        if (lastSentData.skinParts() != currentData.skinParts()) {
-            return true;
-        }
-
-        // 変化がなければ送信しない
-        return false;
+        return !lastSentData.equals(currentData);
     }
 }

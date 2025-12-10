@@ -43,14 +43,7 @@ public final class EntityRegistration {
                                 MobCategory.MISC,
                                 (type, world) -> {
                                     GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
-                                    PlayerData dummyData = new PlayerData(
-                                            Vec3Dto.ZERO,
-                                            Vec2Dto.ZERO,
-                                            "0000",
-                                            "dummy",
-                                            "DUMMY",
-                                            "dummy:dimension",
-                                            (byte) 127);
+                                    PlayerData dummyData = new PlayerData();
 
                                     return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData, null);
                                 })

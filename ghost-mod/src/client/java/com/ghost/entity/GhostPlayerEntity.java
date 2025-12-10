@@ -6,6 +6,7 @@ import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
@@ -22,12 +23,12 @@ public class GhostPlayerEntity extends RemotePlayer {
     private static final int INTERPOLATION_STEPS = 4;
 
     public GhostPlayerEntity(final ClientLevel world, final GameProfile profile, final PlayerData data,
-            CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
+                             CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
         /*? >=1.20.1 {*/
         super(world, profile);
         /*?} else {*/
-         /*super(world, profile, null); 
-        *///?}
+        /*super(world, profile, null);
+         *///?}
         this.ghostUuid = data.uuid();
         updateFromData(data);
 
@@ -53,6 +54,12 @@ public class GhostPlayerEntity extends RemotePlayer {
                 false // テレポートはしない
         );
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
+
+        if (data.swinging()) {
+            this.swing(InteractionHand.valueOf(data.swingArm()));
+        }
+
+
         try {
             Pose newPose = Pose.valueOf(data.pose());
             this.setPose(newPose);
@@ -72,7 +79,6 @@ public class GhostPlayerEntity extends RemotePlayer {
     // 物理演算やAIのtick処理は一切行わないようにする
     @Override
     public void tick() {
-        // 何もしない
         super.tick();
         // this.calculateEntityAnimation(this, false);
     }
