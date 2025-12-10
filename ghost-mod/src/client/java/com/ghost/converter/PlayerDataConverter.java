@@ -32,6 +32,6 @@ public final class PlayerDataConverter {
                  *///?}
                 skinParts,
                 fromMc(player.swingingArm),
-                player.swinging);
+                player.swingTime);
     }
 }

@@ -76,7 +76,7 @@ class InMemoryGhostRegistryTest {
                 "minecraft:overworld",
                 (byte) 127,
                 "MAIN_HAND",
-                false);
+                0);
 
         // 実行 (Act)
         registry.updateGhost(updatedData);
@@ -129,6 +129,6 @@ class InMemoryGhostRegistryTest {
                 "minecraft:overworld",
                 (byte) 127,
                 "MAIN_HAND",
-                false);
+                0);
     }
 }

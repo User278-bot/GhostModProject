@@ -55,7 +55,7 @@ public class GhostPlayerEntity extends RemotePlayer {
         );
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
 
-        if (data.swinging()) {
+        if (data.swingTime() == 1) {
             this.swing(InteractionHand.valueOf(data.swingArm()));
         }
 

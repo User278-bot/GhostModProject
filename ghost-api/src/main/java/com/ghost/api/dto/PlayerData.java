@@ -18,7 +18,7 @@ public final class PlayerData {
     private final String dimension;
     private final byte skinParts;
     private final String swingArm;
-    private final boolean swinging;
+    private final int swingTime;
 
     /**
      * The main constructor to create a full PlayerData object.
@@ -40,7 +40,7 @@ public final class PlayerData {
             String dimension,
             byte skinParts,
             String swingArm,
-            boolean swinging
+            int swingTime
     ) {
         this.pos = pos;
         this.rot = rot;
@@ -50,7 +50,7 @@ public final class PlayerData {
         this.dimension = dimension;
         this.skinParts = skinParts;
         this.swingArm = swingArm;
-        this.swinging = swinging;
+        this.swingTime = swingTime;
     }
 
     /**
@@ -59,7 +59,7 @@ public final class PlayerData {
      * NullPointerExceptions.
      */
     public PlayerData() {
-        this(Vec3Dto.ZERO, Vec2Dto.ZERO, "", "", "STANDING", "", (byte) 127, "MAIN_HAND", false);
+        this(Vec3Dto.ZERO, Vec2Dto.ZERO, "", "", "STANDING", "", (byte) 127, "MAIN_HAND", 0);
     }
 
     // --- Accessors (Getters) ---
@@ -92,8 +92,8 @@ public final class PlayerData {
         return this.skinParts;
     }
 
-    public boolean swinging() {
-        return this.swinging;
+    public int swingTime() {
+        return this.swingTime;
     }
 
     public String swingArm() {
@@ -117,12 +117,12 @@ public final class PlayerData {
                 Objects.equals(dimension, that.dimension) &&
                 skinParts == that.skinParts &&
                 Objects.equals(swingArm, that.swingArm) &&
-                swinging == that.swinging;
+                swingTime == that.swingTime;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pos, rot, uuid, name, pose, dimension, skinParts, swingArm, swinging);
+        return Objects.hash(pos, rot, uuid, name, pose, dimension, skinParts, swingArm, swingTime);
     }
 
     @Override
@@ -136,7 +136,7 @@ public final class PlayerData {
                 ", dimension='" + dimension + '\'' +
                 ", skinParts=" + skinParts + '\'' +
                 ", swingArm=" + swingArm + '\'' +
-                ", swinging=" + swinging +
+                ", swingTime=" + swingTime +
                 '}';
     }
 }

@@ -24,7 +24,7 @@ class SerializationUtilTest {
                 "minecraft:overworld",
                 (byte) 127,
                 "MAIN_HAND",
-                false);
+                0);
         GhostPacket<PlayerData> packet = new GhostPacket<>(MessageType.UPDATE, originalData);
 
         // 実行: シリアライズ
