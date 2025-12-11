@@ -10,13 +10,14 @@ class MessageTypeTest {
         // 全てのMessageTypeが存在することを確認
         MessageType[] values = MessageType.values();
 
-        assertEquals(7, values.length);
+        assertEquals(8, values.length);
         assertNotNull(MessageType.UPDATE);
         assertNotNull(MessageType.INITIAL_SYNC);
         assertNotNull(MessageType.JOIN);
         assertNotNull(MessageType.LEAVE);
         assertNotNull(MessageType.AUTH_CHALLENGE);
         assertNotNull(MessageType.AUTH_RESPONSE);
+        assertNotNull(MessageType.AUTH_SUCCESS);
         assertNotNull(MessageType.UNRECOGNIZED);
     }
 
@@ -41,6 +42,7 @@ class MessageTypeTest {
         assertEquals(3, MessageType.LEAVE.ordinal());
         assertEquals(4, MessageType.AUTH_CHALLENGE.ordinal());
         assertEquals(5, MessageType.AUTH_RESPONSE.ordinal());
-        assertEquals(6, MessageType.UNRECOGNIZED.ordinal());
+        assertEquals(6, MessageType.AUTH_SUCCESS.ordinal());
+        assertEquals(7, MessageType.UNRECOGNIZED.ordinal());
     }
 }

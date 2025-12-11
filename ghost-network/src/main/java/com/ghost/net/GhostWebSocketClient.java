@@ -13,12 +13,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 public class GhostWebSocketClient extends WebSocketClient {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(GhostWebSocketClient.class);
     private final IGhostRegistry GHOST_REGISTRY;
     private final String PASSWORD;
+    private CompletableFuture<Boolean> authFuture = new CompletableFuture<>();
 
     public GhostWebSocketClient(URI serverURI, IGhostRegistry registry, String password) {
         super(serverURI);
@@ -26,15 +28,24 @@ public class GhostWebSocketClient extends WebSocketClient {
         PASSWORD = password;
     }
 
+    public CompletableFuture<Boolean> getAuthFuture() {
+        return authFuture;
+    }
+
     @Override
     public void onOpen(ServerHandshake data) {
         LOGGER.info("Successfully connected to the server (status: {})", data.getHttpStatus());
+        if (authFuture.isDone()) {
+            authFuture = new CompletableFuture<>();
+        }
     }
 
     @Override
     public void onMessage(String message) {
         try {
             var packet = SerializationUtil.deserializePacket(message);
+            if (packet == null)
+                return;
             var type = packet.getType();
             var data = packet.getData();
             LOGGER.debug("type: {},data: {}", type, data);
@@ -55,6 +66,10 @@ public class GhostWebSocketClient extends WebSocketClient {
                             close();
                         }
                     }
+                    break;
+                case AUTH_SUCCESS:
+                    LOGGER.info("Received AUTH_SUCCESS. Authentication verified.");
+                    authFuture.complete(true);
                     break;
                 case UPDATE:
                     if (data != null) {
@@ -89,11 +104,17 @@ public class GhostWebSocketClient extends WebSocketClient {
     public void onClose(int code, String reason, boolean remote) {
         LOGGER.info("Disconnected from server. code: {}, Reason: {}, Remote: {}", code, reason, remote);
         GHOST_REGISTRY.clear();
+        if (!authFuture.isDone()) {
+            authFuture.complete(false);
+        }
     }
 
     @Override
     public void onError(Exception ex) {
         LOGGER.error("An error occurred in Websocket client: ", ex);
         GHOST_REGISTRY.clear();
+        if (!authFuture.isDone()) {
+            authFuture.completeExceptionally(ex);
+        }
     }
 }

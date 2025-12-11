@@ -148,6 +148,10 @@ public class GhostModServer extends WebSocketServer {
                     pendingChallenges.remove(conn); // nonceはもう不要
                     LOGGER.info("Authentication SUCCESS for {}", conn.getRemoteSocketAddress());
 
+                    // 認証成功パケットを送信
+                    GhostPacket<Void> successPacket = new GhostPacket<>(MessageType.AUTH_SUCCESS, null);
+                    conn.send(SerializationUtil.serializePacket(successPacket));
+
                     // 初期同期パケットを送るなど、通常のフローへ
                     // (現状の実装では、クライアントがUPDATEを送ってきたタイミングでJOIN扱いになるため、ここでは何もしなくてよい)
                 } else {

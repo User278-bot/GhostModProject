@@ -37,9 +37,17 @@ public class GhostSyncService {
         }
         session = new GhostWebSocketClient(servverURI, ghostRegistry, password);
         try {
-            return session.connectBlocking(timeout, unit);
+            boolean socketConnected = session.connectBlocking(timeout, unit);
+            if (!socketConnected) {
+                return false;
+            }
+            // 認証完了を待つ
+            // connectBlockingで消費した時間は考慮していないが、簡易実装として別途timeout待つ
+            return session.getAuthFuture().get(timeout, unit);
         } catch (Exception ex) {
-            LOGGER.error("Failed to connect:", ex);
+            LOGGER.error("Failed to connect or authenticate:", ex);
+            session.close();
+            session = null;
         }
         return false;
     }

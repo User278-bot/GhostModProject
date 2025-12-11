@@ -26,5 +26,6 @@ public enum MessageType {
     LEAVE,
     AUTH_CHALLENGE,
     AUTH_RESPONSE,
+    AUTH_SUCCESS,
     UNRECOGNIZED
 }
