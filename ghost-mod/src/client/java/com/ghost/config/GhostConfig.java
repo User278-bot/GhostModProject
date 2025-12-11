@@ -15,6 +15,7 @@ public class GhostConfig {
     // 設定項目のデフォルト値を定義
     private String serverUri = "ws://localhost";
     private int serverPort = 8887;
+    private String serverPassword = "changeme";
 
     // --- シングルトンパターンでインスタンスを管理 ---
     private static final GhostConfig INSTANCE = new GhostConfig();
@@ -43,6 +44,14 @@ public class GhostConfig {
 
     public void setServerPort(int serverPort) {
         this.serverPort = serverPort;
+    }
+
+    public String getServerPassword() {
+        return serverPassword;
+    }
+
+    public void setServerPassword(String serverPassword) {
+        this.serverPassword = serverPassword;
     }
 
     // 組み立てた完全なURIを取得するヘルパーメソッド
@@ -104,7 +113,7 @@ public class GhostConfig {
      * 設定画面での編集作業中に一時的な値を保持するために使用します。
      */
     public ConfigSnapshot createSnapshot() {
-        return new ConfigSnapshot(serverUri, serverPort);
+        return new ConfigSnapshot(serverUri, serverPort, serverPassword);
     }
 
     /**
@@ -114,13 +123,14 @@ public class GhostConfig {
     public void restoreFrom(ConfigSnapshot snapshot) {
         this.serverUri = snapshot.serverUri();
         this.serverPort = snapshot.serverPort();
+        this.serverPassword = snapshot.serverPassword();
     }
 
     /**
      * 設定値を保持する不変のスナップショット。
      * 編集中の設定値を一時的に保持し、接続テストなどに使用します。
      */
-    public record ConfigSnapshot(String serverUri, int serverPort) {
+    public record ConfigSnapshot(String serverUri, int serverPort, String serverPassword) {
         /**
          * WebSocket接続用の完全なURIを組み立てます。
          */

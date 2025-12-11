@@ -8,7 +8,8 @@ public enum MessageType {
     UPDATE,
 
     /**
-     * Sent to a newly connected client, containing the initial state of all existing players.
+     * Sent to a newly connected client, containing the initial state of all
+     * existing players.
      */
     INITIAL_SYNC,
 
@@ -23,5 +24,7 @@ public enum MessageType {
      * This message will contain the UUID of the player who left.
      */
     LEAVE,
+    AUTH_CHALLENGE,
+    AUTH_RESPONSE,
     UNRECOGNIZED
 }

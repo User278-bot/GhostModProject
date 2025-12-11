@@ -20,9 +20,10 @@ import java.util.concurrent.TimeUnit;
 
 public class ModMenuIntegration implements ModMenuApi {
     private boolean pre_connected = false;
-    // UIエントリへの参照を保持（getValue()でリアルタイムな値を取得可能）
+    // UIエントリへの参照を保持
     private StringListEntry serverUriEntry;
     private IntegerListEntry serverPortEntry;
+    private StringListEntry serverPasswordEntry;
     // Mementoパターン: 画面リフレッシュ時に入力値を保持するスナップショット
     private GhostConfig.ConfigSnapshot pendingSnapshot = null;
 
@@ -87,6 +88,20 @@ public class ModMenuIntegration implements ModMenuApi {
         }
         networkCategory.addEntry(serverPortEntry);
 
+        // パスワード設定
+        // パスワード設定
+        serverPasswordEntry = entryBuilder.startStrField(
+                Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
+                .setDefaultValue("changeme")
+                .setTooltip(Component.translatable("tooltip.ghostmod.serverPassword"))
+                .setSaveConsumer(config::setServerPassword)
+                .build();
+        // pendingがあれば表示値を更新
+        if (pendingSnapshot != null) {
+            serverPasswordEntry.setValue(pendingSnapshot.serverPassword());
+        }
+        networkCategory.addEntry(serverPasswordEntry);
+
         // --- 接続管理 ---
         // 接続状態インジケーター
         networkCategory.addEntry(entryBuilder.startTextDescription(
@@ -130,7 +145,8 @@ public class ModMenuIntegration implements ModMenuApi {
     private GhostConfig.ConfigSnapshot createCurrentSnapshot() {
         return new GhostConfig.ConfigSnapshot(
                 serverUriEntry.getValue(),
-                serverPortEntry.getValue());
+                serverPortEntry.getValue(),
+                serverPasswordEntry.getValue());
     }
 
     // トースト通知を表示するヘルパーメソッド
@@ -151,7 +167,8 @@ public class ModMenuIntegration implements ModMenuApi {
                 GhostConfig.ConfigSnapshot currentSnapshot = createCurrentSnapshot();
                 try {
                     URI uri = new URI(currentSnapshot.getFullWebSocketUri());
-                    var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri, 3, TimeUnit.SECONDS);
+                    var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri,
+                            currentSnapshot.serverPassword(), 3, TimeUnit.SECONDS);
                     if (isConnected) {
                         // 接続成功: トースト通知のみ、保存はしない（保存は明示的にSaveボタンで行う）
                         showConnectionSuccessToast();

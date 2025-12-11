@@ -19,7 +19,7 @@ public class ClientEventHandler {
     private final GhostSyncService ghostSyncService;
 
     public ClientEventHandler(final GhostSyncService ghostSyncService,
-                              final GhostEntitySynchronizer ghostEntitySynchronizer) {
+            final GhostEntitySynchronizer ghostEntitySynchronizer) {
         this.ghostEntitySynchronizer = ghostEntitySynchronizer;
         this.ghostSyncService = ghostSyncService;
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);
@@ -32,7 +32,7 @@ public class ClientEventHandler {
                 try {
                     GhostConfig config = GhostConfig.getInstance();
                     URI serverUri = new URI(config.getFullWebSocketUri());
-                    ghostSyncService.connect(serverUri);
+                    ghostSyncService.connect(serverUri, config.getServerPassword());
                     // 接続成功をスケジュールして確認（非同期接続のため）
                     client.execute(() -> {
                         if (ghostSyncService.isConnected()) {
@@ -45,16 +45,15 @@ public class ClientEventHandler {
             }
         });
         ClientPlayConnectionEvents.DISCONNECT.register(
-                (handler, client) -> ghostSyncService.disconnect()
-        );
+                (handler, client) -> ghostSyncService.disconnect());
         ClientTickEvents.END_WORLD_TICK.register((world) -> {
             playerDataSender.sendPlayerData(world);
             ghostEntitySynchronizer.onTick(world);
         });
 
         // スキンカスタマイズ画面が閉じられた時に即座にデータ送信
-        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) ->
-                ScreenEvents.remove(screen).register((removedScreen) -> {
+        ScreenEvents.AFTER_INIT.register(
+                (client, screen, scaledWidth, scaledHeight) -> ScreenEvents.remove(screen).register((removedScreen) -> {
                     // スキンカスタマイズ画面かどうかをチェック
                     if (removedScreen.getClass().getSimpleName().equals(SkinCustomizationScreen.class.toString())) {
                         Minecraft mc = Minecraft.getInstance();

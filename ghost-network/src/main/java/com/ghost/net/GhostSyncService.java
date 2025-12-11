@@ -22,20 +22,20 @@ public class GhostSyncService {
         this.ghostRegistry = ghostRegistry;
     }
 
-    public void connect(URI serverURI) {
+    public void connect(URI serverURI, String password) {
         if (this.isConnected()) {
             return;
         }
-        session = new GhostWebSocketClient(serverURI, ghostRegistry);
+        session = new GhostWebSocketClient(serverURI, ghostRegistry, password);
         session.connect();
     }
 
-    public boolean connectBlocking(URI servverURI, long timeout, TimeUnit unit) {
+    public boolean connectBlocking(URI servverURI, String password, long timeout, TimeUnit unit) {
         if (this.isConnected()) {
             LOGGER.info("Already connected");
             return true;
         }
-        session = new GhostWebSocketClient(servverURI, ghostRegistry);
+        session = new GhostWebSocketClient(servverURI, ghostRegistry, password);
         try {
             return session.connectBlocking(timeout, unit);
         } catch (Exception ex) {

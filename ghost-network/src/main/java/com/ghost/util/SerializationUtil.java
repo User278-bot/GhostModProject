@@ -12,6 +12,10 @@ import java.util.List;
 public final class SerializationUtil {
     private static final Gson GSON = new Gson();
 
+    public static Gson getGson() {
+        return GSON;
+    }
+
     private SerializationUtil() {
     }
 
