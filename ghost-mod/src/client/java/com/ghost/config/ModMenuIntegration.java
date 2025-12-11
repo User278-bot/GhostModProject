@@ -96,6 +96,25 @@ public class ModMenuIntegration implements ModMenuApi {
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverPassword"))
                 .setSaveConsumer(config::setServerPassword)
                 .build();
+
+        // Use reflection to access the protected textFieldWidget in TextFieldListEntry
+        // and set the render text provider to mask the password.
+        try {
+            java.lang.reflect.Field widgetField = me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry.class
+                    .getDeclaredField("textFieldWidget");
+            widgetField.setAccessible(true);
+            net.minecraft.client.gui.components.EditBox widget = (net.minecraft.client.gui.components.EditBox) widgetField
+                    .get(serverPasswordEntry);
+            if (widget != null) {
+                widget.setFormatter((text, firstCharacterIndex) -> {
+                    return net.minecraft.network.chat.Component.literal("•".repeat(text.length())).getVisualOrderText();
+                });
+            }
+        } catch (Exception e) {
+            // Log warning but don't crash if reflection fails (e.g. field name change)
+            e.printStackTrace();
+        }
+
         // pendingがあれば表示値を更新
         if (pendingSnapshot != null) {
             serverPasswordEntry.setValue(pendingSnapshot.serverPassword());
