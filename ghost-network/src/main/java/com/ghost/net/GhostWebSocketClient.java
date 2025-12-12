@@ -53,7 +53,7 @@ public class GhostWebSocketClient extends WebSocketClient {
                 case AUTH_CHALLENGE:
                     if (data != null) {
                         try {
-                            AuthData challenge = SerializationUtil.getGson().fromJson(data, AuthData.class);
+                            AuthData challenge = SerializationUtil.parseAuthData(data);
                             String nonce = challenge.nonce();
                             String hash = ChapAuthenticator.calculateHash(PASSWORD, nonce);
                             AuthData response = new AuthData(null, hash);

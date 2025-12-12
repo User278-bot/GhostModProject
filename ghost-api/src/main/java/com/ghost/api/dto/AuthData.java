@@ -1,6 +1,6 @@
 package com.ghost.api.dto;
 
-public class AuthData {
+public final class AuthData {
     private String nonce;
     private String hash;
 
@@ -18,14 +18,6 @@ public class AuthData {
     }
 
     public String hash() {
-        return hash;
-    }
-
-    public String getNonce() {
-        return nonce;
-    }
-
-    public String getHash() {
         return hash;
     }
 

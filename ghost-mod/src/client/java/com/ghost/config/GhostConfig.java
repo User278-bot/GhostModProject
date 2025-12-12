@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.loader.api.FabricLoader;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,7 +74,7 @@ public class GhostConfig {
             String json = GSON.toJson(this);
             Files.writeString(CONFIG_FILE, json);
 
-            LogUtils.getLogger().info("Configuration saved to: {}", CONFIG_FILE);
+            LogUtils.getLogger().debug("Configuration saved to: {}", CONFIG_FILE);
         } catch (IOException e) {
             LogUtils.getLogger().error("Failed to save configuration to file: {}", CONFIG_FILE, e);
         }
@@ -95,15 +96,20 @@ public class GhostConfig {
 
             // 読み込んだ値を現在のインスタンスにコピー
             if (loaded != null) {
-                this.serverPort = loaded.serverPort;
-                this.serverUri = loaded.serverUri;
-                LogUtils.getLogger().info("Configuration loaded from: {}", CONFIG_FILE);
+                restoreFrom(loaded);
+                LogUtils.getLogger().debug("Configuration loaded from: {}", CONFIG_FILE);
             }
         } catch (IOException e) {
             LogUtils.getLogger().error("Failed to load configuration from file: {}", CONFIG_FILE, e);
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to parse configuration file (using defaults): {}", CONFIG_FILE, e);
         }
+    }
+
+    private void restoreFrom(GhostConfig config) {
+        this.serverPort = config.serverPort;
+        this.serverUri = config.serverUri;
+        this.serverPassword = config.serverPassword;
     }
 
     // --- Mementoパターン: スナップショット機能 ---

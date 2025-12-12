@@ -29,7 +29,7 @@ public class GhostModServer extends WebSocketServer {
     // 認証関連
     private static final Map<WebSocket, String> pendingChallenges = new ConcurrentHashMap<>(); // Connection -> Nonce
     private static final Map<WebSocket, Boolean> authenticatedSessions = new ConcurrentHashMap<>(); // Connection ->
-                                                                                                    // IsAuthenticated
+    // IsAuthenticated
     private final String serverPassword;
 
     // レート制限関連
@@ -138,7 +138,7 @@ public class GhostModServer extends WebSocketServer {
             var packet = SerializationUtil.deserializePacket(message);
 
             if (packet != null && packet.getType() == MessageType.AUTH_RESPONSE) {
-                AuthData authData = SerializationUtil.getGson().fromJson(packet.getData(), AuthData.class);
+                AuthData authData = SerializationUtil.parseAuthData(packet.getData());
                 String clientHash = authData.hash();
                 String nonce = pendingChallenges.get(conn);
 
@@ -231,13 +231,6 @@ public class GhostModServer extends WebSocketServer {
         var msg = SerializationUtil.serializePacket(joinPacket);
         broadcast(msg, conn);
         LOGGER.info("Player '{}' joined.", joinedPlayer.name());
-    }
-
-    /**
-     * ブロードキャスト用のオーバーロード（除外なし）
-     */
-    public void broadcast(String message) {
-        broadcast(message, (WebSocket) null);
     }
 
     public static void main(String[] args) {
