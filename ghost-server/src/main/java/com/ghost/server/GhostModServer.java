@@ -252,7 +252,10 @@ public class GhostModServer extends WebSocketServer {
             if (cmd.hasOption("password")) {
                 password = cmd.getOptionValue("password");
             } else {
-                LOGGER.warn("No password provided. Using default password: '{}'", password);
+                // デフォルトパスワードにランダムな4桁の数字を付与
+                int randomSuffix = (int) (Math.random() * 10000);
+                password = "changeme" + String.format("%04d", randomSuffix);
+                LOGGER.warn("No password provided. Using generated password: '{}'", password);
                 LOGGER.warn("Please use --password <your_password> to set a secure password.");
             }
         } catch (ParseException e) {
