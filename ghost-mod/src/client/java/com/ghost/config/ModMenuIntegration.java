@@ -9,20 +9,23 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.StringListEntry;
+import me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.awt.*;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class ModMenuIntegration implements ModMenuApi {
     private boolean pre_connected = false;
-    // UIエントリへの参照を保持（getValue()でリアルタイムな値を取得可能）
+    // UIエントリへの参照を保持
     private StringListEntry serverUriEntry;
     private IntegerListEntry serverPortEntry;
+    private StringListEntry serverPasswordEntry;
     // Mementoパターン: 画面リフレッシュ時に入力値を保持するスナップショット
     private GhostConfig.ConfigSnapshot pendingSnapshot = null;
 
@@ -62,7 +65,7 @@ public class ModMenuIntegration implements ModMenuApi {
         // --- サーバー設定 ---
         // エントリは保存済み設定値で作成（Cloth Configの変更検知の基準となる）
         serverUriEntry = entryBuilder.startStrField(
-                Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
+                        Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
                 .setDefaultValue("localhost")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverUri"))
                 .setSaveConsumer(config::setServerUri)
@@ -74,7 +77,7 @@ public class ModMenuIntegration implements ModMenuApi {
         networkCategory.addEntry(serverUriEntry);
 
         serverPortEntry = entryBuilder.startIntField(
-                Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
+                        Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
                 .setDefaultValue(8887)
                 .setMin(1)
                 .setMax(65535)
@@ -87,23 +90,54 @@ public class ModMenuIntegration implements ModMenuApi {
         }
         networkCategory.addEntry(serverPortEntry);
 
+        // パスワード設定
+        // パスワード設定
+        serverPasswordEntry = entryBuilder.startStrField(
+                        Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
+                .setDefaultValue("changeme")
+                .setTooltip(Component.translatable("tooltip.ghostmod.serverPassword"))
+                .setSaveConsumer(config::setServerPassword)
+                .build();
+
+        // Use reflection to access the protected textFieldWidget in TextFieldListEntry
+        // and set the render text provider to mask the password.
+        try {
+            java.lang.reflect.Field widgetField = me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry.class
+                    .getDeclaredField("textFieldWidget");
+            widgetField.setAccessible(true);
+            net.minecraft.client.gui.components.EditBox widget = (net.minecraft.client.gui.components.EditBox) widgetField
+                    .get(serverPasswordEntry);
+            if (widget != null) {
+                widget.setFormatter((text, firstCharacterIndex) -> Component.literal("*".repeat(text.length())).getVisualOrderText());
+            }
+        } catch (Exception e) {
+            // Log warning but don't crash if reflection fails (e.g. field name change)
+            LogUtils.getLogger().error("", e);
+        }
+
+        // pendingがあれば表示値を更新
+        if (pendingSnapshot != null) {
+            serverPasswordEntry.setValue(pendingSnapshot.serverPassword());
+        }
+        networkCategory.addEntry(serverPasswordEntry);
+
         // --- 接続管理 ---
         // 接続状態インジケーター
         networkCategory.addEntry(entryBuilder.startTextDescription(
-                Component.translatable("option.ghostmod.status", getStatusText()))
+                        Component.translatable("option.ghostmod.status", getStatusText()))
                 .build());
 
         // 接続先URI表示（接続中の場合のみ）
         URI connectedUri = GhostModClient.GHOST_SYNC_SERVICE.getConnectedUri();
         if (connectedUri != null) {
             networkCategory.addEntry(entryBuilder.startTextDescription(
-                    Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
+                            Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
                     .build());
         }
 
         // 接続/切断ボタン
         var reconnectButton = entryBuilder.startBooleanToggle(
-                Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
+                        Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
                 .setYesNoTextSupplier((connected) -> {
                     connectPushButton(connected, parent);
                     return Component.translatable(
@@ -130,7 +164,8 @@ public class ModMenuIntegration implements ModMenuApi {
     private GhostConfig.ConfigSnapshot createCurrentSnapshot() {
         return new GhostConfig.ConfigSnapshot(
                 serverUriEntry.getValue(),
-                serverPortEntry.getValue());
+                serverPortEntry.getValue(),
+                serverPasswordEntry.getValue());
     }
 
     // トースト通知を表示するヘルパーメソッド
@@ -151,7 +186,8 @@ public class ModMenuIntegration implements ModMenuApi {
                 GhostConfig.ConfigSnapshot currentSnapshot = createCurrentSnapshot();
                 try {
                     URI uri = new URI(currentSnapshot.getFullWebSocketUri());
-                    var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri, 3, TimeUnit.SECONDS);
+                    var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri,
+                            currentSnapshot.serverPassword(), 3, TimeUnit.SECONDS);
                     if (isConnected) {
                         // 接続成功: トースト通知のみ、保存はしない（保存は明示的にSaveボタンで行う）
                         showConnectionSuccessToast();

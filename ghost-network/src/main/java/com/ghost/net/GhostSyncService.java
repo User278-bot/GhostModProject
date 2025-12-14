@@ -22,24 +22,32 @@ public class GhostSyncService {
         this.ghostRegistry = ghostRegistry;
     }
 
-    public void connect(URI serverURI) {
+    public void connect(URI serverURI, String password) {
         if (this.isConnected()) {
             return;
         }
-        session = new GhostWebSocketClient(serverURI, ghostRegistry);
+        session = new GhostWebSocketClient(serverURI, ghostRegistry, password);
         session.connect();
     }
 
-    public boolean connectBlocking(URI servverURI, long timeout, TimeUnit unit) {
+    public boolean connectBlocking(URI servverURI, String password, long timeout, TimeUnit unit) {
         if (this.isConnected()) {
             LOGGER.info("Already connected");
             return true;
         }
-        session = new GhostWebSocketClient(servverURI, ghostRegistry);
+        session = new GhostWebSocketClient(servverURI, ghostRegistry, password);
         try {
-            return session.connectBlocking(timeout, unit);
+            boolean socketConnected = session.connectBlocking(timeout, unit);
+            if (!socketConnected) {
+                return false;
+            }
+            // 認証完了を待つ
+            // connectBlockingで消費した時間は考慮していないが、簡易実装として別途timeout待つ
+            return session.getAuthFuture().get(timeout, unit);
         } catch (Exception ex) {
-            LOGGER.error("Failed to connect:", ex);
+            LOGGER.error("Failed to connect or authenticate:", ex);
+            session.close();
+            session = null;
         }
         return false;
     }

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.loader.api.FabricLoader;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +16,7 @@ public class GhostConfig {
     // 設定項目のデフォルト値を定義
     private String serverUri = "ws://localhost";
     private int serverPort = 8887;
+    private String serverPassword = "changeme";
 
     // --- シングルトンパターンでインスタンスを管理 ---
     private static final GhostConfig INSTANCE = new GhostConfig();
@@ -45,6 +47,14 @@ public class GhostConfig {
         this.serverPort = serverPort;
     }
 
+    public String getServerPassword() {
+        return serverPassword;
+    }
+
+    public void setServerPassword(String serverPassword) {
+        this.serverPassword = serverPassword;
+    }
+
     // 組み立てた完全なURIを取得するヘルパーメソッド
     public String getFullWebSocketUri() {
         return "ws://" + getServerUri() + ":" + getServerPort();
@@ -64,7 +74,7 @@ public class GhostConfig {
             String json = GSON.toJson(this);
             Files.writeString(CONFIG_FILE, json);
 
-            LogUtils.getLogger().info("Configuration saved to: {}", CONFIG_FILE);
+            LogUtils.getLogger().debug("Configuration saved to: {}", CONFIG_FILE);
         } catch (IOException e) {
             LogUtils.getLogger().error("Failed to save configuration to file: {}", CONFIG_FILE, e);
         }
@@ -86,15 +96,20 @@ public class GhostConfig {
 
             // 読み込んだ値を現在のインスタンスにコピー
             if (loaded != null) {
-                this.serverPort = loaded.serverPort;
-                this.serverUri = loaded.serverUri;
-                LogUtils.getLogger().info("Configuration loaded from: {}", CONFIG_FILE);
+                restoreFrom(loaded);
+                LogUtils.getLogger().debug("Configuration loaded from: {}", CONFIG_FILE);
             }
         } catch (IOException e) {
             LogUtils.getLogger().error("Failed to load configuration from file: {}", CONFIG_FILE, e);
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to parse configuration file (using defaults): {}", CONFIG_FILE, e);
         }
+    }
+
+    private void restoreFrom(GhostConfig config) {
+        this.serverPort = config.serverPort;
+        this.serverUri = config.serverUri;
+        this.serverPassword = config.serverPassword;
     }
 
     // --- Mementoパターン: スナップショット機能 ---
@@ -104,7 +119,7 @@ public class GhostConfig {
      * 設定画面での編集作業中に一時的な値を保持するために使用します。
      */
     public ConfigSnapshot createSnapshot() {
-        return new ConfigSnapshot(serverUri, serverPort);
+        return new ConfigSnapshot(serverUri, serverPort, serverPassword);
     }
 
     /**
@@ -114,13 +129,14 @@ public class GhostConfig {
     public void restoreFrom(ConfigSnapshot snapshot) {
         this.serverUri = snapshot.serverUri();
         this.serverPort = snapshot.serverPort();
+        this.serverPassword = snapshot.serverPassword();
     }
 
     /**
      * 設定値を保持する不変のスナップショット。
      * 編集中の設定値を一時的に保持し、接続テストなどに使用します。
      */
-    public record ConfigSnapshot(String serverUri, int serverPort) {
+    public record ConfigSnapshot(String serverUri, int serverPort, String serverPassword) {
         /**
          * WebSocket接続用の完全なURIを組み立てます。
          */

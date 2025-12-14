@@ -27,6 +27,7 @@ public class FakeClientMain {
             Options options = new Options();
             options.addOption(Option.builder().longOpt("uuid").hasArg().desc("Player UUID").build());
             options.addOption(Option.builder().longOpt("uri").hasArg().desc("Server URI").build());
+            options.addOption(Option.builder().longOpt("password").hasArg().desc("Server Password").build());
 
             // --- 引数の解析 ---
             CommandLineParser parser = new DefaultParser();
@@ -41,6 +42,7 @@ public class FakeClientMain {
             // --- 接続情報の準備 ---
             String playerUuid = cmd.getOptionValue("uuid", java.util.UUID.randomUUID().toString());
             String serverUriString = cmd.getOptionValue("uri", "ws://localhost:8887");
+            String password = cmd.getOptionValue("password", "changeme");
 
             URI serverUri = new URI(serverUriString);
             String playerName = "TestBot-" + playerUuid.substring(0, 8);
@@ -52,7 +54,7 @@ public class FakeClientMain {
             LOGGER.info("Connecting to server: {} ...", serverUri);
 
             // 接続が完了するまで最大5秒間待機する
-            var connected = ghostSyncService.connectBlocking(serverUri, 5, TimeUnit.SECONDS);
+            var connected = ghostSyncService.connectBlocking(serverUri, password, 5, TimeUnit.SECONDS);
 
             if (!connected) {
                 LOGGER.error("Failed to connect to the server. Exiting.");

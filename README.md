@@ -70,13 +70,13 @@ java -jar GhostModServer-0.1.0.jar
 デフォルトではポート `8887` で待機します。ポートを変更したい場合は `--port` オプションを使用してください。
 
 ```bash
-java -jar GhostModServer-0.1.0.jar --port 9000
+java -jar GhostModServer-0.1.0.jar --port 9000 --password <password>
 ```
 
 ## 使い方
 1.  サーバーを起動しておきます（ローカルで遊ぶ場合は自分のPCで、離れた友達と遊ぶ場合はVPSなどで）。
 2.  Modを導入した状態で Minecraft を起動します。
-3.  Mod Menu から **Ghost Mod** の設定画面を開き、サーバーのアドレスとポートを入力して保存します。
+3.  Mod Menu から **Ghost Mod** の設定画面を開き、サーバーのアドレス・ポート、パスワードを入力して保存します。
 
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/5fbd055b-2497-4253-860d-ee5a92ee8c38)
 ![Minecraft_ 1 19 2 2025_12_07 15_25_29](https://github.com/user-attachments/assets/e9807190-bf03-4306-a0f0-47313b511237)
@@ -104,7 +104,7 @@ PowerShellスクリプトを使用して、サーバー・クライアント・F
 負荷テストや同期確認のために、ダミーのプレイヤーデータを送信する `FakeClient` が用意されています。
 
 ```bash
-./gradlew :ghost-fake_client:run --args="--uuid <UUID> --uri <URI>"
+./gradlew :ghost-fake_client:run --args="--uuid <UUID> --uri <URI> --password <password>"
 ```
 
 ## ライセンス

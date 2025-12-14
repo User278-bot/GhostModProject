@@ -13,5 +13,7 @@
   "option.ghostmod.connection.disconnect": "切断",
   "option.ghostmod.connectedUri": "接続先: %s",
   "toast.ghostmod.connected.title": "Ghost Mod",
-  "toast.ghostmod.connected.description": "サーバーに接続しました"
+  "toast.ghostmod.connected.description": "サーバーに接続しました",
+  "option.ghostmod.serverPassword": "パスワード",
+  "tooltip.ghostmod.serverPassword": "サーバーとの接続に必要なパスワード"
 }
