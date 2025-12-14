@@ -119,7 +119,6 @@ public class GhostModServer extends WebSocketServer {
                 }
                 var previous = playerDataMap.put(conn, playerData);
                 if (previous == null) {
-                    sendInitialPaket(conn);
                     var joinedPlayer = SerializationUtil.parsePlayerData(packet.getData());
                     sendJoinPacket(conn, joinedPlayer);
                 } else {
@@ -153,7 +152,8 @@ public class GhostModServer extends WebSocketServer {
                     conn.send(SerializationUtil.serializePacket(successPacket));
 
                     // 初期同期パケットを送るなど、通常のフローへ
-                    // (現状の実装では、クライアントがUPDATEを送ってきたタイミングでJOIN扱いになるため、ここでは何もしなくてよい)
+                    // (現状の実装では、クライアントがUPDATEを送ってきたタイミングでJOIN扱いになるため、ここでは何もしなくてよい(大嘘))
+                    sendInitialPaket(conn);
                 } else {
                     // 認証失敗
                     LOGGER.warn("Authentication FAILED for {}. Closing connection.", conn.getRemoteSocketAddress());
