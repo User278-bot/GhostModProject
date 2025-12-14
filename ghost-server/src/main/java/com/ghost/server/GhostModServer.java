@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.cli.*;
 
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -22,13 +23,17 @@ import java.util.stream.Collectors;
 
 public class GhostModServer extends WebSocketServer {
 
-    // 接続中のクライアントをスレッドセーフに管理するためのセット
-    private static final Map<WebSocket, PlayerData> playerDataMap = new ConcurrentHashMap<>();
+    private static final Map<WebSocket, GhostClientData> sessions = new ConcurrentHashMap<>();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GhostModServer.class);
 
+    // 接続中のクライアントをスレッドセーフに管理するためのセット
+    // private static final Map<WebSocket, PlayerData> playerDataMap = new ConcurrentHashMap<>();
+
+
     // 認証関連
-    private static final Map<WebSocket, String> pendingChallenges = new ConcurrentHashMap<>(); // Connection -> Nonce
-    private static final Map<WebSocket, Boolean> authenticatedSessions = new ConcurrentHashMap<>(); // Connection ->
+    // private static final Map<WebSocket, String> pendingChallenges = new ConcurrentHashMap<>(); // Connection -> Nonce
+    // private static final Map<WebSocket, Boolean> authenticatedSessions = new ConcurrentHashMap<>(); // Connection ->
     // IsAuthenticated
     private final String serverPassword;
 
@@ -55,12 +60,11 @@ public class GhostModServer extends WebSocketServer {
         LOGGER.info("New connection from: {}", conn.getRemoteSocketAddress());
 
         // 1. チャレンジ(乱数)の生成と送信
-        String nonce = ChapAuthenticator.generateNonce();
-        pendingChallenges.put(conn, nonce);
-        authenticatedSessions.put(conn, false);
+        var session = new GhostClientData(ChapAuthenticator.generateNonce());
+        sessions.put(conn, session);
 
         // クライアントへ送信
-        AuthData authData = new AuthData(nonce, null);
+        AuthData authData = new AuthData(session.nonce, null);
         // Note: Generic type T is inferred or we can cast. Serialization utilizes
         // object structure.
         GhostPacket<AuthData> challengePacket = new GhostPacket<>(MessageType.AUTH_CHALLENGE, authData);
@@ -72,10 +76,8 @@ public class GhostModServer extends WebSocketServer {
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         // クライアントが切断したときの処理
-        pendingChallenges.remove(conn);
-        authenticatedSessions.remove(conn);
-
-        var disconnectedPlayer = playerDataMap.remove(conn);
+        var removedData = sessions.remove(conn);
+        var disconnectedPlayer = removedData.playerData;
         if (disconnectedPlayer != null) {
             LOGGER.info("Player {} disconnected: {} (Code: {}, Reason: {}, Remote: {})", disconnectedPlayer.name(),
                     conn.getRemoteSocketAddress(), code, reason, remote);
@@ -97,7 +99,11 @@ public class GhostModServer extends WebSocketServer {
         }
 
         // 認証チェック
-        if (!Boolean.TRUE.equals(authenticatedSessions.get(conn))) {
+        var session = sessions.get(conn);
+        if (session == null) {
+            return;
+        }
+        if (!session.authenticated) {
             handleAuthHandshake(conn, message);
             return;
         }
@@ -117,14 +123,14 @@ public class GhostModServer extends WebSocketServer {
                     LOGGER.warn("Failed to parse PlayerData from {}", conn.getRemoteSocketAddress());
                     return;
                 }
-                var previous = playerDataMap.put(conn, playerData);
-                if (previous == null) {
+                if (session.playerData == null) {
                     var joinedPlayer = SerializationUtil.parsePlayerData(packet.getData());
                     sendJoinPacket(conn, joinedPlayer);
                 } else {
                     // ★重要：受信したメッセージを、送信元以外の全クライアントに転送（ブロードキャスト）する
                     sendUpdatePacket(playerData, conn);
                 }
+                session.playerData = playerData;
             }
         } catch (Exception ex) {
             LOGGER.error("Error processing message from {}", conn.getRemoteSocketAddress(), ex);
@@ -137,14 +143,16 @@ public class GhostModServer extends WebSocketServer {
             var packet = SerializationUtil.deserializePacket(message);
 
             if (packet != null && packet.getType() == MessageType.AUTH_RESPONSE) {
+                var session = sessions.get(conn);
                 AuthData authData = SerializationUtil.parseAuthData(packet.getData());
                 String clientHash = authData.hash();
-                String nonce = pendingChallenges.get(conn);
+                String nonce = session.nonce;
+
 
                 if (ChapAuthenticator.verify(serverPassword, nonce, clientHash)) {
                     // 認証成功
-                    authenticatedSessions.put(conn, true);
-                    pendingChallenges.remove(conn); // nonceはもう不要
+                    session.authenticated = true;
+                    session.nonce = null; // nonceはもう不要
                     LOGGER.info("Authentication SUCCESS for {}", conn.getRemoteSocketAddress());
 
                     // 認証成功パケットを送信
@@ -177,9 +185,7 @@ public class GhostModServer extends WebSocketServer {
         // ex.toString() の代わりにexを直接渡すことで、スタックトレースがログに出力され、デバッグが容易になります。
         if (conn != null) {
             LOGGER.error("An error occurred on connection {}:", conn.getRemoteSocketAddress(), ex);
-            playerDataMap.remove(conn);
-            authenticatedSessions.remove(conn);
-            pendingChallenges.remove(conn);
+            sessions.remove(conn);
         } else {
             LOGGER.error("An error occurred:", ex);
         }
@@ -197,8 +203,7 @@ public class GhostModServer extends WebSocketServer {
         synchronized (connections) {
             for (WebSocket conn : connections) {
                 // 認証済みのクライアントにのみブロードキャストする
-                if (conn != null && conn.isOpen() && !conn.equals(exclude)
-                        && Boolean.TRUE.equals(authenticatedSessions.get(conn))) {
+                if (conn != null && conn.isOpen() && !conn.equals(exclude)) {
                     conn.send(message);
                 }
             }
@@ -206,10 +211,10 @@ public class GhostModServer extends WebSocketServer {
     }
 
     private void sendInitialPaket(WebSocket newConnection) {
-        var excludePlayers = playerDataMap.entrySet().stream()
+        var excludePlayers = sessions.entrySet().stream()
                 .filter(
                         (entry) -> !entry.getKey().equals(newConnection))
-                .map(Map.Entry::getValue)
+                .map((entry) -> entry.getValue().playerData)
                 .collect(Collectors.toSet());
         if (excludePlayers.isEmpty()) {
             return;
@@ -236,10 +241,8 @@ public class GhostModServer extends WebSocketServer {
     private void sendUpdatePacket(PlayerData sendData, WebSocket exclude) {
         var packet = new GhostPacket<>(MessageType.UPDATE, sendData);
         var msg = SerializationUtil.serializePacket(packet);
-        authenticatedSessions
-                .entrySet()
-                .stream()
-                .filter((entry) -> Boolean.TRUE.equals(entry.getValue()))
+        sessions.entrySet().stream()
+                .filter((entry) -> entry.getValue().authenticated)
                 .filter((entry -> !exclude.equals(entry.getKey())))
                 .forEach((entry) -> {
                     var sock = entry.getKey();
