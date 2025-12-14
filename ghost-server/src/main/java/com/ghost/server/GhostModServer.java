@@ -123,7 +123,7 @@ public class GhostModServer extends WebSocketServer {
                     sendJoinPacket(conn, joinedPlayer);
                 } else {
                     // ★重要：受信したメッセージを、送信元以外の全クライアントに転送（ブロードキャスト）する
-                    broadcast(message, conn);
+                    sendUpdatePacket(playerData, conn);
                 }
             }
         } catch (Exception ex) {
@@ -231,6 +231,20 @@ public class GhostModServer extends WebSocketServer {
         var msg = SerializationUtil.serializePacket(joinPacket);
         broadcast(msg, conn);
         LOGGER.info("Player '{}' joined.", joinedPlayer.name());
+    }
+
+    private void sendUpdatePacket(PlayerData sendData, WebSocket exclude) {
+        var packet = new GhostPacket<>(MessageType.UPDATE, sendData);
+        var msg = SerializationUtil.serializePacket(packet);
+        authenticatedSessions
+                .entrySet()
+                .stream()
+                .filter((entry) -> Boolean.TRUE.equals(entry.getValue()))
+                .filter((entry -> !exclude.equals(entry.getKey())))
+                .forEach((entry) -> {
+                    var sock = entry.getKey();
+                    sock.send(msg);
+                });
     }
 
     public static void main(String[] args) {
