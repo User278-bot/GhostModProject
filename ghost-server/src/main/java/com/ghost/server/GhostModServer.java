@@ -32,6 +32,8 @@ public class GhostModServer extends WebSocketServer {
     private static final Map<InetAddress, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
     private static final double PACKETS_PER_SECOND = 20.0; // 1秒あたりの許容パケット数
 
+    private static final int GHOST_VISIBLE_CHUNK_RANGE = 80 * 80;
+
     public GhostModServer(int port, String password) {
         super(new InetSocketAddress(port));
         this.serverPassword = password;
@@ -115,8 +117,9 @@ public class GhostModServer extends WebSocketServer {
                     return;
                 }
                 if (session.playerData() == null) {
-                    var joinedPlayer = SerializationUtil.parsePlayerData(packet.getData());
-                    sendJoinPacket(conn, joinedPlayer);
+                    // 初回パケット受信時はJOINパケットを送らず、UPDATEのみ（クライアント側で処理）
+                    // 何もしない、あるいはログ出力のみ
+                    LOGGER.info("Player initialized: {}", conn.getRemoteSocketAddress());
                 } else {
                     sendUpdatePacket(playerData, conn);
                 }
@@ -138,7 +141,6 @@ public class GhostModServer extends WebSocketServer {
                 AuthData authData = SerializationUtil.parseAuthData(packet.getData());
                 String clientHash = authData.hash();
                 String nonce = session.nonce();
-
 
                 if (ChapAuthenticator.verify(serverPassword, nonce, clientHash)) {
                     // 認証成功
@@ -181,34 +183,18 @@ public class GhostModServer extends WebSocketServer {
         }
     }
 
-    /**
-     * 特定のクライアントを除いて、接続中の全クライアントにメッセージを送信する
-     *
-     * @param message 送信するメッセージ
-     * @param exclude 除外するクライアント
-     */
-    public void broadcast(String message, WebSocket exclude) {
-        // スレッドセーフなSetを安全にループするため、synchronizedブロックで囲みます
-        var connections = this.getConnections();
-        synchronized (connections) {
-            for (WebSocket conn : connections) {
-                // 認証済みのクライアントにのみブロードキャストする
-                if (conn != null && conn.isOpen() && !conn.equals(exclude)) {
-                    conn.send(message);
-                }
-            }
-        }
-    }
-
     private void sendInitialPaket(WebSocket newConnection) {
         var excludePlayers = sessions.entrySet().stream()
-                .filter(
-                        (entry) -> !entry.getKey().equals(newConnection))
+                .filter((entry) -> !entry.getKey().equals(newConnection))
+                .filter((entry) -> entry.getValue().isAuthenticated())
+                .filter((entry) -> entry.getValue().playerData() != null)
                 .map((entry) -> entry.getValue().playerData())
                 .collect(Collectors.toSet());
         if (excludePlayers.isEmpty()) {
             return;
         }
+
+        /*将来的には読み込み範囲内のみ送信するようにする*/
 
         var packet = new GhostPacket<>(MessageType.INITIAL_SYNC, excludePlayers);
         var msg = SerializationUtil.serializePacket(packet);
@@ -221,31 +207,40 @@ public class GhostModServer extends WebSocketServer {
         broadcast(msg);
     }
 
-    private void sendJoinPacket(WebSocket conn, PlayerData joinedPlayer) {
-        var joinPacket = new GhostPacket<>(MessageType.JOIN, joinedPlayer);
-        var msg = SerializationUtil.serializePacket(joinPacket);
-        broadcast(msg, conn);
-        LOGGER.info("Player '{}' joined.", joinedPlayer.name());
-    }
+    private void sendUpdatePacket(final PlayerData sendData, final WebSocket exclude) {
+        final var packet = new GhostPacket<>(MessageType.UPDATE, sendData);
+        final var despawnPacket = new GhostPacket<>(MessageType.DESPAWN, sendData.uuid());
+        final var update = SerializationUtil.serializePacket(packet);
+        final var despawn = SerializationUtil.serializePacket(despawnPacket);
+        final var targetUuid = sendData.uuid();
 
-    private void sendUpdatePacket(PlayerData sendData, WebSocket exclude) {
-        var packet = new GhostPacket<>(MessageType.UPDATE, sendData);
-        var msg = SerializationUtil.serializePacket(packet);
         sessions.entrySet().stream()
-                .filter((entry) -> entry.getValue().isAuthenticated())
                 .filter((entry -> !exclude.equals(entry.getKey())))
+                .filter((entry) -> entry.getValue().isAuthenticated())
+                .filter((entry) -> entry.getValue().playerData() != null)
                 .forEach((entry) -> {
                     var sock = entry.getKey();
-                    sock.send(msg);
+                    var clientData = entry.getValue();
+                    var tracked = clientData.trackedPlayers();
+
+                    if (within_range(sendData, clientData.playerData())) {
+                        // 範囲内
+                        tracked.add(targetUuid);
+                        sock.send(update);
+                    } else if (tracked.contains(targetUuid)) {
+                        // 追跡中だったが範囲外に出た: DESPAWN送信してリストから削除
+                        tracked.remove(targetUuid);
+                        sock.send(despawn);
+                    }
                 });
     }
 
-    private GhostClientData getSession(WebSocket conn) {
-        return sessions.get(conn);
-    }
-
-    private void updateSession(WebSocket conn, GhostClientData newSession) {
-        sessions.put(conn, newSession);
+    private boolean within_range(PlayerData pl1, PlayerData pl2) {
+        var diff_x = pl1.pos().x() - pl2.pos().x();
+        var diff_z = pl1.pos().z() - pl2.pos().z();
+        var horizonal_distance = diff_x * diff_x + diff_z * diff_z;
+        return pl1.dimension().equals(pl2.dimension())
+                && horizonal_distance < GHOST_VISIBLE_CHUNK_RANGE;
     }
 
     public static void main(String[] args) {

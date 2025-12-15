@@ -25,7 +25,7 @@ public class GhostEntitySynchronizer {
     }
 
     private void updateGhosts(ClientLevel level, Map<String, GhostPlayerEntity> existingGhosts,
-                              Collection<PlayerData> latestGhosts) {
+            Collection<PlayerData> latestGhosts) {
         for (PlayerData data : latestGhosts) {
             if (existingGhosts.containsKey(data.uuid())) {
                 // 既にエンティティが存在する場合 -> 状態を更新
@@ -52,7 +52,8 @@ public class GhostEntitySynchronizer {
                 // newGhost.setUUID(UUID.fromString(data.uuid()));
 
                 level.addPlayer(newGhost.getId(), newGhost);
-                LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(), newGhost.getUUID());
+                LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(),
+                        newGhost.getUUID());
             }
         }
     }
@@ -68,6 +69,9 @@ public class GhostEntitySynchronizer {
         if (level == null)
             return;
 
+        // 1. タイムアウトしたゴーストを一括削除 (3秒 = 3000ms)
+        ghostRegistry.cleanupGhosts(3000);
+
         // 現在ワールドにいるゴーストエンティティを一旦すべて集める
         Map<String, GhostPlayerEntity> existingGhosts = new HashMap<>();
         for (Entity entity : level.entitiesForRendering()) {
@@ -79,10 +83,26 @@ public class GhostEntitySynchronizer {
         // GhostRegistryから最新のゴースト情報を取得
         Collection<PlayerData> latestGhosts = ghostRegistry.getAllGhosts();
 
+        // 2. 距離チェック (クライアント側でも能動的に削除するため)
+        // サーバー側の配信範囲より少し広めに取るのが一般的だが、
+        // プレイヤーがテレポート等で急激に遠ざかった場合の即時消去用として機能する。
+        double retentionDistanceSqr = 5 * 5; // 仮: 128ブロック
+        if (Minecraft.getInstance().player != null) {
+            var playerPos = Minecraft.getInstance().player.position();
+            // 距離外のものはリストから除外する（＝下のremoveGhostsで消される）
+            latestGhosts = latestGhosts.stream()
+                    .filter(data -> {
+                        double dx = data.pos().x() - playerPos.x;
+                        double dz = data.pos().z() - playerPos.z; // Y軸無視の水平距離
+                        return (dx * dx + dz * dz) <= retentionDistanceSqr;
+                    })
+                    .toList();
+        }
+
         // Registryの情報を元に、エンティティを更新または新規スポーン
         updateGhosts(level, existingGhosts, latestGhosts);
 
-        // Registryに存在しなくなったゴーストエンティティをワールドから削除
+        // Registryに存在しなくなった（または距離外判定された）ゴーストエンティティをワールドから削除
         removeGhosts(existingGhosts);
     }
 
@@ -102,8 +122,8 @@ public class GhostEntitySynchronizer {
                 if (updatedProfile != null) {
                     CompletableFuture<ResourceLocation> textureFuture = new CompletableFuture<>();
 
-                    Minecraft.getInstance().execute(() ->
-                            Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
+                    Minecraft.getInstance()
+                            .execute(() -> Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
                                     (type, location, profile1) -> {
                                         if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
                                             textureFuture.complete(location);

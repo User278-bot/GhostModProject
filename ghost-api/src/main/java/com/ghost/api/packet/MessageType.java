@@ -24,6 +24,7 @@ public enum MessageType {
      * This message will contain the UUID of the player who left.
      */
     LEAVE,
+    DESPAWN,
     AUTH_CHALLENGE,
     AUTH_RESPONSE,
     AUTH_SUCCESS,
