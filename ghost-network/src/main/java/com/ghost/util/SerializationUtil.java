@@ -1,5 +1,6 @@
 package com.ghost.util;
 
+import com.ghost.api.dto.AuthData;
 import com.ghost.api.packet.GhostPacket;
 import com.ghost.api.dto.PlayerData;
 import com.google.gson.Gson;
@@ -11,6 +12,11 @@ import java.util.List;
 
 public final class SerializationUtil {
     private static final Gson GSON = new Gson();
+
+
+    public static Gson getGson() {
+        return GSON;
+    }
 
     private SerializationUtil() {
     }
@@ -30,13 +36,11 @@ public final class SerializationUtil {
         return GSON.fromJson(element, PlayerData.class);
     }
 
-    public static String parseUUID(JsonElement element) {
-        return GSON.fromJson(element, String.class);
+    public static AuthData parseAuthData(JsonElement element) {
+        return GSON.fromJson(element, AuthData.class);
     }
 
-    public static List<PlayerData> parsePlayerDataList(JsonElement element) {
-        Type listType = new TypeToken<List<PlayerData>>() {
-        }.getType();
-        return GSON.fromJson(element, listType);
+    public static String parseUUID(JsonElement element) {
+        return GSON.fromJson(element, String.class);
     }
 }

@@ -13,5 +13,7 @@
   "option.ghostmod.connection.disconnect": "DISCONNECT",
   "option.ghostmod.connectedUri": "Connected to: %s",
   "toast.ghostmod.connected.title": "Ghost Mod",
-  "toast.ghostmod.connected.description": "Connected to server"
+  "toast.ghostmod.connected.description": "Connected to server",
+  "option.ghostmod.serverPassword": "Server Password",
+  "tooltip.ghostmod.serverPassword": "The password of the WebSocket server."
 }

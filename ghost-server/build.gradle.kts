@@ -14,6 +14,7 @@ version = serverVersion
 dependencies {
     implementation(project(":ghost-network"))
     implementation(libs.websocket)
+    implementation(libs.guava)
     implementation(libs.commons.cli)
     runtimeOnly(libs.slf4j.simple)
     testImplementation(platform(libs.junit.bom))

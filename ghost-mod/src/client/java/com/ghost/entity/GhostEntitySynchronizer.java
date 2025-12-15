@@ -25,7 +25,7 @@ public class GhostEntitySynchronizer {
     }
 
     private void updateGhosts(ClientLevel level, Map<String, GhostPlayerEntity> existingGhosts,
-                              Collection<PlayerData> latestGhosts) {
+            Collection<PlayerData> latestGhosts) {
         for (PlayerData data : latestGhosts) {
             if (existingGhosts.containsKey(data.uuid())) {
                 // 既にエンティティが存在する場合 -> 状態を更新
@@ -52,7 +52,8 @@ public class GhostEntitySynchronizer {
                 // newGhost.setUUID(UUID.fromString(data.uuid()));
 
                 level.addPlayer(newGhost.getId(), newGhost);
-                LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(), newGhost.getUUID());
+                LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(),
+                        newGhost.getUUID());
             }
         }
     }
@@ -82,7 +83,7 @@ public class GhostEntitySynchronizer {
         // Registryの情報を元に、エンティティを更新または新規スポーン
         updateGhosts(level, existingGhosts, latestGhosts);
 
-        // Registryに存在しなくなったゴーストエンティティをワールドから削除
+        // Registryに存在しなくなった（または距離外判定された）ゴーストエンティティをワールドから削除
         removeGhosts(existingGhosts);
     }
 
@@ -102,8 +103,8 @@ public class GhostEntitySynchronizer {
                 if (updatedProfile != null) {
                     CompletableFuture<ResourceLocation> textureFuture = new CompletableFuture<>();
 
-                    Minecraft.getInstance().execute(() ->
-                            Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
+                    Minecraft.getInstance()
+                            .execute(() -> Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
                                     (type, location, profile1) -> {
                                         if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
                                             textureFuture.complete(location);
