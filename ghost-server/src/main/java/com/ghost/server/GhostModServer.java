@@ -259,7 +259,7 @@ public class GhostModServer extends WebSocketServer {
 
         // --- 1. 引数をパースして設定ファイルパスを取得 ---
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = null;
+        CommandLine cmd;
         try {
             cmd = parser.parse(options, args);
             if (cmd.hasOption("config")) {

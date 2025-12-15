@@ -4,7 +4,7 @@ gson = "2.8.9"
 websocket = "1.6.0"
 slf4j = "2.0.17"
 junit = "5.10.0"
-guava = "33.3.1-jre"
+guava = "33.5.0-jre"
 
 # Other Dependencies
 commons-cli = "1.6.0"
