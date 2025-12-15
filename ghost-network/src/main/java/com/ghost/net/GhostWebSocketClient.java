@@ -48,7 +48,7 @@ public class GhostWebSocketClient extends WebSocketClient {
                 return;
             var type = packet.getType();
             var data = packet.getData();
-            LOGGER.debug("type: {},data: {}", type, data);
+            LOGGER.info("type: {},data: {}", type, data);
             switch (type) {
                 case AUTH_CHALLENGE:
                     if (data != null) {
@@ -84,14 +84,11 @@ public class GhostWebSocketClient extends WebSocketClient {
                         GHOST_REGISTRY.removeGhost(uuid);
                     }
                     break;
-                case INITIAL_SYNC:
+                case DESPAWN:
                     if (data != null) {
-                        var list = SerializationUtil.parsePlayerDataList(data);
-                        for (PlayerData playerData : list) {
-                            GHOST_REGISTRY.updateGhost(playerData);
-                        }
+                        var despawn = SerializationUtil.parseUUID(data);
+                        GHOST_REGISTRY.removeGhost(despawn);
                     }
-                    break;
                 default:
                     break;
             }

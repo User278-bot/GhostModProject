@@ -23,14 +23,20 @@ public class GhostPlayerEntity extends RemotePlayer {
     private static final int INTERPOLATION_STEPS = 4;
 
     public GhostPlayerEntity(final ClientLevel world, final GameProfile profile, final PlayerData data,
-                             CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
-        /*? >=1.20.1 {*/
+            CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
+        /* ? >=1.20.1 { */
         super(world, profile);
-        /*?} else {*/
-        /*super(world, profile, null);
-         *///?}
+        /* ?} else { */
+        /* super(world, profile, null); */// ?}
         this.ghostUuid = data.uuid();
-        updateFromData(data);
+
+        // 初期座標を確定させる（ lerpToを呼ばないため、見た目がスライドしない）
+        this.setPos(data.pos().x(), data.pos().y(), data.pos().z());
+        this.setRot(data.rot().y(), data.rot().x());
+        this.setYHeadRot(data.rot().y());
+
+        // 状態のみ同期（スキンのパーツやポーズなど）
+        syncState(data);
 
         if (skinFuture != null) {
             skinFuture.thenAcceptAsync(location -> this.skinLocation = location, Minecraft.getInstance());
@@ -55,10 +61,13 @@ public class GhostPlayerEntity extends RemotePlayer {
         );
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
 
+        syncState(data);
+    }
+
+    private void syncState(PlayerData data) {
         if (data.swingTime() == 1) {
             this.swing(InteractionHand.valueOf(data.swingArm()));
         }
-
 
         try {
             Pose newPose = Pose.valueOf(data.pose());
