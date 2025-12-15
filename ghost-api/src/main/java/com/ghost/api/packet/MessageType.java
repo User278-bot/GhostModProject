@@ -8,12 +8,6 @@ public enum MessageType {
     UPDATE,
 
     /**
-     * Sent to a newly connected client, containing the initial state of all
-     * existing players.
-     */
-    INITIAL_SYNC,
-
-    /**
      * Sent to all clients when a new player joins the server.
      * Often, its data is the same as an UPDATE message.
      */

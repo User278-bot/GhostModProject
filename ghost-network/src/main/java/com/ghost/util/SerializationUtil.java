@@ -43,10 +43,4 @@ public final class SerializationUtil {
     public static String parseUUID(JsonElement element) {
         return GSON.fromJson(element, String.class);
     }
-
-    public static List<PlayerData> parsePlayerDataList(JsonElement element) {
-        Type listType = new TypeToken<List<PlayerData>>() {
-        }.getType();
-        return GSON.fromJson(element, listType);
-    }
 }

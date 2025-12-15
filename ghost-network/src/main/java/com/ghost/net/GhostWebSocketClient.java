@@ -84,14 +84,6 @@ public class GhostWebSocketClient extends WebSocketClient {
                         GHOST_REGISTRY.removeGhost(uuid);
                     }
                     break;
-                case INITIAL_SYNC:
-                    if (data != null) {
-                        var list = SerializationUtil.parsePlayerDataList(data);
-                        for (PlayerData playerData : list) {
-                            GHOST_REGISTRY.updateGhost(playerData);
-                        }
-                    }
-                    break;
                 case DESPAWN:
                     if (data != null) {
                         var despawn = SerializationUtil.parseUUID(data);

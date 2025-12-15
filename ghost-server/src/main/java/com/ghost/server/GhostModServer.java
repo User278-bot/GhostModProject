@@ -18,7 +18,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 public class GhostModServer extends WebSocketServer {
 
@@ -153,8 +152,6 @@ public class GhostModServer extends WebSocketServer {
                     conn.send(SerializationUtil.serializePacket(successPacket));
 
                     // 初期同期パケットを送るなど、通常のフローへ
-                    // (現状の実装では、クライアントがUPDATEを送ってきたタイミングでJOIN扱いになるため、ここでは何もしなくてよい(大嘘))
-                    sendInitialPaket(conn);
                 } else {
                     // 認証失敗
                     LOGGER.warn("Authentication FAILED for {}. Closing connection.", conn.getRemoteSocketAddress());
@@ -182,22 +179,6 @@ public class GhostModServer extends WebSocketServer {
         } else {
             LOGGER.error("An error occurred:", ex);
         }
-    }
-
-    private void sendInitialPaket(WebSocket newConnection) {
-        var excludePlayers = sessions.entrySet().stream()
-                .filter((entry) -> !entry.getKey().equals(newConnection))
-                .filter((entry) -> entry.getValue().isAuthenticated())
-                .filter((entry) -> entry.getValue().playerData() != null)
-                .map((entry) -> entry.getValue().playerData())
-                .collect(Collectors.toSet());
-        if (excludePlayers.isEmpty()) {
-            return;
-        }
-
-        var packet = new GhostPacket<>(MessageType.INITIAL_SYNC, excludePlayers);
-        var msg = SerializationUtil.serializePacket(packet);
-        newConnection.send(msg);
     }
 
     private void sendLeavePacket(final PlayerData playerData) {
