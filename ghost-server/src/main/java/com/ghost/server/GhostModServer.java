@@ -34,7 +34,7 @@ public class GhostModServer extends WebSocketServer {
 
     // レート制限関連
     private static final Map<InetAddress, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
-    private static final double PACKETS_PER_SECOND = 20.0; // 1秒あたりの許容パケット数
+    private static final double PACKETS_PER_SECOND = 50.0; // 1秒あたりの許容パケット数 (Tickレート20Hz + ゆとり)
 
     public GhostModServer(int port, String password) {
         super(new InetSocketAddress(port));
