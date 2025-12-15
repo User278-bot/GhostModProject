@@ -227,7 +227,7 @@ public class GhostModServer extends WebSocketServer {
 
                     if (within_range(sendData, clientData.playerData())) {
                         // 範囲内
-                        if (!tracked.add(targetUuid)) {
+                        if (tracked.add(targetUuid)) {
                             var excludePlayerData = entry.getValue().playerData();
                             var excludePacket = new GhostPacket<>(MessageType.UPDATE, excludePlayerData);
                             var excludeMsg = SerializationUtil.serializePacket(excludePacket);
