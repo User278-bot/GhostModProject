@@ -33,7 +33,7 @@ public class GhostPlayerEntity extends RemotePlayer {
         // 初期座標を確定させる（ lerpToを呼ばないため、見た目がスライドしない）
         this.setPos(data.pos().x(), data.pos().y(), data.pos().z());
         this.setRot(data.rot().y(), data.rot().x());
-        this.setYHeadRot(data.rot().x());
+        this.setYHeadRot(data.rot().y());
 
         // 状態のみ同期（スキンのパーツやポーズなど）
         syncState(data);
