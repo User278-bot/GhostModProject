@@ -28,14 +28,17 @@ public class GhostModServer extends WebSocketServer {
     private final String serverPassword;
 
     // レート制限関連
-    private static final Map<InetAddress, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
-    private static final double PACKETS_PER_SECOND = 50.0; // 1秒あたりの許容パケット数 (Tickレート20Hz + ゆとり)
+    private final Map<InetAddress, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
+    private final double packetsPerSecond;
 
-    private static final int GHOST_VISIBLE_CHUNK_RANGE = 5 * 5;
+    // 視認距離の二乗（ブロック単位）
+    private final double visibleRangeSqr;
 
-    public GhostModServer(int port, String password) {
+    public GhostModServer(int port, String password, double visibleRange, double packetsPerSecond) {
         super(new InetSocketAddress(port));
         this.serverPassword = password;
+        this.visibleRangeSqr = visibleRange * visibleRange;
+        this.packetsPerSecond = packetsPerSecond;
     }
 
     @Override
@@ -43,6 +46,8 @@ public class GhostModServer extends WebSocketServer {
         // サーバーが起動したときの処理
         LOGGER.info("Server started on port: {}", getPort());
         LOGGER.info("Authentication enabled using CHAP.");
+        LOGGER.info("Visibility Range: {} blocks", Math.sqrt(visibleRangeSqr));
+        LOGGER.info("Rate Limit: {} packets/sec", packetsPerSecond);
         setConnectionLostTimeout(100); // 接続タイムアウトの設定（秒）
     }
 
@@ -83,7 +88,7 @@ public class GhostModServer extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
         // レート制限チェック
         InetAddress address = conn.getRemoteSocketAddress().getAddress();
-        RateLimiter limiter = rateLimiters.computeIfAbsent(address, k -> RateLimiter.create(PACKETS_PER_SECOND));
+        RateLimiter limiter = rateLimiters.computeIfAbsent(address, k -> RateLimiter.create(packetsPerSecond));
 
         if (!limiter.tryAcquire()) {
             LOGGER.warn("Rate limit exceeded for {}", address);
@@ -233,44 +238,94 @@ public class GhostModServer extends WebSocketServer {
         var diff_z = pl1.pos().z() - pl2.pos().z();
         var horizonal_distance = diff_x * diff_x + diff_z * diff_z;
         return pl1.dimension().equals(pl2.dimension())
-                && horizonal_distance < GHOST_VISIBLE_CHUNK_RANGE;
+                && horizonal_distance < visibleRangeSqr;
     }
 
     public static void main(String[] args) {
-        int port = 8887; // デフォルトポート
-        String password = "changeme"; // デフォルトパスワード
+        // デフォルト設定
+        int port = 8887;
+        String password = null;
+        String configFile = "server.properties";
+        double viewDistance = 5 * 16; // デフォルト5 chunk
+        double rateLimit = 50.0; // デフォルト50パケット/秒
 
         // --- コマンドライン引数の定義 ---
         Options options = new Options();
         options.addOption(Option.builder().longOpt("port").hasArg().desc("Server Port").build());
         options.addOption(Option.builder().longOpt("password").hasArg().desc("Server Password").build());
+        options.addOption(Option.builder().longOpt("config").hasArg().desc("Config File Path").build());
+        options.addOption(Option.builder().longOpt("view-distance").hasArg().desc("View Distance (Blocks)").build());
+        options.addOption(Option.builder().longOpt("rate-limit").hasArg().desc("Rate Limit (Packets/Sec)").build());
 
-        // --- 引数の解析 ---
+        // --- 1. 引数をパースして設定ファイルパスを取得 ---
         CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = null;
         try {
-            CommandLine cmd = parser.parse(options, args);
-            if (cmd.hasOption("port")) {
-                port = Integer.parseInt(cmd.getOptionValue("port"));
-            }
-            if (cmd.hasOption("password")) {
-                password = cmd.getOptionValue("password");
-            } else {
-                // デフォルトパスワードにランダムな4桁の数字を付与
-                int randomSuffix = (int) (Math.random() * 10000);
-                password += String.format("%04d", randomSuffix);
-                LOGGER.warn("No password provided. Using generated password: '{}'", password);
-                LOGGER.warn("Please use --password <your_password> to set a secure password.");
+            cmd = parser.parse(options, args);
+            if (cmd.hasOption("config")) {
+                configFile = cmd.getOptionValue("config");
+                LOGGER.info(configFile);
             }
         } catch (ParseException e) {
             LOGGER.error("Failed to parse command line arguments: {}", e.getMessage());
             return;
-        } catch (NumberFormatException e) {
-            LOGGER.error("Invalid port number format.");
-            return;
         }
 
+        // --- 2. 設定ファイル読み込み ---
+        java.util.Properties props = new java.util.Properties();
+        java.io.File file = new java.io.File(configFile);
+        if (file.exists()) {
+            try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                props.load(fis);
+                LOGGER.info("Loaded configuration from {}", configFile);
+            } catch (java.io.IOException e) {
+                LOGGER.warn("Failed to load config file: {}", e.getMessage());
+            }
+        } else {
+            LOGGER.info("Config file {} not found. Using defaults.", configFile);
+        }
+
+        // --- 3. 設定の適用 (Priority: CLI > Properties > Default) ---
+
+        // Port
+        if (cmd.hasOption("port")) {
+            port = Integer.parseInt(cmd.getOptionValue("port"));
+        } else if (props.containsKey("port")) {
+            port = Integer.parseInt(props.getProperty("port"));
+        }
+
+        // Password
+        if (cmd.hasOption("password")) {
+            password = cmd.getOptionValue("password");
+        } else if (props.containsKey("password")) {
+            password = props.getProperty("password");
+        }
+
+        // 自動生成ロジック
+        if (password == null || password.isEmpty()) {
+            password = "changeme";
+            int randomSuffix = (int) (Math.random() * 10000);
+            password += String.format("%04d", randomSuffix);
+            LOGGER.warn("No password provided. Using generated password: '{}'", password);
+        }
+
+        // View Distance
+        if (cmd.hasOption("view-distance")) {
+            viewDistance = Double.parseDouble(cmd.getOptionValue("view-distance"));
+        } else if (props.containsKey("view-distance")) {
+            viewDistance = Double.parseDouble(props.getProperty("view-distance"));
+        }
+
+        // Rate Limit
+        if (cmd.hasOption("rate-limit")) {
+            rateLimit = Double.parseDouble(cmd.getOptionValue("rate-limit"));
+        } else if (props.containsKey("rate-limit")) {
+            rateLimit = Double.parseDouble(props.getProperty("rate-limit"));
+        }
+
+        // --- サーバー起動 ---
         try {
-            GhostModServer server = new GhostModServer(port, password);
+            GhostModServer server = new GhostModServer(port, password, viewDistance, rateLimit);
             server.start(); // サーバーを起動
         } catch (Exception ex) {
             LOGGER.error("Failed to start WebSocket server", ex);
