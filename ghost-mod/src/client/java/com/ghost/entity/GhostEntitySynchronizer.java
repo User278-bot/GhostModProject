@@ -69,9 +69,6 @@ public class GhostEntitySynchronizer {
         if (level == null)
             return;
 
-        // 1. タイムアウトしたゴーストを一括削除 (3秒 = 3000ms)
-        ghostRegistry.cleanupGhosts(3000);
-
         // 現在ワールドにいるゴーストエンティティを一旦すべて集める
         Map<String, GhostPlayerEntity> existingGhosts = new HashMap<>();
         for (Entity entity : level.entitiesForRendering()) {
@@ -82,22 +79,6 @@ public class GhostEntitySynchronizer {
 
         // GhostRegistryから最新のゴースト情報を取得
         Collection<PlayerData> latestGhosts = ghostRegistry.getAllGhosts();
-
-        // 2. 距離チェック (クライアント側でも能動的に削除するため)
-        // サーバー側の配信範囲より少し広めに取るのが一般的だが、
-        // プレイヤーがテレポート等で急激に遠ざかった場合の即時消去用として機能する。
-        double retentionDistanceSqr = 5 * 5; // 仮: 128ブロック
-        if (Minecraft.getInstance().player != null) {
-            var playerPos = Minecraft.getInstance().player.position();
-            // 距離外のものはリストから除外する（＝下のremoveGhostsで消される）
-            latestGhosts = latestGhosts.stream()
-                    .filter(data -> {
-                        double dx = data.pos().x() - playerPos.x;
-                        double dz = data.pos().z() - playerPos.z; // Y軸無視の水平距離
-                        return (dx * dx + dz * dz) <= retentionDistanceSqr;
-                    })
-                    .toList();
-        }
 
         // Registryの情報を元に、エンティティを更新または新規スポーン
         updateGhosts(level, existingGhosts, latestGhosts);

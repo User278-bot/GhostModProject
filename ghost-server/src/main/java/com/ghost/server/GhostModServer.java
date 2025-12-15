@@ -32,7 +32,7 @@ public class GhostModServer extends WebSocketServer {
     private static final Map<InetAddress, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
     private static final double PACKETS_PER_SECOND = 20.0; // 1秒あたりの許容パケット数
 
-    private static final int GHOST_VISIBLE_CHUNK_RANGE = 80 * 80;
+    private static final int GHOST_VISIBLE_CHUNK_RANGE = 5 * 5;
 
     public GhostModServer(int port, String password) {
         super(new InetSocketAddress(port));
@@ -124,7 +124,8 @@ public class GhostModServer extends WebSocketServer {
                     sendUpdatePacket(playerData, conn);
                 }
 
-                sessions.put(conn, new GhostClientData(session.nonce(), true, playerData));
+                // 追跡状態（trackedPlayers）を引き継いで更新
+                sessions.put(conn, new GhostClientData(session.nonce(), true, playerData, session.trackedPlayers()));
             }
         } catch (Exception ex) {
             LOGGER.error("Error processing message from {}", conn.getRemoteSocketAddress(), ex);
@@ -194,8 +195,6 @@ public class GhostModServer extends WebSocketServer {
             return;
         }
 
-        /*将来的には読み込み範囲内のみ送信するようにする*/
-
         var packet = new GhostPacket<>(MessageType.INITIAL_SYNC, excludePlayers);
         var msg = SerializationUtil.serializePacket(packet);
         newConnection.send(msg);
@@ -214,6 +213,8 @@ public class GhostModServer extends WebSocketServer {
         final var despawn = SerializationUtil.serializePacket(despawnPacket);
         final var targetUuid = sendData.uuid();
 
+        final var excludeSession = sessions.get(exclude);
+
         sessions.entrySet().stream()
                 .filter((entry -> !exclude.equals(entry.getKey())))
                 .filter((entry) -> entry.getValue().isAuthenticated())
@@ -222,15 +223,26 @@ public class GhostModServer extends WebSocketServer {
                     var sock = entry.getKey();
                     var clientData = entry.getValue();
                     var tracked = clientData.trackedPlayers();
+                    var entryUuid = clientData.playerData().uuid();
 
                     if (within_range(sendData, clientData.playerData())) {
                         // 範囲内
-                        tracked.add(targetUuid);
+                        if (!tracked.add(targetUuid)) {
+                            var excludePlayerData = entry.getValue().playerData();
+                            var excludePacket = new GhostPacket<>(MessageType.UPDATE, excludePlayerData);
+                            var excludeMsg = SerializationUtil.serializePacket(excludePacket);
+                            exclude.send(excludeMsg);
+                        }
                         sock.send(update);
                     } else if (tracked.contains(targetUuid)) {
                         // 追跡中だったが範囲外に出た: DESPAWN送信してリストから削除
                         tracked.remove(targetUuid);
                         sock.send(despawn);
+
+                        var excludePacket = new GhostPacket<>(MessageType.DESPAWN, entryUuid);
+                        var excludeMsg = SerializationUtil.serializePacket(excludePacket);
+                        excludeSession.trackedPlayers().remove(entryUuid);
+                        exclude.send(excludeMsg);
                     }
                 });
     }

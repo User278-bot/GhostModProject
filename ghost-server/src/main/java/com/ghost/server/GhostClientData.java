@@ -12,10 +12,14 @@ public final class GhostClientData {
     private final Set<String> trackedPlayers;
 
     public GhostClientData(String nonce, boolean isAuthenticated, PlayerData playerData) {
+        this(nonce, isAuthenticated, playerData, ConcurrentHashMap.newKeySet());
+    }
+
+    public GhostClientData(String nonce, boolean isAuthenticated, PlayerData playerData, Set<String> trackedPlayers) {
         this.nonce = nonce;
         this.isAuthenticated = isAuthenticated;
         this.playerData = playerData;
-        this.trackedPlayers = ConcurrentHashMap.newKeySet();
+        this.trackedPlayers = trackedPlayers;
     }
 
     public String nonce() {
