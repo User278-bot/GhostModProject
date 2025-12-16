@@ -6,7 +6,6 @@ import com.ghost.api.packet.GhostPacket;
 import com.ghost.api.packet.MessageType;
 import com.ghost.net.auth.ChapAuthenticator;
 import com.ghost.util.SerializationUtil;
-import com.google.common.util.concurrent.RateLimiter;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -21,6 +20,43 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class GhostModServer extends WebSocketServer {
 
+    // 簡易的なトークンバケットアルゴリズムの実装
+    static class SimpleRateLimiter {
+        private final double permitsPerSecond;
+        private double tokens;
+        private long lastRefillTimestamp;
+
+        public SimpleRateLimiter(double permitsPerSecond) {
+            this.permitsPerSecond = permitsPerSecond;
+            this.tokens = permitsPerSecond; // Start full
+            this.lastRefillTimestamp = System.nanoTime();
+        }
+
+        public synchronized boolean tryAcquire() {
+            refill();
+            if (tokens >= 1.0) {
+                tokens -= 1.0;
+                return true;
+            }
+            return false;
+        }
+
+        private void refill() {
+            long now = System.nanoTime();
+            double secondsPassed = (now - lastRefillTimestamp) / 1_000_000_000.0;
+            double newTokens = secondsPassed * permitsPerSecond;
+
+            if (newTokens > 0) {
+                tokens = Math.min(permitsPerSecond, tokens + newTokens);
+                lastRefillTimestamp = now;
+            }
+        }
+
+        public static SimpleRateLimiter create(double permitsPerSecond) {
+            return new SimpleRateLimiter(permitsPerSecond);
+        }
+    }
+
     private static final Map<WebSocket, GhostClientData> sessions = new ConcurrentHashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GhostModServer.class);
@@ -28,7 +64,7 @@ public class GhostModServer extends WebSocketServer {
     private final String serverPassword;
 
     // レート制限関連
-    private final Map<InetAddress, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
+    private final Map<InetAddress, SimpleRateLimiter> rateLimiters = new ConcurrentHashMap<>();
     private final double packetsPerSecond;
 
     // 視認距離の二乗（ブロック単位）
@@ -88,7 +124,8 @@ public class GhostModServer extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
         // レート制限チェック
         InetAddress address = conn.getRemoteSocketAddress().getAddress();
-        RateLimiter limiter = rateLimiters.computeIfAbsent(address, k -> RateLimiter.create(packetsPerSecond));
+        SimpleRateLimiter limiter = rateLimiters.computeIfAbsent(address,
+                k -> SimpleRateLimiter.create(packetsPerSecond));
 
         if (!limiter.tryAcquire()) {
             LOGGER.warn("Rate limit exceeded for {}", address);
