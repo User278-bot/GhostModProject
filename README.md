@@ -70,8 +70,17 @@ java -jar GhostModServer-0.1.0.jar
 デフォルトではポート `8887` で待機します。ポートを変更したい場合は `--port` オプションを使用してください。
 
 ```bash
-java -jar GhostModServer-0.1.0.jar --port 9000 --password <password>
+java -jar GhostModServer-0.1.0.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
 ```
+
+> [!IMPORTANT]
+> LAN以外（離れた友達と遊ぶ場合など）では、サーバーを外部に公開する必要があります。
+>
+> - **ポート開放**: ルーターの設定でポート `8887` (または指定したポート) を解放してください。セキュリティ設定は各自の責任で行ってください。
+> - **ポート開放が難しい場合**: 以下のサービスを利用することで、ポート開放なしで接続可能です。
+>     - [Fast Server](https://fss.zpw.jp/) の **ConnectXross** (推奨・動作確認済み): サーバー側のみ設定が必要で、接続側（友達）は設定不要なため最も手軽です。
+>     - [playit.gg](https://playit.gg/): ConnectXrossと同様、接続側の設定が不要なトンネリングサービスです。
+>     - [Hamachi](https://www.vpn.net/): 仮想LAN構築サービス。全員がソフトをインストールして同じネットワークに入る必要があります。
 
 ## 使い方
 1.  サーバーを起動しておきます（ローカルで遊ぶ場合は自分のPCで、離れた友達と遊ぶ場合はVPSなどで）。
@@ -81,7 +90,7 @@ java -jar GhostModServer-0.1.0.jar --port 9000 --password <password>
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/5fbd055b-2497-4253-860d-ee5a92ee8c38)
 ![Minecraft_ 1 19 2 2025_12_07 15_25_29](https://github.com/user-attachments/assets/e9807190-bf03-4306-a0f0-47313b511237)
 
-4.  シングルプレイのワールドに入ると、自動的にサーバーに接続されます。
+4.  シングルプレイのワールドに入ると、**自動的に**サーバーへ接続されます。
 5.  同じサーバーに接続している他のプレイヤーが、ワールド内にゴーストとして表示されます。
 
 > [!NOTE]
