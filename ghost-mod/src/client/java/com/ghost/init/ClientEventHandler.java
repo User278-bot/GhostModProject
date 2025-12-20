@@ -13,6 +13,8 @@ import net.minecraft.client.gui.screens.SkinCustomizationScreen;
 
 import java.net.URI;
 
+import static com.ghost.client.ToastNotifications.showConnectionSuccessToast;
+
 public class ClientEventHandler {
     private final PlayerDataSender playerDataSender;
     private final GhostEntitySynchronizer ghostEntitySynchronizer;
@@ -36,7 +38,7 @@ public class ClientEventHandler {
                     // 接続成功をスケジュールして確認（非同期接続のため）
                     client.execute(() -> {
                         if (ghostSyncService.isConnected()) {
-                            com.ghost.config.ModMenuIntegration.showConnectionSuccessToast();
+                            showConnectionSuccessToast();
                         }
                     });
                 } catch (Exception ex) {

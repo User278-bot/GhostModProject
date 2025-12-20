@@ -62,13 +62,11 @@ public class GhostPlayerEntity extends RemotePlayer {
                 if (filledProfile == null) return null;
 
                 CompletableFuture<net.minecraft.resources.ResourceLocation> future = new CompletableFuture<>();
-                Minecraft.getInstance().execute(() -> {
-                    Minecraft.getInstance().getSkinManager().registerSkins(filledProfile, (type, location, p1) -> {
-                        if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
-                            future.complete(location);
-                        }
-                    }, true);
-                });
+                Minecraft.getInstance().execute(() -> Minecraft.getInstance().getSkinManager().registerSkins(filledProfile, (type, location, p1) -> {
+                    if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
+                        future.complete(location);
+                    }
+                }, true));
                 return future.join();
             } catch (Exception e) {
                 return null;
