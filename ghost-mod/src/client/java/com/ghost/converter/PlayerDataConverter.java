@@ -27,11 +27,11 @@ public final class PlayerDataConverter {
                 player.getPose().toString(),
                 /*? >=1.20.1 {*/
                 /*player.level().dimension().location().toString(),
-                *//*?} else {*/
+                 *//*?} else {*/
                 player.level.dimension().location().toString(),
-                 //?}
+                //?}
                 skinParts,
-                fromMc(player.swingingArm),
+                fromMc(player.getMainArm()),
                 player.swingTime);
     }
 }
