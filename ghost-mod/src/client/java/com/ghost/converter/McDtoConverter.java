@@ -2,7 +2,9 @@ package com.ghost.converter;
 
 import com.ghost.api.dto.Vec3Dto;
 import com.ghost.api.dto.Vec2Dto;
+import com.mojang.logging.LogUtils;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.Vec2;
 
@@ -19,6 +21,10 @@ public final class McDtoConverter {
         return hand != null ? hand.name() : InteractionHand.MAIN_HAND.name();
     }
 
+    public static String fromMc(HumanoidArm hand) {
+        return hand != null ? hand.name() : HumanoidArm.RIGHT.name();
+    }
+
     public static Vec2Dto fromMc(Vec2 vec2) {
         return new Vec2Dto(vec2.x, vec2.y);
     }
@@ -29,5 +35,14 @@ public final class McDtoConverter {
 
     public static Vec2 toMc(Vec2Dto v2d) {
         return new Vec2(v2d.x(), v2d.y());
+    }
+
+    public static HumanoidArm toMc(String arm) {
+        try {
+            return HumanoidArm.valueOf(arm);
+        } catch (Exception ex) {
+            LogUtils.getLogger().error("Could not convert to HumanoidArm: ", ex);
+        }
+        return HumanoidArm.RIGHT;
     }
 }

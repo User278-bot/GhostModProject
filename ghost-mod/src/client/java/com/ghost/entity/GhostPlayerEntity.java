@@ -1,6 +1,8 @@
 package com.ghost.entity;
 
 import com.ghost.api.dto.PlayerData;
+import com.ghost.converter.McDtoConverter;
+import com.ghost.converter.PlayerDataConverter;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import net.minecraft.MethodsReturnNonnullByDefault;
@@ -9,7 +11,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 /*? >=1.20.6 {*/
 /*import net.minecraft.client.resources.PlayerSkin;
-*///?}
+ *///?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
@@ -32,9 +34,9 @@ public class GhostPlayerEntity extends RemotePlayer {
                              final PlayerData data) {
         /*? >=1.20.1 {*/
         /*super(world, profile);
-        *//*?} else {*/
+         *//*?} else {*/
         super(world, profile, null);
-         //?}
+        //?}
         this.ghostUuid = data.uuid();
 
         // 初期座標を確定させる
@@ -54,7 +56,7 @@ public class GhostPlayerEntity extends RemotePlayer {
             skinSupplier.thenAccept((playerSkin) -> this.skinLocation = playerSkin);
         });
         *//*?} else {*/
-        
+
         CompletableFuture.supplyAsync(() -> {
             try {
                 GameProfile filledProfile = Minecraft.getInstance().getMinecraftSessionService()
@@ -95,7 +97,7 @@ public class GhostPlayerEntity extends RemotePlayer {
                 /*? >=1.20.6 {*/
                 /*?} else {*/
                 , false
-                 //?}
+                //?}
         );
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
 
@@ -104,7 +106,8 @@ public class GhostPlayerEntity extends RemotePlayer {
 
     private void syncState(PlayerData data) {
         if (data.swingTime() == 1) {
-            this.swing(InteractionHand.valueOf(data.swingArm()));
+            this.setMainArm(McDtoConverter.toMc(data.swingArm()));
+            this.swing(InteractionHand.MAIN_HAND);
         }
 
         try {
@@ -164,6 +167,7 @@ public class GhostPlayerEntity extends RemotePlayer {
     *//*?} else {*/
     // --- Skin Handling ---
     private volatile net.minecraft.resources.ResourceLocation skinLocation = null;
+
     @Override
     @MethodsReturnNonnullByDefault
     public net.minecraft.resources.ResourceLocation getSkinTextureLocation() {
