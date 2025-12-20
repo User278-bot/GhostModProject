@@ -9,15 +9,10 @@ Start-Sleep -Seconds 10
 
 # 2. Modクライアント起動
 Write-Host "Starting Ghost Mod Client..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle = 'Ghost Debug - Mod Client'; ./gradlew :ghost-mod:1.19.2:runClient"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle = 'Ghost Debug - Mod Client'; ./gradlew runClient"
 
 # クライアントの起動を待つ
-Start-Sleep -Seconds 30
-
-Write-Host "Starting Ghost Mod Client..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle = 'Ghost Debug - Mod Client'; ./gradlew :ghost-mod:1.20.1:runClient"
-
-Start-Sleep -Seconds 30
+Start-Sleep -Seconds 120
 
 # 3. FakeClient起動
 Write-Host "Starting Fake Client..."

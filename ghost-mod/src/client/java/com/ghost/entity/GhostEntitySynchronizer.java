@@ -37,16 +37,7 @@ public class GhostEntitySynchronizer {
                 LogUtils.getLogger().debug("Spawning new ghost: uuid={}, name={}", data.uuid(), data.name());
 
                 var newGameProfile = new GameProfile(UUID.fromString(data.uuid()), data.name());
-
-                /*? >=1.20.6 {*/
-                /*var skinFuture = Minecraft.getInstance().getSkinManager().getOrLoad(newGameProfile);
-                *//*?} else {*/
-                 var skinFuture = fetchSkinLocation(data.uuid(), data.name());
-                //?}
-                // スキン情報の非同期取得を開始 (Futureを作成)
-
-
-                GhostPlayerEntity newGhost = new GhostPlayerEntity(level, newGameProfile, data, skinFuture);
+                GhostPlayerEntity newGhost = new GhostPlayerEntity(level, newGameProfile, data);
 
                 // エンティティIDとUUIDをセット
                 int uniqueId = nextEntityId.getAndDecrement();
@@ -56,7 +47,7 @@ public class GhostEntitySynchronizer {
                 /*? >=1.20.6 {*/
                 /*level.addEntity(newGhost);
                 *//*?} else {*/
-                 level.addPlayer(newGhost.getId(), newGhost); 
+                level.addPlayer(newGhost.getId(), newGhost); 
                 //?}
 
                 LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(),
@@ -94,6 +85,10 @@ public class GhostEntitySynchronizer {
         removeGhosts(existingGhosts);
     }
 
+    // fetchSkinLocationメソッドは、古いバージョンでのみ必要になる可能性があるため保持するか、
+    // あるいは完全にGhostPlayerEntity内に移動させる。
+    // 今回は簡略化のため一旦残すが、呼び出し元は削除。
+    @Deprecated
     public CompletableFuture<ResourceLocation> fetchSkinLocation(String uuidString, String name) {
         if (uuidString == null || uuidString.isEmpty())
             return CompletableFuture.completedFuture(null);

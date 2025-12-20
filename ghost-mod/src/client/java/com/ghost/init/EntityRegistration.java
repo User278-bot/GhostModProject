@@ -43,7 +43,7 @@ public final class EntityRegistration {
                                     GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
                                     PlayerData dummyData = new PlayerData();
 
-                                    return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData, null);
+                                    return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData);
                                 })
                         .dimensions(EntityDimensions.fixed(0.6f, 1.8f)) // プレイヤーと同じサイズ
                         .build());
