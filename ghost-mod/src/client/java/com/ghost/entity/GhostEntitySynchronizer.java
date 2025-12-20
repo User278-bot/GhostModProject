@@ -4,14 +4,10 @@ import com.ghost.api.dto.PlayerData;
 import com.ghost.api.registry.IGhostRegistry;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GhostEntitySynchronizer {
@@ -43,13 +39,11 @@ public class GhostEntitySynchronizer {
                 int uniqueId = nextEntityId.getAndDecrement();
                 newGhost.setId(uniqueId); // クライアントサイドエンティティは負のIDを使うのが一般的
 
-
                 /*? >=1.20.6 {*/
                 /*level.addEntity(newGhost);
-                *//*?} else {*/
-                level.addPlayer(newGhost.getId(), newGhost); 
+                 *//*?} else {*/
+                level.addPlayer(newGhost.getId(), newGhost);
                 //?}
-
                 LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(),
                         newGhost.getUUID());
             }
@@ -83,57 +77,5 @@ public class GhostEntitySynchronizer {
 
         // Registryに存在しなくなった（または距離外判定された）ゴーストエンティティをワールドから削除
         removeGhosts(existingGhosts);
-    }
-
-    // fetchSkinLocationメソッドは、古いバージョンでのみ必要になる可能性があるため保持するか、
-    // あるいは完全にGhostPlayerEntity内に移動させる。
-    // 今回は簡略化のため一旦残すが、呼び出し元は削除。
-    @Deprecated
-    public CompletableFuture<ResourceLocation> fetchSkinLocation(String uuidString, String name) {
-        if (uuidString == null || uuidString.isEmpty())
-            return CompletableFuture.completedFuture(null);
-
-        /*? >=1.20.5 {*/
-        /*// 新しいPlayerSkin API (1.20.5+)
-        // lookupInsecureはSupplier<PlayerSkin>を返す
-        UUID uuid = UUID.fromString(uuidString);
-        GameProfile profile = new GameProfile(uuid, name);
-
-        return CompletableFuture.supplyAsync(() -> {
-            var skinSupplier = Minecraft.getInstance().getSkinManager().lookupInsecure(profile);
-            var playerSkin = skinSupplier.get();
-            return playerSkin != null ? playerSkin.texture() : null;
-        });
-        *//*?} else {*/
-        
-        // 旧registerSkins API (1.20.4以前)
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                UUID uuid = UUID.fromString(uuidString);
-                // セッションサービスを使ってプロファイル情報を埋める（通信発生）
-                GameProfile profile = new GameProfile(uuid, name);
-                GameProfile updatedProfile = Minecraft.getInstance().getMinecraftSessionService()
-                        .fillProfileProperties(profile, true);
-
-                if (updatedProfile != null) {
-                    CompletableFuture<ResourceLocation> textureFuture = new CompletableFuture<>();
-
-                    Minecraft.getInstance()
-                            .execute(() -> Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
-                                    (type, location, profile1) -> {
-                                        if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
-                                            textureFuture.complete(location);
-                                        }
-                                    }, true));
-
-                    // タイムアウトなどを考慮すべきだが、今回は簡易実装
-                    return textureFuture.join();
-                }
-            } catch (Exception e) {
-                LogUtils.getLogger().error("Failed to load skin for ghost: {}", name, e);
-            }
-            return null;
-        });
-        //?}
     }
 }
