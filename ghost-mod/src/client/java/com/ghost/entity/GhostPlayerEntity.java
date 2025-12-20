@@ -6,6 +6,9 @@ import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
+/*? >=1.20.6 {*/
+ /*import net.minecraft.client.resources.PlayerSkin; 
+*///?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
@@ -22,12 +25,26 @@ public class GhostPlayerEntity extends RemotePlayer {
     private final String ghostUuid;
     private static final int INTERPOLATION_STEPS = 4;
 
-    public GhostPlayerEntity(final ClientLevel world, final GameProfile profile, final PlayerData data,
-            CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture) {
-        /* ? >=1.20.1 { */
-        super(world, profile);
-        /* ?} else { */
-        /* super(world, profile, null); */// ?}
+    /*? >=1.20.6 {*/
+    
+    /*public GhostPlayerEntity(final ClientLevel world,
+                             final GameProfile profile,
+                             final PlayerData data,
+                             CompletableFuture<PlayerSkin> skinFuture)
+    
+    *//*?} else {*/
+    public GhostPlayerEntity(final ClientLevel world,
+                             final GameProfile profile,
+                             final PlayerData data,
+                             CompletableFuture<net.minecraft.resources.ResourceLocation> skinFuture)
+    
+    //?}
+    {
+        /*? >=1.20.1 {*/
+         /*super(world, profile); 
+        *//*?} else {*/
+         super(world, profile, null); 
+        //?}
         this.ghostUuid = data.uuid();
 
         // 初期座標を確定させる（ lerpToを呼ばないため、見た目がスライドしない）
@@ -43,6 +60,7 @@ public class GhostPlayerEntity extends RemotePlayer {
         }
     }
 
+
     // GhostRegistryから受け取った最新のデータで、エンティティの状態を更新するメソッド
     public void updateFromData(final PlayerData data) {
         if (data == null) {
@@ -56,8 +74,11 @@ public class GhostPlayerEntity extends RemotePlayer {
                 data.pos().z(),
                 data.rot().y(), // ★ YawはY軸周りの回転
                 data.rot().x(), // ★ PitchはX軸周りの回転
-                INTERPOLATION_STEPS,
-                false // テレポートはしない
+                INTERPOLATION_STEPS
+                /*? >=1.20.6 {*/
+                /*?} else {*/
+                 , false 
+                //?}
         );
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
 
@@ -113,12 +134,22 @@ public class GhostPlayerEntity extends RemotePlayer {
         // 何もしない
     }
 
+    /*? >=1.20.6 {*/
+    
+    /*private volatile PlayerSkin skinLocation = null;
+    @Override
+    @MethodsReturnNonnullByDefault
+    public PlayerSkin getSkin() {
+        return skinLocation != null ? skinLocation : super.getSkin();
+    }
+    
+    *//*?} else {*/
     // --- Skin Handling ---
     private volatile net.minecraft.resources.ResourceLocation skinLocation = null;
-
     @Override
     @MethodsReturnNonnullByDefault
     public net.minecraft.resources.ResourceLocation getSkinTextureLocation() {
         return skinLocation != null ? skinLocation : super.getSkinTextureLocation();
     }
+    //?}
 }

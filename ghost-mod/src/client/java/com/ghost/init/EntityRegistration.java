@@ -17,8 +17,8 @@ import net.minecraft.world.entity.MobCategory;
 import java.util.UUID;
 
 /*? >=1.19.3 {*/
-import net.minecraft.core.registries.BuiltInRegistries;
-//?}
+/*import net.minecraft.core.registries.BuiltInRegistries;
+*///?}
 
 public final class EntityRegistration {
     private EntityRegistration() {
@@ -32,10 +32,10 @@ public final class EntityRegistration {
         LogUtils.getLogger().info("Registering entity types...");
         GHOST_PLAYER = Registry.register(
                 /*? >=1.19.3 {*/
-                BuiltInRegistries.ENTITY_TYPE,
-                /*?} else {*/
-                /*Registry.ENTITY_TYPE,
-                 *///?}
+                /*BuiltInRegistries.ENTITY_TYPE,
+                *//*?} else {*/
+                Registry.ENTITY_TYPE,
+                 //?}
                 new ResourceLocation("ghostmod", "ghost_player"),
                 FabricEntityTypeBuilder.<GhostPlayerEntity>create(
                                 MobCategory.MISC,
