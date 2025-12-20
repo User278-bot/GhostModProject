@@ -5,14 +5,12 @@ import com.ghost.api.registry.IGhostRegistry;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,7 +23,7 @@ public class GhostEntitySynchronizer {
     }
 
     private void updateGhosts(ClientLevel level, Map<String, GhostPlayerEntity> existingGhosts,
-            Collection<PlayerData> latestGhosts) {
+                              Collection<PlayerData> latestGhosts) {
         for (PlayerData data : latestGhosts) {
             if (existingGhosts.containsKey(data.uuid())) {
                 // 既にエンティティが存在する場合 -> 状態を更新
@@ -38,20 +36,20 @@ public class GhostEntitySynchronizer {
                 // エンティティが存在しない場合 -> 新しくスポーン
                 LogUtils.getLogger().debug("Spawning new ghost: uuid={}, name={}", data.uuid(), data.name());
 
-                // スキン情報の非同期取得を開始 (Futureを作成)
-                var skinFuture = fetchSkinLocation(data.uuid(), data.name());
-
-                GhostPlayerEntity newGhost = new GhostPlayerEntity(level,
-                        new GameProfile(UUID.fromString(data.uuid()), data.name()), data, skinFuture);
+                var newGameProfile = new GameProfile(UUID.fromString(data.uuid()), data.name());
+                GhostPlayerEntity newGhost = new GhostPlayerEntity(level, newGameProfile, data);
 
                 // エンティティIDとUUIDをセット
                 int uniqueId = nextEntityId.getAndDecrement();
                 newGhost.setId(uniqueId); // クライアントサイドエンティティは負のIDを使うのが一般的
 
-                // UUIDはコンストラクタでGameProfile経由でセットされるが、念のため確認
-                // newGhost.setUUID(UUID.fromString(data.uuid()));
 
-                level.addPlayer(newGhost.getId(), newGhost);
+                /*? >=1.20.6 {*/
+                /*level.addEntity(newGhost);
+                *//*?} else {*/
+                level.addPlayer(newGhost.getId(), newGhost); 
+                //?}
+
                 LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(),
                         newGhost.getUUID());
             }
@@ -87,11 +85,28 @@ public class GhostEntitySynchronizer {
         removeGhosts(existingGhosts);
     }
 
+    // fetchSkinLocationメソッドは、古いバージョンでのみ必要になる可能性があるため保持するか、
+    // あるいは完全にGhostPlayerEntity内に移動させる。
+    // 今回は簡略化のため一旦残すが、呼び出し元は削除。
+    @Deprecated
     public CompletableFuture<ResourceLocation> fetchSkinLocation(String uuidString, String name) {
         if (uuidString == null || uuidString.isEmpty())
             return CompletableFuture.completedFuture(null);
 
-        // 非同期でスキン情報を取得
+        /*? >=1.20.5 {*/
+        /*// 新しいPlayerSkin API (1.20.5+)
+        // lookupInsecureはSupplier<PlayerSkin>を返す
+        UUID uuid = UUID.fromString(uuidString);
+        GameProfile profile = new GameProfile(uuid, name);
+
+        return CompletableFuture.supplyAsync(() -> {
+            var skinSupplier = Minecraft.getInstance().getSkinManager().lookupInsecure(profile);
+            var playerSkin = skinSupplier.get();
+            return playerSkin != null ? playerSkin.texture() : null;
+        });
+        *//*?} else {*/
+        
+        // 旧registerSkins API (1.20.4以前)
         return CompletableFuture.supplyAsync(() -> {
             try {
                 UUID uuid = UUID.fromString(uuidString);
@@ -119,5 +134,6 @@ public class GhostEntitySynchronizer {
             }
             return null;
         });
+        //?}
     }
 }
