@@ -9,16 +9,15 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.StringListEntry;
-import me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-import java.awt.*;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import static com.ghost.client.ToastNotifications.showConnectionSuccessToast;
 
 public class ModMenuIntegration implements ModMenuApi {
     private boolean pre_connected = false;
@@ -65,7 +64,7 @@ public class ModMenuIntegration implements ModMenuApi {
         // --- サーバー設定 ---
         // エントリは保存済み設定値で作成（Cloth Configの変更検知の基準となる）
         serverUriEntry = entryBuilder.startStrField(
-                        Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
+                Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
                 .setDefaultValue("localhost")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverUri"))
                 .setSaveConsumer(config::setServerUri)
@@ -77,7 +76,7 @@ public class ModMenuIntegration implements ModMenuApi {
         networkCategory.addEntry(serverUriEntry);
 
         serverPortEntry = entryBuilder.startIntField(
-                        Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
+                Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
                 .setDefaultValue(8887)
                 .setMin(1)
                 .setMax(65535)
@@ -93,7 +92,7 @@ public class ModMenuIntegration implements ModMenuApi {
         // パスワード設定
         // パスワード設定
         serverPasswordEntry = entryBuilder.startStrField(
-                        Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
+                Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
                 .setDefaultValue("changeme")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverPassword"))
                 .setSaveConsumer(config::setServerPassword)
@@ -108,7 +107,8 @@ public class ModMenuIntegration implements ModMenuApi {
             net.minecraft.client.gui.components.EditBox widget = (net.minecraft.client.gui.components.EditBox) widgetField
                     .get(serverPasswordEntry);
             if (widget != null) {
-                widget.setFormatter((text, firstCharacterIndex) -> Component.literal("*".repeat(text.length())).getVisualOrderText());
+                widget.setFormatter((text, firstCharacterIndex) -> Component.literal("*".repeat(text.length()))
+                        .getVisualOrderText());
             }
         } catch (Exception e) {
             // Log warning but don't crash if reflection fails (e.g. field name change)
@@ -124,20 +124,20 @@ public class ModMenuIntegration implements ModMenuApi {
         // --- 接続管理 ---
         // 接続状態インジケーター
         networkCategory.addEntry(entryBuilder.startTextDescription(
-                        Component.translatable("option.ghostmod.status", getStatusText()))
+                Component.translatable("option.ghostmod.status", getStatusText()))
                 .build());
 
         // 接続先URI表示（接続中の場合のみ）
         URI connectedUri = GhostModClient.GHOST_SYNC_SERVICE.getConnectedUri();
         if (connectedUri != null) {
             networkCategory.addEntry(entryBuilder.startTextDescription(
-                            Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
+                    Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
                     .build());
         }
 
         // 接続/切断ボタン
         var reconnectButton = entryBuilder.startBooleanToggle(
-                        Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
+                Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
                 .setYesNoTextSupplier((connected) -> {
                     connectPushButton(connected, parent);
                     return Component.translatable(
@@ -166,16 +166,6 @@ public class ModMenuIntegration implements ModMenuApi {
                 serverUriEntry.getValue(),
                 serverPortEntry.getValue(),
                 serverPasswordEntry.getValue());
-    }
-
-    // トースト通知を表示するヘルパーメソッド
-    public static void showConnectionSuccessToast() {
-        Minecraft.getInstance().getToasts().addToast(
-                SystemToast.multiline(
-                        Minecraft.getInstance(),
-                        SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
-                        Component.translatable("toast.ghostmod.connected.title"),
-                        Component.translatable("toast.ghostmod.connected.description")));
     }
 
     private void connectPushButton(boolean connected, Screen parent) {

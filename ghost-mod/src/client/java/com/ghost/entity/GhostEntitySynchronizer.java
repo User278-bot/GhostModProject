@@ -4,16 +4,10 @@ import com.ghost.api.dto.PlayerData;
 import com.ghost.api.registry.IGhostRegistry;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GhostEntitySynchronizer {
@@ -25,7 +19,7 @@ public class GhostEntitySynchronizer {
     }
 
     private void updateGhosts(ClientLevel level, Map<String, GhostPlayerEntity> existingGhosts,
-            Collection<PlayerData> latestGhosts) {
+                              Collection<PlayerData> latestGhosts) {
         for (PlayerData data : latestGhosts) {
             if (existingGhosts.containsKey(data.uuid())) {
                 // 既にエンティティが存在する場合 -> 状態を更新
@@ -38,20 +32,18 @@ public class GhostEntitySynchronizer {
                 // エンティティが存在しない場合 -> 新しくスポーン
                 LogUtils.getLogger().debug("Spawning new ghost: uuid={}, name={}", data.uuid(), data.name());
 
-                // スキン情報の非同期取得を開始 (Futureを作成)
-                var skinFuture = fetchSkinLocation(data.uuid(), data.name());
-
-                GhostPlayerEntity newGhost = new GhostPlayerEntity(level,
-                        new GameProfile(UUID.fromString(data.uuid()), data.name()), data, skinFuture);
+                var newGameProfile = new GameProfile(UUID.fromString(data.uuid()), data.name());
+                GhostPlayerEntity newGhost = new GhostPlayerEntity(level, newGameProfile, data);
 
                 // エンティティIDとUUIDをセット
                 int uniqueId = nextEntityId.getAndDecrement();
                 newGhost.setId(uniqueId); // クライアントサイドエンティティは負のIDを使うのが一般的
 
-                // UUIDはコンストラクタでGameProfile経由でセットされるが、念のため確認
-                // newGhost.setUUID(UUID.fromString(data.uuid()));
-
+                /*? >=1.20.6 {*/
+                /*level.addEntity(newGhost);
+                 *//*?} else {*/
                 level.addPlayer(newGhost.getId(), newGhost);
+                //?}
                 LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(),
                         newGhost.getUUID());
             }
@@ -85,39 +77,5 @@ public class GhostEntitySynchronizer {
 
         // Registryに存在しなくなった（または距離外判定された）ゴーストエンティティをワールドから削除
         removeGhosts(existingGhosts);
-    }
-
-    public CompletableFuture<ResourceLocation> fetchSkinLocation(String uuidString, String name) {
-        if (uuidString == null || uuidString.isEmpty())
-            return CompletableFuture.completedFuture(null);
-
-        // 非同期でスキン情報を取得
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                UUID uuid = UUID.fromString(uuidString);
-                // セッションサービスを使ってプロファイル情報を埋める（通信発生）
-                GameProfile profile = new GameProfile(uuid, name);
-                GameProfile updatedProfile = Minecraft.getInstance().getMinecraftSessionService()
-                        .fillProfileProperties(profile, true);
-
-                if (updatedProfile != null) {
-                    CompletableFuture<ResourceLocation> textureFuture = new CompletableFuture<>();
-
-                    Minecraft.getInstance()
-                            .execute(() -> Minecraft.getInstance().getSkinManager().registerSkins(updatedProfile,
-                                    (type, location, profile1) -> {
-                                        if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
-                                            textureFuture.complete(location);
-                                        }
-                                    }, true));
-
-                    // タイムアウトなどを考慮すべきだが、今回は簡易実装
-                    return textureFuture.join();
-                }
-            } catch (Exception e) {
-                LogUtils.getLogger().error("Failed to load skin for ghost: {}", name, e);
-            }
-            return null;
-        });
     }
 }

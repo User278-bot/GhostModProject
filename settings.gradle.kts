@@ -28,7 +28,7 @@ dependencyResolutionManagement {
 stonecutter {
     create("ghost-mod") {
         // See https://stonecutter.kikugie.dev/wiki/start/#choosing-minecraft-versions
-        versions("1.19.2","1.20.1")
+        versions("1.19.2","1.20.1","1.20.6")
         vcsVersion = "1.19.2"
     }
 }
