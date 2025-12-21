@@ -24,39 +24,20 @@
 ## 対応バージョン
 - Minecraft 1.19.2
 - Minecraft 1.20.1
+- Minecraft 1.20.6
 
 ## 成果物のダウンロード
-以下のリンクから成果物をダウンロードできます。最新でない場合は、[リリース](https://github.com/User278-bot/GhostModProject/releases)から各成果物の最新バージョンをダウンロードしてください。
+以下のリンクから成果物をダウンロードできます。表示されている番号が最新バージョンです。リンク先が正しくない場合は、[リリース](https://github.com/User278-bot/GhostModProject/releases)から各成果物の最新バージョンをダウンロードしてください。
 
-[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases/tag/mod/v1.3.0)
+[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases/tag/mod/v1.3.1)
 [![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases/tag/server/v1.3.1)
 [![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases/tag/client/v1.3.0)
-
-## ビルド方法
-プロジェクトのルートディレクトリで以下のコマンドを実行してください。
-
-```bash
-./gradlew build
-```
-
-### 成果物の出力先
-
-ビルドが成功すると、以下の場所に成果物 (JARファイル) が生成されます。
-
-#### Mod (ghost-mod)
-バージョンごとに以下のディレクトリに出力されます。
-- `ghost-mod/versions/1.19.2/build/libs/ghostmod-0.1.0+1.19.2.jar`
-- `ghost-mod/versions/1.20.1/build/libs/ghostmod-0.1.0+1.20.1.jar`
-
-#### Server (ghost-server)
-- `ghost-server/build/libs/GhostModServer-0.1.0.jar`
-※ `GhostModServer-*.jar` (ファイルサイズが大きい方) が実行可能なサーバーアプリケーションです。
 
 ## 導入方法
 
 ### 1. Modの導入 (クライアント)
 1.  `ghostmod-<version>+<mc_version>.jar` を Minecraft の `mods` フォルダに配置してください。
-2.  以下の前提 Mod も合わせて導入してください。
+2.  以下のModもMinecraftバージョンに合わせて導入してください。
     - [Fabric API](https://modrinth.com/mod/fabric-api)
     - [Mod Menu](https://modrinth.com/mod/modmenu)
     - [Cloth Config API](https://modrinth.com/mod/cloth-config)
@@ -65,12 +46,12 @@
 `GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。
 
 ```bash
-java -jar GhostModServer-0.1.0.jar
+java -jar GhostModServer-<vesion>.jar
 ```
 デフォルトではポート `8887` で待機します。ポートを変更したい場合は `--port` オプションを使用してください。
 
 ```bash
-java -jar GhostModServer-0.1.0.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
+java -jar GhostModServer-<vesion>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
 ```
 
 > [!IMPORTANT]
@@ -87,8 +68,8 @@ java -jar GhostModServer-0.1.0.jar --port 9000 --password <password> --config <f
 2.  Modを導入した状態で Minecraft を起動します。
 3.  Mod Menu から **Ghost Mod** の設定画面を開き、サーバーのアドレス・ポート、パスワードを入力して保存します。
 
-![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/5fbd055b-2497-4253-860d-ee5a92ee8c38)
-![Minecraft_ 1 19 2 2025_12_07 15_25_29](https://github.com/user-attachments/assets/e9807190-bf03-4306-a0f0-47313b511237)
+![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/6b8b27db-694b-4c3d-bd01-b5a3b891d6a7)
+![Minecraft_ 1 20 1 2025_12_21 8_51_29](https://github.com/user-attachments/assets/00ecd29f-e7f0-49da-a643-8b6072ca7cdf)
 
 4.  シングルプレイのワールドに入ると、**自動的に**サーバーへ接続されます。
 5.  同じサーバーに接続している他のプレイヤーが、ワールド内にゴーストとして表示されます。
@@ -97,6 +78,33 @@ java -jar GhostModServer-0.1.0.jar --port 9000 --password <password> --config <f
 > シングルプレイワールドに入っている間は接続、切断ボタンが有効化されます。必要に応じて使用してください。
 
 ## 開発者向け情報
+### ビルド方法
+プロジェクトのルートディレクトリで以下のコマンドを実行してください。
+
+```bash
+./gradlew build
+```
+
+### 成果物の出力先
+
+ビルドが成功すると、以下の場所に成果物 (JARファイル) が生成されます。
+
+#### Mod (ghost-mod)
+バージョンごとに以下のディレクトリに出力されます。
+- `ghost-mod/versions/1.19.2/build/libs/ghostmod-<vesion>+1.19.2.jar`
+- `ghost-mod/versions/1.20.1/build/libs/ghostmod-<vesion>+1.20.1.jar`
+など
+
+#### Server (ghost-server)
+- `ghost-server/build/libs/GhostModServer-<version>.jar`
+※ `GhostModServer-*.jar` (ファイルサイズが大きい方) が実行可能なサーバーアプリケーションです。
+
+### FakeClient
+負荷テストや同期確認のために、ダミーのプレイヤーデータを送信する `FakeClient` が用意されています。
+
+```bash
+./gradlew :ghost-fake_client:run --args="--uuid <UUID> --uri <URI> --password <password>"
+```
 
 ### デバッグ環境の起動
 PowerShellスクリプトを使用して、サーバー・クライアント・FakeClientを一括で起動できます。
@@ -107,13 +115,6 @@ PowerShellスクリプトを使用して、サーバー・クライアント・F
 
 # デバッグ環境の終了
 .\stop-debug.ps1
-```
-
-### FakeClient
-負荷テストや同期確認のために、ダミーのプレイヤーデータを送信する `FakeClient` が用意されています。
-
-```bash
-./gradlew :ghost-fake_client:run --args="--uuid <UUID> --uri <URI> --password <password>"
 ```
 
 ## ライセンス
