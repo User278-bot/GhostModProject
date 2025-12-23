@@ -29,7 +29,7 @@ public final class EntityRegistration {
     public static EntityType<GhostPlayerEntity> GHOST_PLAYER;
 
     public static void register() {
-        LogUtils.getLogger().info("Registering entity types...");
+        LogUtils.getLogger().debug("Registering entity types...");
         GHOST_PLAYER = Registry.register(
                 /*? >=1.19.3 {*/
                 /*BuiltInRegistries.ENTITY_TYPE,
