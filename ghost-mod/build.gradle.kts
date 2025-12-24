@@ -106,8 +106,7 @@ tasks {
             "id" to project.property("mod.id"),
             "name" to project.property("mod.name"),
             "version" to project.property("mod.version"),
-            "minecraft" to project.property("mod.mc_dep"),
-            "java" to requiredJava.majorVersion
+            "minecraft" to project.property("mod.mc_dep")
         )
 
         filesMatching("fabric.mod.json") { expand(props) }
