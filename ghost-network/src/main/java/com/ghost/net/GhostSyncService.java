@@ -9,7 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @SuppressWarnings("unused")
 public class GhostSyncService {
@@ -22,12 +25,17 @@ public class GhostSyncService {
         this.ghostRegistry = ghostRegistry;
     }
 
-    public void connect(URI serverURI, String password) {
-        if (this.isConnected()) {
-            return;
-        }
-        session = new GhostWebSocketClient(serverURI, ghostRegistry, password);
-        session.connect();
+    public CompletableFuture<Boolean> connect(URI serverURI, String password, long timeout, TimeUnit unit) {
+        return CompletableFuture.supplyAsync(() -> {
+            session = new GhostWebSocketClient(serverURI, ghostRegistry, password);
+            try {
+                return session.connectBlocking(timeout, unit) && session.getAuthFuture().get(timeout, unit);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                session.close();
+                session = null;
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public boolean connectBlocking(URI servverURI, String password, long timeout, TimeUnit unit) {
