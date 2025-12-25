@@ -15,8 +15,6 @@ import net.minecraft.client.gui.screens.SkinCustomizationScreen;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import static com.ghost.client.ToastNotifications.showConnectionSuccessToast;
-
 public class ClientEventHandler {
     private final PlayerDataSender playerDataSender;
     private final GhostEntitySynchronizer ghostEntitySynchronizer;
@@ -36,7 +34,7 @@ public class ClientEventHandler {
                 try {
                     GhostConfig config = GhostConfig.getInstance();
                     URI serverUri = new URI(config.getFullWebSocketUri());
-                    ghostSyncService.connect(serverUri, config.getServerPassword(), 3, TimeUnit.SECONDS)
+                    ghostSyncService.connectAsync(serverUri, config.getServerPassword(), 3, TimeUnit.SECONDS)
                             .thenAccept((isConnected) -> {
                                 // 接続成功をスケジュールして確認（非同期接続のため）
                                 if (isConnected) {
