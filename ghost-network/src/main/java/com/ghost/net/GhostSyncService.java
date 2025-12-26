@@ -30,7 +30,12 @@ public class GhostSyncService {
     public boolean connectBlocking(URI servverURI, String password, long timeout, TimeUnit unit) {
         if (this.isConnected()) {
             LOGGER.warn("Already connected");
-            return true;
+            assert session != null;
+            try {
+                session.closeBlocking();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
         session = new GhostWebSocketClient(servverURI, ghostRegistry, password);
         try {
