@@ -19,3 +19,28 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+------------------------------------------------------------------
+
+This project utilizes the following third-party libraries, which are bundled in the binary distributions.
+These libraries are subject to their respective licenses:
+
+## Google Gson
+Copyright (c) 2008 Google Inc.
+Licensed under the Apache License, Version 2.0
+https://github.com/google/gson/blob/master/LICENSE
+
+## Java-WebSocket
+Copyright (c) 2010-2020 Nathan Rajlich
+Licensed under the MIT License
+https://github.com/TooTallNate/Java-WebSocket/blob/master/LICENSE
+
+## SLF4J (Simple Logging Facade for Java)
+Copyright (c) 2004-2025 QOS.ch
+Licensed under the MIT License
+https://www.slf4j.org/license.html
+
+## Apache Commons CLI
+Copyright (c) 2002-2025 The Apache Software Foundation
+Licensed under the Apache License, Version 2.0
+https://commons.apache.org/proper/commons-cli/

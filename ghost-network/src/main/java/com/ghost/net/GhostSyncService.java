@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
@@ -22,34 +23,30 @@ public class GhostSyncService {
         this.ghostRegistry = ghostRegistry;
     }
 
-    public void connect(URI serverURI, String password) {
-        if (this.isConnected()) {
-            return;
-        }
-        session = new GhostWebSocketClient(serverURI, ghostRegistry, password);
-        session.connect();
+    public CompletableFuture<Boolean> connectAsync(URI serverURI, String password, long timeout, TimeUnit unit) {
+        return CompletableFuture.supplyAsync(() -> this.connectBlocking(serverURI, password, timeout, unit));
     }
 
     public boolean connectBlocking(URI servverURI, String password, long timeout, TimeUnit unit) {
         if (this.isConnected()) {
-            LOGGER.info("Already connected");
-            return true;
+            LOGGER.warn("Already connected");
+            assert session != null;
+            try {
+                session.closeBlocking();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
         session = new GhostWebSocketClient(servverURI, ghostRegistry, password);
         try {
-            boolean socketConnected = session.connectBlocking(timeout, unit);
-            if (!socketConnected) {
-                return false;
-            }
-            // 認証完了を待つ
-            // connectBlockingで消費した時間は考慮していないが、簡易実装として別途timeout待つ
-            return session.getAuthFuture().get(timeout, unit);
+            // 認証完了も待つ
+            return session.connectBlocking(timeout, unit) && session.getAuthFuture().get(timeout, unit);
         } catch (Exception ex) {
             LOGGER.error("Failed to connect or authenticate:", ex);
             session.close();
             session = null;
+            throw new RuntimeException(ex);
         }
-        return false;
     }
 
     public void disconnect() {

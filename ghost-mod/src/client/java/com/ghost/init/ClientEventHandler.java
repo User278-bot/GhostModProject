@@ -1,6 +1,7 @@
 package com.ghost.init;
 
 import com.ghost.client.PlayerDataSender;
+import com.ghost.client.ToastNotifications;
 import com.ghost.config.GhostConfig;
 import com.ghost.entity.GhostEntitySynchronizer;
 import com.ghost.net.GhostSyncService;
@@ -12,8 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.SkinCustomizationScreen;
 
 import java.net.URI;
-
-import static com.ghost.client.ToastNotifications.showConnectionSuccessToast;
+import java.util.concurrent.TimeUnit;
 
 public class ClientEventHandler {
     private final PlayerDataSender playerDataSender;
@@ -21,7 +21,7 @@ public class ClientEventHandler {
     private final GhostSyncService ghostSyncService;
 
     public ClientEventHandler(final GhostSyncService ghostSyncService,
-            final GhostEntitySynchronizer ghostEntitySynchronizer) {
+                              final GhostEntitySynchronizer ghostEntitySynchronizer) {
         this.ghostEntitySynchronizer = ghostEntitySynchronizer;
         this.ghostSyncService = ghostSyncService;
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);
@@ -34,13 +34,17 @@ public class ClientEventHandler {
                 try {
                     GhostConfig config = GhostConfig.getInstance();
                     URI serverUri = new URI(config.getFullWebSocketUri());
-                    ghostSyncService.connect(serverUri, config.getServerPassword());
-                    // 接続成功をスケジュールして確認（非同期接続のため）
-                    client.execute(() -> {
-                        if (ghostSyncService.isConnected()) {
-                            showConnectionSuccessToast();
-                        }
-                    });
+                    ghostSyncService.connectAsync(serverUri, config.getServerPassword(), 3, TimeUnit.SECONDS)
+                            .thenAccept((isConnected) -> {
+                                // 接続成功をスケジュールして確認（非同期接続のため）
+                                if (isConnected) {
+                                    client.execute(ToastNotifications::showConnectionSuccessToast);
+                                }
+                            }).exceptionally((e) -> {
+                                LogUtils.getLogger().error("Failed to connect to GhostServer asynchronously", e);
+                                return null;
+                            });
+
                 } catch (Exception ex) {
                     LogUtils.getLogger().error("Failed to auto-connect to GhostServer.", ex);
                 }

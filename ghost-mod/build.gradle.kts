@@ -52,7 +52,8 @@ dependencies {
         exclude(group = "net.fabricmc.fabric-api")
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
-    modApi("com.terraformersmc:modmenu:${project.property("mod_menu_version")}") {
+    // ModMenuはオプショナル依存 - コンパイル時のみ使用
+    modCompileOnly("com.terraformersmc:modmenu:${project.property("mod_menu_version")}") {
         exclude(group= "net.fabricmc.fabric-api")
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
@@ -106,8 +107,7 @@ tasks {
             "id" to project.property("mod.id"),
             "name" to project.property("mod.name"),
             "version" to project.property("mod.version"),
-            "minecraft" to project.property("mod.mc_dep"),
-            "java" to requiredJava.majorVersion
+            "minecraft" to project.property("mod.mc_dep")
         )
 
         filesMatching("fabric.mod.json") { expand(props) }

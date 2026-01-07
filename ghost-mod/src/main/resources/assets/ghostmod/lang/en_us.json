@@ -15,5 +15,7 @@
   "toast.ghostmod.connected.title": "Ghost Mod",
   "toast.ghostmod.connected.description": "Connected to server",
   "option.ghostmod.serverPassword": "Server Password",
-  "tooltip.ghostmod.serverPassword": "The password of the WebSocket server."
+  "tooltip.ghostmod.serverPassword": "The password of the WebSocket server.",
+  "key.ghostmod.openConfig": "Open Configuration",
+  "category.ghostmod.keys": "Ghost Mod"
 }

@@ -11,6 +11,7 @@
       <option name="taskNames">
         <list>
           <option value=":ghost-fake_client:run" />
+          <option value="--args='--password debug'" />
         </list>
       </option>
       <option name="vmOptions" />

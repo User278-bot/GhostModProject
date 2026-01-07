@@ -48,7 +48,7 @@ public class GhostWebSocketClient extends WebSocketClient {
                 return;
             var type = packet.getType();
             var data = packet.getData();
-            LOGGER.info("type: {},data: {}", type, data);
+            LOGGER.debug("type: {},data: {}", type, data);
             switch (type) {
                 case AUTH_CHALLENGE:
                     if (data != null) {
@@ -60,7 +60,7 @@ public class GhostWebSocketClient extends WebSocketClient {
                             GhostPacket<AuthData> responsePacket = new GhostPacket<>(MessageType.AUTH_RESPONSE,
                                     response);
                             send(SerializationUtil.serializePacket(responsePacket));
-                            LOGGER.info("Sent AUTH_RESPONSE.");
+                            LOGGER.debug("Sent AUTH_RESPONSE.");
                         } catch (Exception e) {
                             LOGGER.error("Failed to generate auth response", e);
                             close();
@@ -68,7 +68,7 @@ public class GhostWebSocketClient extends WebSocketClient {
                     }
                     break;
                 case AUTH_SUCCESS:
-                    LOGGER.info("Received AUTH_SUCCESS. Authentication verified.");
+                    LOGGER.debug("Received AUTH_SUCCESS. Authentication verified.");
                     authFuture.complete(true);
                     break;
                 case UPDATE:

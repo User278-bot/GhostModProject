@@ -8,11 +8,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
-import java.util.List;
 
 public final class SerializationUtil {
     private static final Gson GSON = new Gson();
-
 
     public static Gson getGson() {
         return GSON;
