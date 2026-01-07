@@ -14,7 +14,7 @@ public class GhostConfig {
     private static final Path CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("ghostmod.json");
 
     // 設定項目のデフォルト値を定義
-    private String serverUri = "ws://localhost";
+    private String serverUri = "localhost";
     private int serverPort = 8887;
     private String serverPassword = "changeme";
 
