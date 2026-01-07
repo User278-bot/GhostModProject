@@ -52,7 +52,8 @@ dependencies {
         exclude(group = "net.fabricmc.fabric-api")
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
-    modApi("com.terraformersmc:modmenu:${project.property("mod_menu_version")}") {
+    // ModMenuはオプショナル依存 - コンパイル時のみ使用
+    modCompileOnly("com.terraformersmc:modmenu:${project.property("mod_menu_version")}") {
         exclude(group= "net.fabricmc.fabric-api")
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
