@@ -1,5 +1,8 @@
 # Ghost Mod Project
 
+AI Translated: English
+[README_en.md](README_en.md)
+
 **Ghost Mod** は、一人用の配布マップなどを擬似的にマルチプレイ化するための Minecraft Mod およびサーバーソフトウェアです。
 
 各プレイヤーの位置情報をリアルタイムで同期し、他のプレイヤーのクライアント上に「ゴースト（幻影）」として表示します。
