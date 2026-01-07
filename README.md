@@ -41,9 +41,11 @@ AI Translated: English
 ### 1. Modの導入 (クライアント)
 1.  `ghostmod-<version>+<mc_version>.jar` を Minecraft の `mods` フォルダに配置してください。
 2.  以下のModもMinecraftバージョンに合わせて導入してください。
-    - [Fabric API](https://modrinth.com/mod/fabric-api)
-    - [Mod Menu](https://modrinth.com/mod/modmenu)
-    - [Cloth Config API](https://modrinth.com/mod/cloth-config)
+    - **必須**
+        - [Fabric API](https://modrinth.com/mod/fabric-api)
+        - [Cloth Config API](https://modrinth.com/mod/cloth-config)
+    - **オプション**
+        - [Mod Menu](https://modrinth.com/mod/modmenu)
 
 ### 2. サーバーの起動
 `GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。
@@ -69,13 +71,14 @@ java -jar GhostModServer-<vesion>.jar --port 9000 --password <password> --config
 ## 使い方
 1.  サーバーを起動しておきます（ローカルで遊ぶ場合は自分のPCで、離れた友達と遊ぶ場合はVPSなどで）。
 2.  Modを導入した状態で Minecraft を起動します。
-3.  Mod Menu から **Ghost Mod** の設定画面を開き、サーバーのアドレス・ポート、パスワードを入力して保存します。
+3.  Mod Menu またはショートカットキー（デフォルトではＧキー）から **Ghost Mod** の設定画面を開きます。
+4.  サーバーのアドレス・ポート、パスワードを入力して保存します。
 
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/6b8b27db-694b-4c3d-bd01-b5a3b891d6a7)
 ![Minecraft_ 1 20 1 2025_12_21 8_51_29](https://github.com/user-attachments/assets/00ecd29f-e7f0-49da-a643-8b6072ca7cdf)
 
-4.  シングルプレイのワールドに入ると、**自動的に**サーバーへ接続されます。
-5.  同じサーバーに接続している他のプレイヤーが、ワールド内にゴーストとして表示されます。
+5.  シングルプレイのワールドに入ると、**自動的に**サーバーへ接続されます。
+6.  同じサーバーに接続している他のプレイヤーが、ワールド内にゴーストとして表示されます。
 
 > [!NOTE]
 > シングルプレイワールドに入っている間は接続、切断ボタンが有効化されます。必要に応じて使用してください。

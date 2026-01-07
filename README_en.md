@@ -1,6 +1,6 @@
 # Ghost Mod Project
 
-日本語版: 
+日本語版:
 [README.md](README.md)
 
 **Ghost Mod** is a Minecraft Mod and server software designed to simulate multiplayer functionality in single-player adventure maps.
@@ -41,9 +41,11 @@ You can download the artifacts from the links below. The version number displaye
 ### 1. Mod Installation (Client)
 1.  Place `ghostmod-<version>+<mc_version>.jar` into your Minecraft `mods` folder.
 2.  Install the following mods matching your Minecraft version:
-    - [Fabric API](https://modrinth.com/mod/fabric-api)
-    - [Mod Menu](https://modrinth.com/mod/modmenu)
-    - [Cloth Config API](https://modrinth.com/mod/cloth-config)
+    - **Required**
+        - [Fabric API](https://modrinth.com/mod/fabric-api)
+        - [Cloth Config API](https://modrinth.com/mod/cloth-config)
+    - **Optional**
+        - [Mod Menu](https://modrinth.com/mod/modmenu)
 
 ### 2. Starting the Server
 Run `GhostModServer-<version>.jar` to start the synchronization server.
@@ -69,13 +71,14 @@ java -jar GhostModServer-<vesion>.jar --port 9000 --password <password> --config
 ## Usage
 1.  Start the server (on your PC for local play, or on a VPS/etc. for distant play).
 2.  Launch Minecraft with the Mod installed.
-3.  Open the **Ghost Mod** settings screen via Mod Menu, enter the server address, port, and password, then save.
+3.  Open the **Ghost Mod** settings screen via Mod Menu or using the shortcut key (default: G key).
+4.  Enter the server address, port, and password, then save.
 
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/6b8b27db-694b-4c3d-bd01-b5a3b891d6a7)
 ![Minecraft_ 1 20 1 2025_12_21 8_51_29](https://github.com/user-attachments/assets/00ecd29f-e7f0-49da-a643-8b6072ca7cdf)
 
-4.  Enter a single-player world, and you will **automatically** connect to the server.
-5.  Other players connected to the same server will appear as ghosts in your world.
+5.  Enter a single-player world, and you will **automatically** connect to the server.
+6.  Other players connected to the same server will appear as ghosts in your world.
 
 > [!NOTE]
 > Connect and Disconnect buttons are enabled while in a single-player world. Use them as needed.
