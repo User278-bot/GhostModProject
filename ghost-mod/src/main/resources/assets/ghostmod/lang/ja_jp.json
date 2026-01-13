@@ -15,5 +15,7 @@
   "toast.ghostmod.connected.title": "Ghost Mod",
   "toast.ghostmod.connected.description": "サーバーに接続しました",
   "option.ghostmod.serverPassword": "パスワード",
-  "tooltip.ghostmod.serverPassword": "サーバーとの接続に必要なパスワード"
+  "tooltip.ghostmod.serverPassword": "サーバーとの接続に必要なパスワード",
+  "key.ghostmod.openConfig": "設定画面を開く",
+  "category.ghostmod.keys": "Ghost Mod"
 }

@@ -3,6 +3,7 @@ package com.ghost;
 import com.ghost.api.registry.IGhostRegistry;
 import com.ghost.init.ClientEventHandler;
 import com.ghost.init.EntityRegistration;
+import com.ghost.init.GhostModKeyBindings;
 import com.ghost.net.GhostSyncService;
 import com.ghost.registry.InMemoryGhostRegistry;
 import com.ghost.entity.GhostEntitySynchronizer;
@@ -22,11 +23,13 @@ public class GhostModClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // This entrypoint is suitable for setting up client-specific logic, such as rendering.
-        LogUtils.getLogger().info("Initializing GhostModClient...");
+        // This entrypoint is suitable for setting up client-specific logic, such as
+        // rendering.
+        LogUtils.getLogger().debug("Initializing GhostModClient...");
 
         clientEventHandler.registerEvents();
         EntityRegistration.register();
+        GhostModKeyBindings.register();
     }
 }
 
