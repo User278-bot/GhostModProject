@@ -2,9 +2,7 @@ package com.ghost.entity;
 
 import com.ghost.api.dto.PlayerData;
 import com.ghost.converter.McDtoConverter;
-import com.ghost.converter.PlayerDataConverter;
 import com.mojang.authlib.GameProfile;
-import com.mojang.logging.LogUtils;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
