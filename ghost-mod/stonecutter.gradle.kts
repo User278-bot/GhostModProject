@@ -1,18 +1,16 @@
 plugins {
     id("dev.kikugie.stonecutter")
     id("fabric-loom") version "1.13-SNAPSHOT" apply false
-    // id("me.modmuss50.mod-publish-plugin") version "1.0.+" apply false
+    id("me.modmuss50.mod-publish-plugin") version "1.1.0" apply false
 }
 
 stonecutter active "1.19.2"
 
-/*
-// Make newer versions be published last
+// 新しいバージョンを後に公開（Modrinth/CurseForgeのUIで最新として表示されるため）
 stonecutter tasks {
     order("publishModrinth")
     order("publishCurseforge")
 }
- */
 
 // See https://stonecutter.kikugie.dev/wiki/config/params
 stonecutter parameters {

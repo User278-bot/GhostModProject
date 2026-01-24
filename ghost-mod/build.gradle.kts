@@ -1,8 +1,6 @@
 plugins {
     id("fabric-loom")
-
-    // `maven-publish`
-    // id("me.modmuss50.mod-publish-plugin")
+    id("me.modmuss50.mod-publish-plugin")
 }
 
 val baseVersion = VersionResolver.resolveVersionFromTag("mod/v") ?: "dev"
@@ -125,17 +123,17 @@ tasks {
     }
 }
 
-/*
-// Publishes builds to Modrinth and Curseforge with changelog from the CHANGELOG.md file
+// ModrinthとCurseForgeにビルドを公開
 publishMods {
     file = tasks.remapJar.map { it.archiveFile.get() }
     additionalFiles.from(tasks.remapSourcesJar.map { it.archiveFile.get() })
     displayName = "${property("mod.name")} ${property("mod.version")} for ${property("mod.mc_title")}"
     version = property("mod.version") as String
-    changelog = rootProject.file("CHANGELOG.md").readText()
+    changelog = (project.parent ?: project).file("CHANGELOG.md").readText()
     type = STABLE
     modLoaders.add("fabric")
 
+    // トークンが未設定の場合はdryRunモード（実際のアップロードは行わない）
     dryRun = providers.environmentVariable("MODRINTH_TOKEN").getOrNull() == null
         || providers.environmentVariable("CURSEFORGE_TOKEN").getOrNull() == null
 
@@ -146,6 +144,12 @@ publishMods {
         requires {
             slug = "fabric-api"
         }
+        requires {
+            slug = "cloth-config"
+        }
+        optional {
+            slug = "modmenu"
+        }
     }
 
     curseforge {
@@ -155,9 +159,18 @@ publishMods {
         requires {
             slug = "fabric-api"
         }
+        requires {
+            slug = "cloth-config"
+        }
+        optional {
+            slug = "modmenu"
+        }
     }
+
+    // discord {
+    //     webhookUrl = providers.environmentVariable("DISCORD_WEBHOOK")
+    // }
 }
- */
 /*
 // Publishes builds to a maven repository under `com.example:template:0.1.0+mc`
 publishing {

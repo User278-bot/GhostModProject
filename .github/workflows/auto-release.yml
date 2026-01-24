@@ -83,3 +83,12 @@ jobs:
             ${{ steps.component.outputs.component == 'mod' && '!ghost-mod/versions/*/build/libs/ghostmod-*-sources.jar' || '' }}
             ${{ steps.component.outputs.component == 'server' && 'ghost-server/build/libs/GhostModServer-*.jar' || '' }}
             ${{ steps.component.outputs.component == 'client' && 'ghost-fake_client/build/libs/GhostFakeClient-*.jar' || '' }}
+
+      # Modの場合はModrinthとCurseForgeに公開
+      - name: Publish Mod to Modrinth and CurseForge
+        if: steps.component.outputs.component == 'mod'
+        working-directory: ghost-mod
+        run: ../gradlew publishMods
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
