@@ -3,18 +3,24 @@ package com.ghost.entity;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.converter.McDtoConverter;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.MethodsReturnNonnullByDefault;
+//? if >=1.21.11 {
+//?} else {
+ import net.minecraft.MethodsReturnNonnullByDefault;
+//?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
-/*? >=1.20.6 {*/
-/*import net.minecraft.client.resources.PlayerSkin;
- *///?}
+//? if >=1.21.11 {
+/*import net.minecraft.world.entity.player.PlayerSkin;
+*//*?} else if >=1.20.6 {*/
+// import net.minecraft.client.resources.PlayerSkin;
+//?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 
+import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -46,7 +52,28 @@ public class GhostPlayerEntity extends RemotePlayer {
         syncState(data);
 
         // スキン情報の非同期取得
-        /*? >=1.20.6 {*/
+        //? if >=1.21.11 {
+        /*CompletableFuture.runAsync(() -> {
+            var updatedProfile = Minecraft.getInstance().services().sessionService().fetchProfile(profile.id(), true);
+            var skinSupplier = Minecraft.getInstance().getSkinManager().get(Objects.requireNonNull(updatedProfile).profile());
+
+            skinSupplier.thenAccept((playerSkin) -> {
+                playerSkin.ifPresent(skin -> this.skinLocation = skin);
+            });
+        });
+        *///?} else if >=1.21.4 {
+        /*
+        CompletableFuture.runAsync(() -> {
+            var updatedProfile = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.getId(), true);
+            var skinSupplier = Minecraft.getInstance().getSkinManager().getOrLoad(Objects.requireNonNull(updatedProfile).profile());
+
+            skinSupplier.thenAccept((playerSkin) -> {
+                playerSkin.ifPresent(skin -> this.skinLocation = skin);
+            });
+        });
+        */
+        /*?} else if >=1.20.6 {*/
+        
         /*CompletableFuture.runAsync(() -> {
             var updatedProfile = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.getId(), true);
             var skinSupplier = Minecraft.getInstance().getSkinManager().getOrLoad(Objects.requireNonNull(updatedProfile).profile());
@@ -85,6 +112,17 @@ public class GhostPlayerEntity extends RemotePlayer {
         }
 
         // ★ Minecraftの滑らかな移動メソッドを呼び出す
+        //? if >= 1.21.11 {
+        /*this.lerpPositionAndRotationStep(
+                1,
+                data.pos().x(),
+                data.pos().y(),
+                data.pos().z(),
+                data.rot().y(), // ★ YawはY軸周りの回転
+                data.rot().x()  // ★ PitchはX軸周りの回転
+        );
+        *///?} else if >= 1.20.6 {
+        /*
         this.lerpTo(
                 data.pos().x(),
                 data.pos().y(),
@@ -92,11 +130,21 @@ public class GhostPlayerEntity extends RemotePlayer {
                 data.rot().y(), // ★ YawはY軸周りの回転
                 data.rot().x(), // ★ PitchはX軸周りの回転
                 INTERPOLATION_STEPS
-                /*? >=1.20.6 {*/
-                /*?} else {*/
-                , false
-                //?}
         );
+        */
+        //?} else {
+        
+        this.lerpTo(
+                data.pos().x(),
+                data.pos().y(),
+                data.pos().z(),
+                data.rot().y(), // ★ YawはY軸周りの回転
+                data.rot().x(), // ★ PitchはX軸周りの回転
+                INTERPOLATION_STEPS,
+                false
+        );
+        
+        //?}
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
 
         syncState(data);
@@ -148,17 +196,18 @@ public class GhostPlayerEntity extends RemotePlayer {
     }
 
     @Override
-    protected void doPush(Entity entity) {
+    protected void doPush(@NotNull Entity entity) {
         // 何もしない
     }
 
-    /*? >=1.20.6 {*/
+
+
+    /*? if >=1.20.6 {*/
 
     /*private volatile PlayerSkin skinLocation = null;
 
     @Override
-    @MethodsReturnNonnullByDefault
-    public PlayerSkin getSkin() {
+    public @NotNull PlayerSkin getSkin() {
         return skinLocation != null ? skinLocation : super.getSkin();
     }
 
