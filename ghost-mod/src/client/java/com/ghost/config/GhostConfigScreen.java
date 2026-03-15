@@ -114,7 +114,13 @@ public class GhostConfigScreen {
             net.minecraft.client.gui.components.EditBox widget = (net.minecraft.client.gui.components.EditBox) widgetField
                     .get(serverPasswordEntry);
             if (widget != null) {
-                widget.setFormatter((text, firstCharacterIndex) -> Component.literal("*".repeat(text.length()))
+                widget
+                //? if >=1.21.11 {
+                /*.addFormatter
+                *///?} else {
+                 .setFormatter
+                //?}
+                ((text, firstCharacterIndex) -> Component.literal("*".repeat(text.length()))
                         .getVisualOrderText());
             }
         } catch (Exception e) {

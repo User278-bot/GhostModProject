@@ -6,6 +6,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+//? if >=1.21.11 {
+/*import net.minecraft.resources.Identifier;
+*///?}
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -25,7 +28,12 @@ public class GhostModKeyBindings {
                 "key.ghostmod.openConfig", // 翻訳キー
                 InputConstants.Type.KEYSYM, // キーボード入力
                 GLFW.GLFW_KEY_G, // デフォルト: Gキー
-                "category.ghostmod.keys" // カテゴリ翻訳キー
+                //? if >=1.21.11 {
+                /*KeyMapping.Category.register(Identifier.fromNamespaceAndPath("ghostmod","keys"))
+                *///?} else {
+                "category.ghostmod.keys" 
+                //?}
+                // カテゴリ翻訳キー
         ));
 
         // キー押下時のイベントハンドラを登録

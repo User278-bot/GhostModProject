@@ -10,8 +10,12 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.SkinCustomizationScreen;
 
+//? if <= 1.20.6 {
+ import net.minecraft.client.gui.screens.SkinCustomizationScreen;
+//?} else {
+/*import net.minecraft.client.gui.screens.options.SkinCustomizationScreen;
+*///?}
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
