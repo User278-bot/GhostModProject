@@ -13,8 +13,8 @@ import net.minecraft.client.player.RemotePlayer;
 //? if >=1.21.11 {
 /*import net.minecraft.world.entity.player.PlayerSkin;
  *//*?} else if >=1.20.6 {*/
-// import net.minecraft.client.resources.PlayerSkin;
-//?}
+ /*import net.minecraft.client.resources.PlayerSkin;
+*///?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -64,8 +64,8 @@ public class GhostPlayerEntity extends RemotePlayer {
             });
         });
         *///?} else if >=1.21.4 {
-        /*
-        CompletableFuture.runAsync(() -> {
+        
+        /*CompletableFuture.runAsync(() -> {
             var updatedProfile = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.getId(), true);
             var skinSupplier = Minecraft.getInstance().getSkinManager().getOrLoad(Objects.requireNonNull(updatedProfile).profile());
 
@@ -73,8 +73,8 @@ public class GhostPlayerEntity extends RemotePlayer {
                 playerSkin.ifPresent(skin -> this.skinLocation = skin);
             });
         });
-        */
-        /*?} else if >=1.20.6 {*/
+        
+        *//*?} else if >=1.20.6 {*/
         
         /*CompletableFuture.runAsync(() -> {
             var updatedProfile = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.getId(), true);
@@ -124,8 +124,8 @@ public class GhostPlayerEntity extends RemotePlayer {
                 data.rot().x()  // ★ PitchはX軸周りの回転
         );
         *///?} else if >= 1.20.6 {
-        /*
-        this.lerpTo(
+        
+        /*this.lerpTo(
                 data.pos().x(),
                 data.pos().y(),
                 data.pos().z(),
@@ -133,8 +133,8 @@ public class GhostPlayerEntity extends RemotePlayer {
                 data.rot().x(), // ★ PitchはX軸周りの回転
                 INTERPOLATION_STEPS
         );
-        */
-        //?} else {
+        
+        *///?} else {
 
         this.lerpTo(
                 data.pos().x(),

@@ -26,7 +26,8 @@ class PlayerDataTest {
                     "minecraft:overworld",
                     (byte) 127,
                     "MAIN_HAND",
-                    0
+                    0,
+                    new EquipmentDto()
             );
 
             // 検証
@@ -78,7 +79,8 @@ class PlayerDataTest {
                     "dim",
                     (byte) 50,
                     "MAIN_HAND",
-                    0);
+                    0,
+                    new EquipmentDto());
             PlayerData data2 = new PlayerData(
                     new Vec3Dto(1.0, 2.0, 3.0),
                     new Vec2Dto(10.0f, 20.0f),
@@ -88,7 +90,8 @@ class PlayerDataTest {
                     "dim",
                     (byte) 50,
                     "MAIN_HAND",
-                    0);
+                    0,
+                    new EquipmentDto());
 
             // 検証
             assertEquals(data1, data2);
@@ -108,7 +111,8 @@ class PlayerDataTest {
                     "minecraft:overworld",
                     (byte) 127,
                     "MAIN_HAND",
-                    0);
+                    0,
+                    new EquipmentDto());
             PlayerData data2 = new PlayerData(
                     new Vec3Dto(1.0, 2.0, 3.0),
                     new Vec2Dto(10.0f, 20.0f),
@@ -118,7 +122,8 @@ class PlayerDataTest {
                     "minecraft:overworld",
                     (byte) 127,
                     "MAIN_HAND",
-                    0);
+                    0,
+                    new EquipmentDto());
 
             // 検証
             assertNotEquals(data1, data2);
@@ -162,7 +167,8 @@ class PlayerDataTest {
                     "minecraft:the_nether",
                     (byte) 63,
                     "MAIN_HAND",
-                    0);
+                    0,
+                    new EquipmentDto());
 
             // 実行
             String str = data.toString();
@@ -187,7 +193,8 @@ class PlayerDataTest {
                     Vec3Dto.ZERO, Vec2Dto.ZERO,
                     "uuid", "name", "STANDING", "dim", (byte) 127,
                     "MAIN_HAND",
-                    0);
+                    0,
+                    new EquipmentDto());
 
             assertEquals(127, data.skinParts());
         }
@@ -199,7 +206,8 @@ class PlayerDataTest {
                     Vec3Dto.ZERO, Vec2Dto.ZERO,
                     "uuid", "name", "STANDING", "dim", (byte) 0,
                     "MAIN_HAND",
-                    0);
+                    0,
+                    new EquipmentDto());
 
             assertEquals(0, data.skinParts());
         }
