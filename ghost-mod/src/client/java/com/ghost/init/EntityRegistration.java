@@ -60,8 +60,8 @@ public final class EntityRegistration {
                         .sized(0.6f, 1.8f) // プレイヤーと同じサイズ
                         .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath("ghostmod", "ghost_player")))
         *///?} else if >=1.21.4 {
-                /*
-                BuiltInRegistries.ENTITY_TYPE,
+                
+                /*BuiltInRegistries.ENTITY_TYPE,
                 ResourceLocation.fromNamespaceAndPath("ghostmod", "ghost_player"),
                 EntityType.Builder.<GhostPlayerEntity>of(
                                 (type, world) -> {
@@ -71,8 +71,8 @@ public final class EntityRegistration {
                                 }, MobCategory.MISC)
                         .sized(0.6f, 1.8f) // プレイヤーと同じサイズ
                         .build(ResourceKey.create(Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath("ghostmod", "ghost_player")))
-                */
-        //?} else if >=1.20.1 {
+                
+        *///?} else if >=1.20.1 {
                 /*BuiltInRegistries.ENTITY_TYPE,
                 new ResourceLocation("ghostmod", "ghost_player"),
                 FabricEntityTypeBuilder.<GhostPlayerEntity>create(

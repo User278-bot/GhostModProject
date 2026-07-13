@@ -13,10 +13,15 @@ import net.minecraft.world.phys.Vec3;
 
 //? if <=1.19.2 {
 import net.minecraft.core.Registry;
-//?} else {
+ //?} else {
 /*import net.minecraft.core.registries.BuiltInRegistries;
- *///?}
+*///?}
+
+//? if >=1.21.11 {
+/*import net.minecraft.resources.Identifier;
+ *///?} else {
 import net.minecraft.resources.ResourceLocation;
+//?}
 
 @SuppressWarnings("unused")
 public final class McDtoConverter {
@@ -64,12 +69,13 @@ public final class McDtoConverter {
         }
 
         String id;
-        // ? if <=1.19.2 {
+        //? if <=1.19.2 {
+
         id = Registry.ITEM.getKey(stack.getItem()).toString();
-        // ?} else {
-        /*
-         * id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-         */// ?}
+         //?} else {
+
+        /*id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        *///?}
 
         return new ItemDto(id);
     }
@@ -78,9 +84,25 @@ public final class McDtoConverter {
         if (item == null) {
             return ItemStack.EMPTY;
         } // 1. ID文字列から ResourceLocation を作成
-        ResourceLocation location = new ResourceLocation(item.id()); // もしくは new ResourceLocation("minecraft:stone")
-        // 2. Registry から Item を取得
-        Item mcItem = Registry.ITEM.get(location);
+
+        //? if <= 1.20.6 {
+        ResourceLocation location = new ResourceLocation(item.id());
+        //?} else if <= 1.21.4 {
+        // ResourceLocation location = ResourceLocation.parse(item.id());
+        //?} else {
+        /*Identifier location = Identifier.parse(item.id());
+         *///?}
+
+        //? if <= 1.19.2 {
+         Item mcItem = Registry.ITEM.get(location);
+        //?} else if <= 1.20.6 {
+        /*Item mcItem = BuiltInRegistries.ITEM.get(location);
+        *///?} else if <= 1.21.4 {
+        // Item mcItem = BuiltInRegistries.ITEM.getValue(location);
+        //?} else {
+        /*Item mcItem = BuiltInRegistries.ITEM.getValue(location);
+         *///?}
+
         // 3. ItemStack を生成
         return new ItemStack(mcItem);
     }
