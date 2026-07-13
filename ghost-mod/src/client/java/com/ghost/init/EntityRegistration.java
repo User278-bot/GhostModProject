@@ -83,8 +83,8 @@ public final class EntityRegistration {
                                     return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData);
                                 })
                         .dimensions(EntityDimensions.fixed(0.6f, 1.8f)) // プレイヤーと同じサイズ
-                        .build()*/
-        //?} else {
+                        .build()
+        *///?} else {
                 Registry.ENTITY_TYPE,
                 new ResourceLocation("ghostmod", "ghost_player"),
                 FabricEntityTypeBuilder.<GhostPlayerEntity>create(

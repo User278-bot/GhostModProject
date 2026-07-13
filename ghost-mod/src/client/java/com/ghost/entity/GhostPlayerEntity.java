@@ -5,22 +5,24 @@ import com.ghost.converter.McDtoConverter;
 import com.mojang.authlib.GameProfile;
 //? if >=1.21.11 {
 //?} else {
- import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.MethodsReturnNonnullByDefault;
 //?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 //? if >=1.21.11 {
 /*import net.minecraft.world.entity.player.PlayerSkin;
-*//*?} else if >=1.20.6 {*/
+ *//*?} else if >=1.20.6 {*/
 // import net.minecraft.client.resources.PlayerSkin;
 //?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 
 import org.jetbrains.annotations.NotNull;
+
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -133,7 +135,7 @@ public class GhostPlayerEntity extends RemotePlayer {
         );
         */
         //?} else {
-        
+
         this.lerpTo(
                 data.pos().x(),
                 data.pos().y(),
@@ -143,7 +145,7 @@ public class GhostPlayerEntity extends RemotePlayer {
                 INTERPOLATION_STEPS,
                 false
         );
-        
+
         //?}
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
 
@@ -162,9 +164,15 @@ public class GhostPlayerEntity extends RemotePlayer {
         } catch (IllegalArgumentException e) {
             // 不正なポーズ名が送られてきた場合は無視する
         }
-
         // Skin Parts Synchronization
         this.entityData.set(Player.DATA_PLAYER_MODE_CUSTOMISATION, data.skinParts());
+
+        this.setItemSlot(EquipmentSlot.MAINHAND, McDtoConverter.toMc(data.equipment().mainHand()));
+        this.setItemSlot(EquipmentSlot.OFFHAND, McDtoConverter.toMc(data.equipment().offHand()));
+        this.setItemSlot(EquipmentSlot.FEET, McDtoConverter.toMc(data.equipment().feet()));
+        this.setItemSlot(EquipmentSlot.CHEST, McDtoConverter.toMc(data.equipment().chest()));
+        this.setItemSlot(EquipmentSlot.HEAD, McDtoConverter.toMc(data.equipment().head()));
+        this.setItemSlot(EquipmentSlot.LEGS, McDtoConverter.toMc(data.equipment().legs()));
     }
 
     public String getGhostUuid() {
@@ -199,7 +207,6 @@ public class GhostPlayerEntity extends RemotePlayer {
     protected void doPush(@NotNull Entity entity) {
         // 何もしない
     }
-
 
 
     /*? if >=1.20.6 {*/
