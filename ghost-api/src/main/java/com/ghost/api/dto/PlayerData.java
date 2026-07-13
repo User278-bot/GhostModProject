@@ -19,6 +19,7 @@ public final class PlayerData {
     private final byte skinParts;
     private final String swingArm;
     private final int swingTime;
+    private final EquipmentDto equipment; // 追加: 装備データの同期
 
     /**
      * The main constructor to create a full PlayerData object.
@@ -30,6 +31,9 @@ public final class PlayerData {
      * @param pose      Player's current pose (e.g., "STANDING").
      * @param dimension Player's current dimension (e.g., "minecraft:overworld").
      * @param skinParts Bitmask of enabled skin parts.
+     * @param swingArm  Player's currently used arm ("MAIN_HAND" or "OFF_HAND").
+     * @param swingTime Timer for the arm swing animation.
+     * @param equipment Player's equipment set (helmet, chestplate, etc.).
      */
     public PlayerData(
             Vec3Dto pos,
@@ -40,8 +44,8 @@ public final class PlayerData {
             String dimension,
             byte skinParts,
             String swingArm,
-            int swingTime
-    ) {
+            int swingTime,
+            EquipmentDto equipment) {
         this.pos = pos;
         this.rot = rot;
         this.uuid = uuid;
@@ -51,6 +55,7 @@ public final class PlayerData {
         this.skinParts = skinParts;
         this.swingArm = swingArm;
         this.swingTime = swingTime;
+        this.equipment = equipment;
     }
 
     /**
@@ -59,11 +64,10 @@ public final class PlayerData {
      * NullPointerExceptions.
      */
     public PlayerData() {
-        this(Vec3Dto.ZERO, Vec2Dto.ZERO, "", "", "STANDING", "", (byte) 127, "MAIN_HAND", 0);
+        this(Vec3Dto.ZERO, Vec2Dto.ZERO, "", "", "STANDING", "", (byte) 127, "MAIN_HAND", 0, new EquipmentDto());
     }
 
     // --- Accessors (Getters) ---
-
     public Vec3Dto pos() {
         return this.pos;
     }
@@ -100,7 +104,9 @@ public final class PlayerData {
         return this.swingArm;
     }
 
-    // --- Utility Methods (equals, hashCode, toString) ---
+    public EquipmentDto equipment() {
+        return this.equipment;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -109,20 +115,21 @@ public final class PlayerData {
         if (o == null || getClass() != o.getClass())
             return false;
         PlayerData that = (PlayerData) o;
-        return Objects.equals(pos, that.pos) &&
+        return skinParts == that.skinParts &&
+                swingTime == that.swingTime &&
+                Objects.equals(pos, that.pos) &&
                 Objects.equals(rot, that.rot) &&
                 Objects.equals(uuid, that.uuid) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(pose, that.pose) &&
                 Objects.equals(dimension, that.dimension) &&
-                skinParts == that.skinParts &&
                 Objects.equals(swingArm, that.swingArm) &&
-                swingTime == that.swingTime;
+                Objects.equals(equipment, that.equipment);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pos, rot, uuid, name, pose, dimension, skinParts, swingArm, swingTime);
+        return Objects.hash(pos, rot, uuid, name, pose, dimension, skinParts, swingArm, swingTime, equipment);
     }
 
     @Override
@@ -134,9 +141,10 @@ public final class PlayerData {
                 ", name='" + name + '\'' +
                 ", pose='" + pose + '\'' +
                 ", dimension='" + dimension + '\'' +
-                ", skinParts=" + skinParts + '\'' +
-                ", swingArm=" + swingArm + '\'' +
+                ", skinParts=" + skinParts +
+                ", swingArm='" + swingArm + '\'' +
                 ", swingTime=" + swingTime +
+                ", equipment=" + equipment +
                 '}';
     }
 }

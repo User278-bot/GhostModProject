@@ -1,7 +1,9 @@
 package com.ghost.converter;
 
+import com.ghost.api.dto.EquipmentDto;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.api.dto.Vec2Dto;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.PlayerModelPart;
 
@@ -19,6 +21,15 @@ public final class PlayerDataConverter {
             }
         }
 
+        // 装備情報の抽出
+        EquipmentDto equipment = new EquipmentDto(
+                fromMc(player.getItemBySlot(EquipmentSlot.MAINHAND)),
+                fromMc(player.getItemBySlot(EquipmentSlot.OFFHAND)),
+                fromMc(player.getItemBySlot(EquipmentSlot.HEAD)),
+                fromMc(player.getItemBySlot(EquipmentSlot.CHEST)),
+                fromMc(player.getItemBySlot(EquipmentSlot.LEGS)),
+                fromMc(player.getItemBySlot(EquipmentSlot.FEET)));
+
         return new PlayerData(
                 fromMc(player.position()),
                 new Vec2Dto(player.getXRot(), player.getYHeadRot()),
@@ -26,14 +37,15 @@ public final class PlayerDataConverter {
                 player.getName().getString(),
                 player.getPose().toString(),
                 //? if >=1.21.11 {
-                /*player.level().dimension().identifier().toString(),
-                *//*?} else if >=1.20.1 {*/
-                /*player.level().dimension().location().toString(),*/
-                 /*?} else {*/
+                /* player.level().dimension().identifier().toString(), */
+                //?} else if >=1.20.1 {
+                 /*player.level().dimension().location().toString(), 
+                *///?} else {
                 player.level.dimension().location().toString(),
                 //?}
                 skinParts,
                 fromMc(player.getMainArm()),
-                player.swingTime);
+                player.swingTime,
+                equipment);
     }
 }

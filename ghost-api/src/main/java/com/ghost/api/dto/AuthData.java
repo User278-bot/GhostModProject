@@ -1,5 +1,6 @@
 package com.ghost.api.dto;
 
+@SuppressWarnings({ "unused", "ClassCanBeRecord" })
 public final class AuthData {
     private String nonce;
     private String hash;
