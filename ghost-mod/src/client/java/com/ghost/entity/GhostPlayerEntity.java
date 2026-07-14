@@ -13,14 +13,15 @@ import net.minecraft.client.player.RemotePlayer;
 //? if >=1.21.11 {
 /*import net.minecraft.world.entity.player.PlayerSkin;
  *//*?} else if >=1.20.6 {*/
- /*import net.minecraft.client.resources.PlayerSkin;
-*///?}
+/*import net.minecraft.client.resources.PlayerSkin;
+ *///?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -39,6 +40,7 @@ public class GhostPlayerEntity extends RemotePlayer {
                              final GameProfile profile,
                              final PlayerData data) {
         /*? >=1.20.1 {*/
+
         /*super(world, profile);
          *//*?} else {*/
         super(world, profile, null);
@@ -55,57 +57,74 @@ public class GhostPlayerEntity extends RemotePlayer {
 
         // スキン情報の非同期取得
         //? if >=1.21.11 {
-        /*CompletableFuture.runAsync(() -> {
-            var updatedProfile = Minecraft.getInstance().services().sessionService().fetchProfile(profile.id(), true);
-            var skinSupplier = Minecraft.getInstance().getSkinManager().get(Objects.requireNonNull(updatedProfile).profile());
 
-            skinSupplier.thenAccept((playerSkin) -> {
-                playerSkin.ifPresent(skin -> this.skinLocation = skin);
-            });
-        });
-        *///?} else if >=1.21.4 {
-        
-        /*CompletableFuture.runAsync(() -> {
-            var updatedProfile = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.getId(), true);
-            var skinSupplier = Minecraft.getInstance().getSkinManager().getOrLoad(Objects.requireNonNull(updatedProfile).profile());
+          /*CompletableFuture.runAsync(() -> {
+          var updatedProfile =
+          Minecraft.getInstance().services().sessionService().fetchProfile(profile.id()
+          , true);
+          var skinSupplier =
+          Minecraft.getInstance().getSkinManager().get(Objects.requireNonNull(
+          updatedProfile).profile());
 
-            skinSupplier.thenAccept((playerSkin) -> {
-                playerSkin.ifPresent(skin -> this.skinLocation = skin);
-            });
-        });
-        
-        *//*?} else if >=1.20.6 {*/
-        
-        /*CompletableFuture.runAsync(() -> {
-            var updatedProfile = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.getId(), true);
-            var skinSupplier = Minecraft.getInstance().getSkinManager().getOrLoad(Objects.requireNonNull(updatedProfile).profile());
+          skinSupplier.thenAccept((playerSkin) -> {
+          playerSkin.ifPresent(skin -> this.skinLocation = skin);
+          });
+          });
+         *///?} else if >=1.21.4 {
 
-            skinSupplier.thenAccept((playerSkin) -> this.skinLocation = playerSkin);
-        });
-        *//*?} else {*/
+        /*
+          CompletableFuture.runAsync(() -> {
+          var updatedProfile =
+          Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.
+          getId(), true);
+          var skinSupplier =
+          Minecraft.getInstance().getSkinManager().getOrLoad(Objects.requireNonNull(
+          updatedProfile).profile());
+
+          skinSupplier.thenAccept((playerSkin) -> {
+          playerSkin.ifPresent(skin -> this.skinLocation = skin);
+          });
+          });
+
+         *//*?} else if >=1.20.6 {*/
+
+
+          /*CompletableFuture.runAsync(() -> {
+          var updatedProfile =
+          Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.
+          getId(), true);
+          var skinSupplier =
+          Minecraft.getInstance().getSkinManager().getOrLoad(Objects.requireNonNull(
+          updatedProfile).profile());
+
+          skinSupplier.thenAccept((playerSkin) -> this.skinLocation = playerSkin);
+          });
+         *//*?} else {*/
 
         CompletableFuture.supplyAsync(() -> {
             try {
                 GameProfile filledProfile = Minecraft.getInstance().getMinecraftSessionService()
                         .fillProfileProperties(profile, true);
-                if (filledProfile == null) return null;
+                if (filledProfile == null)
+                    return null;
 
                 CompletableFuture<net.minecraft.resources.ResourceLocation> future = new CompletableFuture<>();
-                Minecraft.getInstance().execute(() -> Minecraft.getInstance().getSkinManager().registerSkins(filledProfile, (type, location, p1) -> {
-                    if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
-                        future.complete(location);
-                    }
-                }, true));
+                Minecraft.getInstance().execute(() -> Minecraft.getInstance().getSkinManager()
+                        .registerSkins(filledProfile, (type, location, p1) -> {
+                            if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN) {
+                                future.complete(location);
+                            }
+                        }, true));
                 return future.join();
             } catch (Exception e) {
                 return null;
             }
         }).thenAcceptAsync(location -> {
-            if (location != null) this.skinLocation = location;
+            if (location != null)
+                this.skinLocation = location;
         }, Minecraft.getInstance());
         //?}
     }
-
 
     // GhostRegistryから受け取った最新のデータで、エンティティの状態を更新するメソッド
     public void updateFromData(final PlayerData data) {
@@ -115,26 +134,24 @@ public class GhostPlayerEntity extends RemotePlayer {
 
         // ★ Minecraftの滑らかな移動メソッドを呼び出す
         //? if >= 1.21.11 {
-        /*this.lerpPositionAndRotationStep(
-                1,
-                data.pos().x(),
-                data.pos().y(),
-                data.pos().z(),
-                data.rot().y(), // ★ YawはY軸周りの回転
-                data.rot().x()  // ★ PitchはX軸周りの回転
-        );
-        *///?} else if >= 1.20.6 {
-        
-        /*this.lerpTo(
-                data.pos().x(),
-                data.pos().y(),
-                data.pos().z(),
-                data.rot().y(), // ★ YawはY軸周りの回転
-                data.rot().x(), // ★ PitchはX軸周りの回転
-                INTERPOLATION_STEPS
-        );
-        
-        *///?} else {
+
+
+          /*Vec3 pos = McDtoConverter.toMc(data.pos());
+          this.moveOrInterpolateTo(pos, data.rot().y(), data.rot().x());
+
+         *///?} else if >= 1.20.6 {
+
+
+          /*this.lerpTo(
+          data.pos().x(),
+          data.pos().y(),
+          data.pos().z(),
+          data.rot().y(), // ★ YawはY軸周りの回転
+          data.rot().x(), // ★ PitchはX軸周りの回転
+          INTERPOLATION_STEPS
+          );
+
+         *///?} else {
 
         this.lerpTo(
                 data.pos().x(),
@@ -143,8 +160,7 @@ public class GhostPlayerEntity extends RemotePlayer {
                 data.rot().y(), // ★ YawはY軸周りの回転
                 data.rot().x(), // ★ PitchはX軸周りの回転
                 INTERPOLATION_STEPS,
-                false
-        );
+                false);
 
         //?}
         this.lerpHeadTo(data.rot().y(), INTERPOLATION_STEPS);
@@ -181,11 +197,6 @@ public class GhostPlayerEntity extends RemotePlayer {
 
     // このエンティティはクライアントサイドのみの幻影なので、
     // 物理演算やAIのtick処理は一切行わないようにする
-    @Override
-    public void tick() {
-        super.tick();
-        // this.calculateEntityAnimation(this, false);
-    }
 
     @Override
     public boolean isSpectator() {
@@ -208,17 +219,17 @@ public class GhostPlayerEntity extends RemotePlayer {
         // 何もしない
     }
 
-
     /*? if >=1.20.6 {*/
+
 
     /*private volatile PlayerSkin skinLocation = null;
 
     @Override
     public @NotNull PlayerSkin getSkin() {
-        return skinLocation != null ? skinLocation : super.getSkin();
+    return skinLocation != null ? skinLocation : super.getSkin();
     }
 
-    *//*?} else {*/
+   *//*?} else {*/
     // --- Skin Handling ---
     private volatile net.minecraft.resources.ResourceLocation skinLocation = null;
 
