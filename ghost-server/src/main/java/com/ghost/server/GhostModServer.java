@@ -84,6 +84,7 @@ public class GhostModServer extends WebSocketServer {
         LOGGER.info("Authentication enabled using CHAP.");
         LOGGER.info("Visibility Range: {} blocks", Math.sqrt(visibleRangeSqr));
         LOGGER.info("Rate Limit: {} packets/sec", packetsPerSecond);
+        LOGGER.debug("\n=== DEBUG MODE ===\n");
         setConnectionLostTimeout(100); // 接続タイムアウトの設定（秒）
     }
 
