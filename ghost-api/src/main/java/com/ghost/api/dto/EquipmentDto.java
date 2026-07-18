@@ -1,5 +1,7 @@
 package com.ghost.api.dto;
 
+import com.ghost.api.dto.item.ItemDto;
+
 import java.util.Objects;
 
 /**

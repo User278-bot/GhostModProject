@@ -1,21 +1,24 @@
 package com.ghost.converter;
 
-import com.ghost.api.dto.ItemDto;
+import com.ghost.api.dto.item.ItemDto;
 import com.ghost.api.dto.Vec2Dto;
 import com.ghost.api.dto.Vec3Dto;
 import com.mojang.logging.LogUtils;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 //? if <=1.19.2 {
 import net.minecraft.core.Registry;
- //?} else {
+        //?} else {
 /*import net.minecraft.core.registries.BuiltInRegistries;
-*///?}
+ *///?}
 
 //? if >=1.21.11 {
 /*import net.minecraft.resources.Identifier;
@@ -67,17 +70,25 @@ public final class McDtoConverter {
         if (stack == null || stack.isEmpty()) {
             return ItemDto.ITEM_AIR;
         }
-
         String id;
         //? if <=1.19.2 {
-
         id = Registry.ITEM.getKey(stack.getItem()).toString();
-         //?} else {
-
+        //?} else {
         /*id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-        *///?}
+         *///?}
 
-        return new ItemDto(id);
+        ItemDto.Builder builder = new ItemDto.Builder(id)
+                //? if<=1.19.2{
+                .damage(stack.getDamageValue())
+                .hasGlint(stack.hasFoil())
+                .color(stack.getBarColor());
+        //? }else if<=1.20.1{
+        //? }else if<=1.20.6{
+        //? }else if<=1.20.11{
+        //? }else{
+        //? }
+
+        return builder.build();
     }
 
     public static ItemStack toMc(ItemDto item) {
@@ -93,17 +104,42 @@ public final class McDtoConverter {
         /*Identifier location = Identifier.parse(item.id());
          *///?}
 
+        ItemStack itemStack;
         //? if <= 1.19.2 {
-         Item mcItem = Registry.ITEM.get(location);
+        Item mcItem = Registry.ITEM.get(location);
+        itemStack = new ItemStack(mcItem);
+        itemStack.setDamageValue(item.damage());
+        CompoundTag tag = itemStack.getOrCreateTag();
+        if (item.hasGlint()) {
+
+            ListTag enchantmentsList = new ListTag();
+
+            // 空のリストではなく、無害なダミーデータ（例: IDなし、レベル0）を内包したCompoundTagを1つ追加する
+            CompoundTag dummyEnchantment = new CompoundTag();
+            dummyEnchantment.putString("id", "ghost:dummy");
+            dummyEnchantment.putShort("lvl", (short) 0);
+
+            enchantmentsList.add(dummyEnchantment);
+
+            // 1.19.2でのエンチャント情報を管理するバニラ標準のキー "Enchantments" にセット
+            tag.put("Enchantments", enchantmentsList);
+        }
+        if (item.color() != -1) {
+
+            CompoundTag display = tag.getCompound("display");
+            display.putInt("color", item.color());
+            tag.put("display", display);
+        }
+
         //?} else if <= 1.20.6 {
         /*Item mcItem = BuiltInRegistries.ITEM.get(location);
-        *///?} else if <= 1.21.4 {
+         *///?} else if <= 1.21.4 {
         // Item mcItem = BuiltInRegistries.ITEM.getValue(location);
         //?} else {
         /*Item mcItem = BuiltInRegistries.ITEM.getValue(location);
          *///?}
 
         // 3. ItemStack を生成
-        return new ItemStack(mcItem);
+        return itemStack;
     }
 }
