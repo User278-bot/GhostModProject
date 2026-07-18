@@ -1,5 +1,6 @@
 package com.ghost.registry;
 
+import com.ghost.api.dto.EquipmentDto;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.api.dto.Vec2Dto;
 import com.ghost.api.dto.Vec3Dto;
@@ -66,6 +67,8 @@ class InMemoryGhostRegistryTest {
         PlayerData initialData = createTestData("uuid-1", "Player1");
         registry.updateGhost(initialData);
 
+        EquipmentDto equipment = new EquipmentDto();
+
         // 同じUUIDで新しいデータを準備（位置を変更）
         PlayerData updatedData = new PlayerData(
                 new Vec3Dto(10, 20, 30),
@@ -76,7 +79,8 @@ class InMemoryGhostRegistryTest {
                 "minecraft:overworld",
                 (byte) 127,
                 "MAIN_HAND",
-                0);
+                0,
+                equipment);
 
         // 実行 (Act)
         registry.updateGhost(updatedData);
@@ -129,6 +133,7 @@ class InMemoryGhostRegistryTest {
                 "minecraft:overworld",
                 (byte) 127,
                 "MAIN_HAND",
-                0);
+                0,
+                new EquipmentDto());
     }
 }
