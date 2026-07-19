@@ -28,6 +28,8 @@ This project consists of the following modules:
 - Minecraft 1.19.2
 - Minecraft 1.20.1
 - Minecraft 1.20.6
+- Minecraft 1.21.4
+- Minecraft 1.21.11
 
 ## Downloads
 You can download the artifacts from the links below. The version number displayed is the latest version. If the link is incorrect, please download the latest version of each artifact from the [Releases](https://github.com/User278-bot/GhostModProject/releases) page.
