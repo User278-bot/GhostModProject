@@ -72,8 +72,8 @@ public class GhostPlayerEntity extends RemotePlayer {
           });
          *///?} else if >=1.21.4 {
 
-        /*
-          CompletableFuture.runAsync(() -> {
+        
+          /*CompletableFuture.runAsync(() -> {
           var updatedProfile =
           Minecraft.getInstance().getMinecraftSessionService().fetchProfile(profile.
           getId(), true);

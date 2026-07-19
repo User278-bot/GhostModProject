@@ -13,16 +13,27 @@ public final class CustomModelDataDto {
     private final List<Boolean> flags;
     private final List<String> strings;
     private final List<Integer> colors;
+    private final int model;
 
     public CustomModelDataDto() {
         this(List.of(), List.of(), List.of(), List.of());
     }
+
 
     public CustomModelDataDto(List<Float> floats, List<Boolean> flags, List<String> strings, List<Integer> colors) {
         this.floats = floats != null ? floats : List.of();
         this.flags = flags != null ? flags : List.of();
         this.strings = strings != null ? strings : List.of();
         this.colors = colors != null ? colors : List.of();
+        this.model = 0;
+    }
+
+    public CustomModelDataDto(int model) {
+        this.floats = List.of();
+        this.flags = List.of();
+        this.strings = List.of();
+        this.colors = List.of();
+        this.model = model;
     }
 
     public List<Float> floats() {
@@ -39,6 +50,14 @@ public final class CustomModelDataDto {
 
     public List<Integer> colors() {
         return colors;
+    }
+
+    public int model(){
+        return model;
+    }
+
+    public boolean isEmpty() {
+        return flags.isEmpty() || floats.isEmpty() || strings().isEmpty() || colors().isEmpty();
     }
 
     @Override

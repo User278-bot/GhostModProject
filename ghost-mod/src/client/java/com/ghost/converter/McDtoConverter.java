@@ -4,27 +4,32 @@ import com.ghost.api.dto.item.ItemDto;
 import com.ghost.api.dto.Vec2Dto;
 import com.ghost.api.dto.Vec3Dto;
 import com.mojang.logging.LogUtils;
+//? if <= 1.20.1 {
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+//?} else {
+/*import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.component.CustomModelData;
+*///?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 //? if <=1.19.2 {
 import net.minecraft.core.Registry;
-        //?} else {
+ //?} else {
 /*import net.minecraft.core.registries.BuiltInRegistries;
- *///?}
+        *///?}
 
 //? if >=1.21.11 {
 /*import net.minecraft.resources.Identifier;
- *///?} else {
+        *///?} else {
 import net.minecraft.resources.ResourceLocation;
-//?}
+ //?}
 
 @SuppressWarnings("unused")
 public final class McDtoConverter {
@@ -73,20 +78,14 @@ public final class McDtoConverter {
         String id;
         //? if <=1.19.2 {
         id = Registry.ITEM.getKey(stack.getItem()).toString();
-        //?} else {
+         //?} else {
         /*id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-         *///?}
+        *///?}
 
         ItemDto.Builder builder = new ItemDto.Builder(id)
-                //? if<=1.19.2{
                 .damage(stack.getDamageValue())
                 .hasGlint(stack.hasFoil())
                 .color(stack.getBarColor());
-        //? }else if<=1.20.1{
-        //? }else if<=1.20.6{
-        //? }else if<=1.20.11{
-        //? }else{
-        //? }
 
         return builder.build();
     }
@@ -98,19 +97,30 @@ public final class McDtoConverter {
 
         //? if <= 1.20.6 {
         ResourceLocation location = new ResourceLocation(item.id());
-        //?} else if <= 1.21.4 {
-        // ResourceLocation location = ResourceLocation.parse(item.id());
-        //?} else {
+         //?} else if <= 1.21.4 {
+        /*ResourceLocation location = ResourceLocation.parse(item.id());
+         *///?} else {
         /*Identifier location = Identifier.parse(item.id());
-         *///?}
+        *///?}
 
-        ItemStack itemStack;
+
         //? if <= 1.19.2 {
         Item mcItem = Registry.ITEM.get(location);
-        itemStack = new ItemStack(mcItem);
+         //?} else if <= 1.20.6 {
+        /*Item mcItem = BuiltInRegistries.ITEM.get(location);
+         *///?} else {
+        /*Item mcItem = BuiltInRegistries.ITEM.getValue(location);
+        *///?}
+
+        ItemStack itemStack = new ItemStack(mcItem);
         itemStack.setDamageValue(item.damage());
+
+        //? if <= 1.20.1 {
         CompoundTag tag = itemStack.getOrCreateTag();
+         //?}
+
         if (item.hasGlint()) {
+            //? if <=1.20.1 {
 
             ListTag enchantmentsList = new ListTag();
 
@@ -123,22 +133,38 @@ public final class McDtoConverter {
 
             // 1.19.2でのエンチャント情報を管理するバニラ標準のキー "Enchantments" にセット
             tag.put("Enchantments", enchantmentsList);
+
+            //?} else {
+            /*itemStack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+            *///?}
         }
         if (item.color() != -1) {
+            //? if <=1.20.1 {
 
             CompoundTag display = tag.getCompound("display");
             display.putInt("color", item.color());
             tag.put("display", display);
+            
+            //?} else if <=1.21.4 {
+            // itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color(), true));
+            //?} else {
+            /*itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color()));
+            *///?}
         }
-
-        //?} else if <= 1.20.6 {
-        /*Item mcItem = BuiltInRegistries.ITEM.get(location);
-         *///?} else if <= 1.21.4 {
-        // Item mcItem = BuiltInRegistries.ITEM.getValue(location);
-        //?} else {
-        /*Item mcItem = BuiltInRegistries.ITEM.getValue(location);
-         *///?}
-
+        if (item.customModelData() != null && !item.customModelData().isEmpty()) {
+            //? if <=1.20.1 {
+            tag.putInt("CustomModelData", item.customModelData().model());
+             //?} else if <= 1.20.6 {
+            // itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(item.customModelData().model()));
+            //?} else {
+            /*itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(
+                    item.customModelData().floats(),
+                    item.customModelData().flags(),
+                    item.customModelData().strings(),
+                    item.customModelData().colors())
+            );
+            *///?}
+        }
         // 3. ItemStack を生成
         return itemStack;
     }
