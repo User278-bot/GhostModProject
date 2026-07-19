@@ -30,6 +30,15 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<JavaExec> {
     jvmArgs = listOf("-Dfile.encoding=UTF-8")
+    doFirst {
+        // IntelliJがデバッグ実行時に差し込むJDWPエージェントが含まれているかチェック
+        val isDebugExecute = jvmArgs?.any { it.contains("-agentlib:jdwp") } == true
+
+        if (isDebugExecute) {
+            println("🐛 デバッグモードを検知: slf4j-simple のログレベルを DEBUG に切り替えます")
+            systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug")
+        }
+    }
 }
 
 tasks.named<JavaExec>("run") {

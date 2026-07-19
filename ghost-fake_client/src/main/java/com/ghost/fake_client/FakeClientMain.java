@@ -1,5 +1,6 @@
 package com.ghost.fake_client;
 
+import com.ghost.api.dto.EquipmentDto;
 import com.ghost.net.GhostSyncService;
 import com.ghost.api.packet.GhostPacket;
 import com.ghost.api.dto.PlayerData;
@@ -108,6 +109,6 @@ public class FakeClientMain {
         Vec2Dto rot = new Vec2Dto(yaw, 0f); // pitchは0で固定
 
         // PlayerData DTOを直接インスタンス化
-        return new PlayerData(pos, rot, uuid, name, "STANDING", "minecraft:overworld", (byte) 127, "MAIN_HAND", 0);
+        return new PlayerData(pos, rot, uuid, name, "STANDING", "minecraft:overworld", (byte) 127, "MAIN_HAND", 0,new EquipmentDto());
     }
 }

@@ -23,7 +23,6 @@ repositories {
      */
     maven("https://maven.fabricmc.net/") { name = "Fabric" }
     maven("https://maven.shedaniel.me/")
-    maven("https://maven.terraformersmc.com/releases/")
 
     fun strictMaven(url: String, alias: String, vararg groups: String) = exclusiveContent {
         forRepository { maven(url) { name = alias } }
@@ -51,7 +50,7 @@ dependencies {
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }
     // ModMenuはオプショナル依存 - コンパイル時のみ使用
-    modCompileOnly("com.terraformersmc:modmenu:${project.property("mod_menu_version")}") {
+    modCompileOnly("maven.modrinth:modmenu:${project.property("mod_menu_version")}") {
         exclude(group= "net.fabricmc.fabric-api")
         exclude(group= "net.fabricmc", module= "fabric-loader")
     }

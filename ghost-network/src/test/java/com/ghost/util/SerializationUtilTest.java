@@ -1,5 +1,6 @@
 package com.ghost.util;
 
+import com.ghost.api.dto.EquipmentDto;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.api.dto.Vec2Dto;
 import com.ghost.api.dto.Vec3Dto;
@@ -24,7 +25,8 @@ class SerializationUtilTest {
                 "minecraft:overworld",
                 (byte) 127,
                 "MAIN_HAND",
-                0);
+                0,
+                new EquipmentDto());
         GhostPacket<PlayerData> packet = new GhostPacket<>(MessageType.UPDATE, originalData);
 
         // 実行: シリアライズ
