@@ -47,17 +47,17 @@ dependencies {
 
     modImplementation("me.shedaniel.cloth:cloth-config-fabric:${project.property("cloth_config_version")}") {
         exclude(group = "net.fabricmc.fabric-api")
-        exclude(group= "net.fabricmc", module= "fabric-loader")
+        exclude(group = "net.fabricmc", module = "fabric-loader")
     }
     // ModMenuはオプショナル依存 - コンパイル時のみ使用
     modCompileOnly("maven.modrinth:modmenu:${project.property("mod_menu_version")}") {
-        exclude(group= "net.fabricmc.fabric-api")
-        exclude(group= "net.fabricmc", module= "fabric-loader")
+        exclude(group = "net.fabricmc.fabric-api")
+        exclude(group = "net.fabricmc", module = "fabric-loader")
     }
     implementation(project(":ghost-network"))
     include(project(":ghost-network"))
     include(project(":ghost-api"))
-    
+
     // 外部ライブラリも明示的にincludeが必要（Loomのincludeは推移的ではない）
     // ghost-networkが依存しているWebSocketライブラリを含める
     include(libs.websocket)
@@ -66,7 +66,8 @@ dependencies {
 loom {
     splitEnvironmentSourceSets()
 
-    fabricModJsonPath = (project.parent ?: project).file("src/main/resources/fabric.mod.json") // Useful for interface injection
+    fabricModJsonPath =
+        (project.parent ?: project).file("src/main/resources/fabric.mod.json") // Useful for interface injection
     accessWidenerPath = (project.parent ?: project).file("src/main/resources/template.accesswidener")
 
     decompilerOptions.named("vineflower") {
@@ -74,7 +75,7 @@ loom {
     }
 
     mods {
-        register(project.property("mod.id")as String) {
+        register(project.property("mod.id") as String) {
             sourceSet(sourceSets.main.get())
             sourceSet(sourceSets["client"])
         }
@@ -134,7 +135,7 @@ publishMods {
 
     // トークンが未設定の場合はdryRunモード（実際のアップロードは行わない）
     dryRun = providers.environmentVariable("MODRINTH_TOKEN").getOrNull() == null
-        || providers.environmentVariable("CURSEFORGE_TOKEN").getOrNull() == null
+            || providers.environmentVariable("CURSEFORGE_TOKEN").getOrNull() == null
 
     modrinth {
         projectId = property("publish.modrinth") as String
@@ -164,6 +165,8 @@ publishMods {
         optional {
             slug = "modmenu"
         }
+        clientRequired = true;
+        serverRequired = false;
     }
 
     // discord {
