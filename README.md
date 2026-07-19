@@ -28,6 +28,8 @@ AI Translated: English
 - Minecraft 1.19.2
 - Minecraft 1.20.1
 - Minecraft 1.20.6
+- Minecraft 1.21.4
+- Minecraft 1.21.11
 
 ## 成果物のダウンロード
 以下のリンクから成果物をダウンロードできます。表示されている番号が最新バージョンです。リンク先が正しくない場合は、[リリース](https://github.com/User278-bot/GhostModProject/releases)から各成果物の最新バージョンをダウンロードしてください。
