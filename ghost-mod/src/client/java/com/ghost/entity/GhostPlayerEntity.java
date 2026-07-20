@@ -20,11 +20,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
-
-import net.minecraft.world.phys.Vec3;
+//? if >= 1.21.11 {
+// import net.minecraft.world.phys.Vec3;
+//? }
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
+//? if >=1.20.6 {
+// import java.util.Objects;
+//?}
 import java.util.concurrent.CompletableFuture;
 
 // Playerエンティティを継承すると多くの機能を使えるが、
@@ -169,8 +171,8 @@ public class GhostPlayerEntity extends RemotePlayer {
     }
 
     private void syncState(PlayerData data) {
+        this.setMainArm(McDtoConverter.toHumanoidArm(data.mainArm()));
         if (data.swingTime() == 1) {
-            this.setMainArm(McDtoConverter.toMc(data.swingArm()));
             this.swing(InteractionHand.MAIN_HAND);
         }
 
@@ -189,6 +191,26 @@ public class GhostPlayerEntity extends RemotePlayer {
         this.setItemSlot(EquipmentSlot.CHEST, McDtoConverter.toMc(data.equipment().chest()));
         this.setItemSlot(EquipmentSlot.HEAD, McDtoConverter.toMc(data.equipment().head()));
         this.setItemSlot(EquipmentSlot.LEGS, McDtoConverter.toMc(data.equipment().legs()));
+
+        if (data.isUsingItem()) {
+            InteractionHand hand = McDtoConverter.toInteractionHand(data.activeHand());
+            // アイテムの使用を開始した、または「使っている手」が切り替わった場合
+            if (!this.isUsingItem() || this.getUsedItemHand() != hand) {
+                this.startUsingItem(hand);
+
+                // クライアント側のエンティティ（RemotePlayer）はバニラの仕様上、
+                // startUsingItem内でEntityDataフラグが立たないため、手動で状態を上書き同期する
+                this.setLivingEntityFlag(1, true); // アイテムを使用中
+                this.setLivingEntityFlag(2, hand == InteractionHand.OFF_HAND); // オフハンドを使用中か
+            }
+        } else {
+            // アイテムの使用を停止した場合は、フラグと内部変数を確実にリセットする
+            this.setLivingEntityFlag(1, false);
+            this.setLivingEntityFlag(2, false);
+            this.useItem = net.minecraft.world.item.ItemStack.EMPTY;
+            this.useItemRemaining = 0;
+        }
+
     }
 
     public String getGhostUuid() {

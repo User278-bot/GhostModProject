@@ -78,9 +78,11 @@ class InMemoryGhostRegistryTest {
                 "STANDING",
                 "minecraft:overworld",
                 (byte) 127,
-                "MAIN_HAND",
+                "RIGHT",
                 0,
-                equipment);
+                equipment,
+                false,
+                "MAIN_HAND");
 
         // 実行 (Act)
         registry.updateGhost(updatedData);
@@ -132,8 +134,10 @@ class InMemoryGhostRegistryTest {
                 "STANDING",
                 "minecraft:overworld",
                 (byte) 127,
-                "MAIN_HAND",
+                "RIGHT",
                 0,
-                new EquipmentDto());
+                new EquipmentDto(),
+                false,
+                "MAIN_HAND");
     }
 }

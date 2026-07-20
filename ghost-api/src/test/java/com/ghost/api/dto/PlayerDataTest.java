@@ -25,9 +25,11 @@ class PlayerDataTest {
                     "STANDING",
                     "minecraft:overworld",
                     (byte) 127,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto()
+                    new EquipmentDto(),
+                    true,
+                    "OFF_HAND"
             );
 
             // 検証
@@ -41,6 +43,9 @@ class PlayerDataTest {
             assertEquals("STANDING", data.pose());
             assertEquals("minecraft:overworld", data.dimension());
             assertEquals(127, data.skinParts());
+            assertEquals("RIGHT", data.mainArm());
+            assertTrue(data.isUsingItem());
+            assertEquals("OFF_HAND", data.activeHand());
         }
 
         @Test
@@ -59,6 +64,9 @@ class PlayerDataTest {
             assertEquals("STANDING", data.pose());
             assertEquals("", data.dimension());
             assertEquals(127, data.skinParts());
+            assertEquals("RIGHT", data.mainArm());
+            assertFalse(data.isUsingItem());
+            assertEquals("MAIN_HAND", data.activeHand());
         }
     }
 
@@ -78,9 +86,11 @@ class PlayerDataTest {
                     "POSE",
                     "dim",
                     (byte) 50,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto());
+                    new EquipmentDto(),
+                    false,
+                    "MAIN_HAND");
             PlayerData data2 = new PlayerData(
                     new Vec3Dto(1.0, 2.0, 3.0),
                     new Vec2Dto(10.0f, 20.0f),
@@ -89,9 +99,11 @@ class PlayerDataTest {
                     "POSE",
                     "dim",
                     (byte) 50,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto());
+                    new EquipmentDto(),
+                    false,
+                    "MAIN_HAND");
 
             // 検証
             assertEquals(data1, data2);
@@ -110,9 +122,11 @@ class PlayerDataTest {
                     "STANDING",
                     "minecraft:overworld",
                     (byte) 127,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto());
+                    new EquipmentDto(),
+                    false,
+                    "MAIN_HAND");
             PlayerData data2 = new PlayerData(
                     new Vec3Dto(1.0, 2.0, 3.0),
                     new Vec2Dto(10.0f, 20.0f),
@@ -121,9 +135,11 @@ class PlayerDataTest {
                     "STANDING",
                     "minecraft:overworld",
                     (byte) 127,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto());
+                    new EquipmentDto(),
+                    false,
+                    "MAIN_HAND");
 
             // 検証
             assertNotEquals(data1, data2);
@@ -166,9 +182,11 @@ class PlayerDataTest {
                     "CROUCHING",
                     "minecraft:the_nether",
                     (byte) 63,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto());
+                    new EquipmentDto(),
+                    false,
+                    "MAIN_HAND");
 
             // 実行
             String str = data.toString();
@@ -192,9 +210,11 @@ class PlayerDataTest {
             PlayerData data = new PlayerData(
                     Vec3Dto.ZERO, Vec2Dto.ZERO,
                     "uuid", "name", "STANDING", "dim", (byte) 127,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto());
+                    new EquipmentDto(),
+                    false,
+                    "MAIN_HAND");
 
             assertEquals(127, data.skinParts());
         }
@@ -205,9 +225,11 @@ class PlayerDataTest {
             PlayerData data = new PlayerData(
                     Vec3Dto.ZERO, Vec2Dto.ZERO,
                     "uuid", "name", "STANDING", "dim", (byte) 0,
-                    "MAIN_HAND",
+                    "RIGHT",
                     0,
-                    new EquipmentDto());
+                    new EquipmentDto(),
+                    false,
+                    "MAIN_HAND");
 
             assertEquals(0, data.skinParts());
         }
