@@ -7,6 +7,7 @@ import com.ghost.api.packet.MessageType;
 import com.ghost.api.registry.IGhostRegistry;
 import com.ghost.net.auth.ChapAuthenticator;
 import com.ghost.util.SerializationUtil;
+import com.ghost.util.CryptoUtil;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
@@ -33,6 +34,15 @@ public class GhostWebSocketClient extends WebSocketClient {
     }
 
     @Override
+    public void send(String text) {
+        try {
+            super.send(CryptoUtil.encrypt(text, PASSWORD));
+        } catch (Exception e) {
+            LOGGER.error("Failed to encrypt message before sending", e);
+        }
+    }
+
+    @Override
     public void onOpen(ServerHandshake data) {
         LOGGER.info("Successfully connected to the server (status: {})", data.getHttpStatus());
         if (authFuture.isDone()) {
@@ -43,7 +53,8 @@ public class GhostWebSocketClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         try {
-            var packet = SerializationUtil.deserializePacket(message);
+            String decryptedMessage = CryptoUtil.decrypt(message, PASSWORD);
+            var packet = SerializationUtil.deserializePacket(decryptedMessage);
             if (packet == null)
                 return;
             var type = packet.getType();
