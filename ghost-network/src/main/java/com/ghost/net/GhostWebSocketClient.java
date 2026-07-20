@@ -39,6 +39,8 @@ public class GhostWebSocketClient extends WebSocketClient {
             super.send(CryptoUtil.encrypt(text, PASSWORD));
         } catch (Exception e) {
             LOGGER.error("Failed to encrypt message before sending", e);
+            close();
+            throw new RuntimeException("Encryption failed", e);
         }
     }
 
@@ -55,8 +57,11 @@ public class GhostWebSocketClient extends WebSocketClient {
         try {
             String decryptedMessage = CryptoUtil.decrypt(message, PASSWORD);
             var packet = SerializationUtil.deserializePacket(decryptedMessage);
-            if (packet == null)
+            if (packet == null) {
+                LOGGER.warn("Received invalid/malformed packet payload.");
+                close();
                 return;
+            }
             var type = packet.getType();
             var data = packet.getData();
             LOGGER.debug("type: {},data: {}", type, data);
@@ -105,6 +110,10 @@ public class GhostWebSocketClient extends WebSocketClient {
             }
         } catch (Exception ex) {
             LOGGER.error("Failed to process WebSocket message: {}", message, ex);
+            if (!authFuture.isDone()) {
+                authFuture.completeExceptionally(new SecurityException("Decryption or processing failed. Invalid password?", ex));
+            }
+            close();
         }
     }
 
