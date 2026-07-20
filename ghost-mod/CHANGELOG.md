@@ -1,9 +1,8 @@
 # Changelog
 
-## v1.3.2 (2025/01/24)
-### change
-- ModMenu is no longer a required dependency. Press G key to open the config screen.
+## v1.4 (2026/07/19)
+### feat
+- Synced items held in hands and equipment to the client.
 
 ### fix
-- Toast notification was not displayed in some cases. Fixed.
-- The default value and the value when reset in the config screen were different. Fixed.
+- Fix movement animation bug in 1.21.11

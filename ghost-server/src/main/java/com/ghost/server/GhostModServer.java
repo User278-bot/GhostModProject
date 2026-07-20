@@ -6,6 +6,7 @@ import com.ghost.api.packet.GhostPacket;
 import com.ghost.api.packet.MessageType;
 import com.ghost.net.auth.ChapAuthenticator;
 import com.ghost.util.SerializationUtil;
+import com.ghost.util.CryptoUtil;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -102,7 +103,11 @@ public class GhostModServer extends WebSocketServer {
         // Note: Generic type T is inferred or we can cast. Serialization utilizes
         // object structure.
         GhostPacket<AuthData> challengePacket = new GhostPacket<>(MessageType.AUTH_CHALLENGE, authData);
-        conn.send(SerializationUtil.serializePacket(challengePacket));
+        try {
+            conn.send(CryptoUtil.encrypt(SerializationUtil.serializePacket(challengePacket), serverPassword));
+        } catch (Exception e) {
+            LOGGER.error("Failed to encrypt challenge", e);
+        }
 
         LOGGER.info("Sent AUTH_CHALLENGE to {}", conn.getRemoteSocketAddress());
     }
@@ -133,20 +138,30 @@ public class GhostModServer extends WebSocketServer {
             return; // 制限超過時はメッセージを無視
         }
 
+        // 復号化処理
+        String decryptedMessage;
+        try {
+            decryptedMessage = CryptoUtil.decrypt(message, serverPassword);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to decrypt message from {}, closing connection.", conn.getRemoteSocketAddress());
+            conn.close(4003, "Decryption Failed");
+            return;
+        }
+
         // 認証チェック
         var session = sessions.get(conn);
         if (session == null) {
             return;
         }
         if (!session.isAuthenticated()) {
-            handleAuthHandshake(conn, message);
+            handleAuthHandshake(conn, decryptedMessage);
             return;
         }
 
-        LOGGER.debug("Message from {}: {}", conn.getRemoteSocketAddress(), message);
+        LOGGER.debug("Message from {}: {}", conn.getRemoteSocketAddress(), decryptedMessage);
 
         try {
-            var packet = SerializationUtil.deserializePacket(message);
+            var packet = SerializationUtil.deserializePacket(decryptedMessage);
             if (packet == null) {
                 return;
             }
@@ -192,7 +207,11 @@ public class GhostModServer extends WebSocketServer {
 
                     // 認証成功パケットを送信
                     GhostPacket<Void> successPacket = new GhostPacket<>(MessageType.AUTH_SUCCESS, null);
-                    conn.send(SerializationUtil.serializePacket(successPacket));
+                    try {
+                        conn.send(CryptoUtil.encrypt(SerializationUtil.serializePacket(successPacket), serverPassword));
+                    } catch (Exception e) {
+                        LOGGER.error("Failed to encrypt auth success", e);
+                    }
 
                     // 初期同期パケットを送るなど、通常のフローへ
                 } else {
@@ -227,7 +246,11 @@ public class GhostModServer extends WebSocketServer {
     private void sendLeavePacket(final PlayerData playerData) {
         var leavePacket = new GhostPacket<>(MessageType.LEAVE, playerData.uuid());
         var msg = SerializationUtil.serializePacket(leavePacket);
-        broadcast(msg);
+        try {
+            broadcast(CryptoUtil.encrypt(msg, serverPassword));
+        } catch (Exception e) {
+            LOGGER.error("Failed to encrypt leave packet", e);
+        }
     }
 
     private void sendUpdatePacket(final PlayerData sendData, final WebSocket exclude) {
@@ -235,6 +258,16 @@ public class GhostModServer extends WebSocketServer {
         final var despawnPacket = new GhostPacket<>(MessageType.DESPAWN, sendData.uuid());
         final var update = SerializationUtil.serializePacket(packet);
         final var despawn = SerializationUtil.serializePacket(despawnPacket);
+
+        final String encryptedUpdate;
+        final String encryptedDespawn;
+        try {
+            encryptedUpdate = CryptoUtil.encrypt(update, serverPassword);
+            encryptedDespawn = CryptoUtil.encrypt(despawn, serverPassword);
+        } catch (Exception e) {
+            LOGGER.error("Encryption failed for update packet", e);
+            return;
+        }
         final var targetUuid = sendData.uuid();
 
         final var excludeSession = sessions.get(exclude);
@@ -255,18 +288,26 @@ public class GhostModServer extends WebSocketServer {
                             var excludePlayerData = entry.getValue().playerData();
                             var excludePacket = new GhostPacket<>(MessageType.UPDATE, excludePlayerData);
                             var excludeMsg = SerializationUtil.serializePacket(excludePacket);
-                            exclude.send(excludeMsg);
+                            try {
+                                exclude.send(CryptoUtil.encrypt(excludeMsg, serverPassword));
+                            } catch (Exception e) {
+                                LOGGER.error("Failed to encrypt exclude update", e);
+                            }
                         }
-                        sock.send(update);
+                        sock.send(encryptedUpdate);
                     } else if (tracked.contains(targetUuid)) {
                         // 追跡中だったが範囲外に出た: DESPAWN送信してリストから削除
                         tracked.remove(targetUuid);
-                        sock.send(despawn);
+                        sock.send(encryptedDespawn);
 
                         var excludePacket = new GhostPacket<>(MessageType.DESPAWN, entryUuid);
                         var excludeMsg = SerializationUtil.serializePacket(excludePacket);
                         excludeSession.trackedPlayers().remove(entryUuid);
-                        exclude.send(excludeMsg);
+                        try {
+                            exclude.send(CryptoUtil.encrypt(excludeMsg, serverPassword));
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to encrypt exclude despawn", e);
+                        }
                     }
                 });
     }

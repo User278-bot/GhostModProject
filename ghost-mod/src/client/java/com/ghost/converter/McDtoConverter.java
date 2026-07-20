@@ -21,15 +21,15 @@ import net.minecraft.world.phys.Vec3;
 
 //? if <=1.19.2 {
 import net.minecraft.core.Registry;
- //?} else {
+        //?} else {
 /*import net.minecraft.core.registries.BuiltInRegistries;
-        *///?}
+ *///?}
 
 //? if >=1.21.11 {
 /*import net.minecraft.resources.Identifier;
-        *///?} else {
+ *///?} else {
 import net.minecraft.resources.ResourceLocation;
- //?}
+        //?}
 
 @SuppressWarnings("unused")
 public final class McDtoConverter {
@@ -61,13 +61,17 @@ public final class McDtoConverter {
         return new Vec2(v2d.x(), v2d.y());
     }
 
-    public static HumanoidArm toMc(String arm) {
+    public static HumanoidArm toHumanoidArm(String arm) {
         try {
             return HumanoidArm.valueOf(arm);
         } catch (Exception ex) {
             LogUtils.getLogger().error("Could not convert to HumanoidArm: ", ex);
         }
         return HumanoidArm.RIGHT;
+    }
+
+    public static InteractionHand toInteractionHand(String hand) {
+        return "OFF_HAND".equals(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
     }
 
     // --- 新規追加: ItemStack変換 ---
@@ -78,9 +82,9 @@ public final class McDtoConverter {
         String id;
         //? if <=1.19.2 {
         id = Registry.ITEM.getKey(stack.getItem()).toString();
-         //?} else {
+        //?} else {
         /*id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-        *///?}
+         *///?}
 
         ItemDto.Builder builder = new ItemDto.Builder(id)
                 .damage(stack.getDamageValue())
@@ -97,27 +101,27 @@ public final class McDtoConverter {
 
         //? if <= 1.20.6 {
         ResourceLocation location = new ResourceLocation(item.id());
-         //?} else if <= 1.21.4 {
+        //?} else if <= 1.21.4 {
         /*ResourceLocation location = ResourceLocation.parse(item.id());
          *///?} else {
         /*Identifier location = Identifier.parse(item.id());
-        *///?}
+         *///?}
 
 
         //? if <= 1.19.2 {
         Item mcItem = Registry.ITEM.get(location);
-         //?} else if <= 1.20.6 {
+        //?} else if <= 1.20.6 {
         /*Item mcItem = BuiltInRegistries.ITEM.get(location);
          *///?} else {
         /*Item mcItem = BuiltInRegistries.ITEM.getValue(location);
-        *///?}
+         *///?}
 
         ItemStack itemStack = new ItemStack(mcItem);
         itemStack.setDamageValue(item.damage());
 
         //? if <= 1.20.1 {
         CompoundTag tag = itemStack.getOrCreateTag();
-         //?}
+        //?}
 
         if (item.hasGlint()) {
             //? if <=1.20.1 {
@@ -136,7 +140,7 @@ public final class McDtoConverter {
 
             //?} else {
             /*itemStack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-            *///?}
+             *///?}
         }
         if (item.color() != -1) {
             //? if <=1.20.1 {
@@ -144,17 +148,17 @@ public final class McDtoConverter {
             CompoundTag display = tag.getCompound("display");
             display.putInt("color", item.color());
             tag.put("display", display);
-            
+
             //?} else if <=1.21.4 {
             // itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color(), true));
             //?} else {
             /*itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color()));
-            *///?}
+             *///?}
         }
         if (item.customModelData() != null && !item.customModelData().isEmpty()) {
             //? if <=1.20.1 {
             tag.putInt("CustomModelData", item.customModelData().model());
-             //?} else if <= 1.20.6 {
+            //?} else if <= 1.20.6 {
             // itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(item.customModelData().model()));
             //?} else {
             /*itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(

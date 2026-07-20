@@ -46,6 +46,8 @@ public final class PlayerDataConverter {
                 skinParts,
                 fromMc(player.getMainArm()),
                 player.swingTime,
-                equipment);
+                equipment,
+                player.isUsingItem(),
+                fromMc(player.getUsedItemHand()));
     }
 }

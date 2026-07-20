@@ -109,6 +109,6 @@ public class FakeClientMain {
         Vec2Dto rot = new Vec2Dto(yaw, 0f); // pitchは0で固定
 
         // PlayerData DTOを直接インスタンス化
-        return new PlayerData(pos, rot, uuid, name, "STANDING", "minecraft:overworld", (byte) 127, "MAIN_HAND", 0,new EquipmentDto());
+        return new PlayerData(pos, rot, uuid, name, "STANDING", "minecraft:overworld", (byte) 127, "RIGHT", 0, new EquipmentDto(), false, "MAIN_HAND");
     }
 }
