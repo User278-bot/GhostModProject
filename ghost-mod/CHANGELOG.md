@@ -1,8 +1,6 @@
 # Changelog
 
-## v1.4 (2026/07/19)
+## v1.5.0 (2026/07/20)
 ### feat
-- Synced items held in hands and equipment to the client.
-
-### fix
-- Fix movement animation bug in 1.21.11
+- Added AES-256 encryption for ghost players.
+- Added synchronization of animations while using items.
