@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 public class GhostWebSocketClient extends WebSocketClient {
@@ -45,10 +46,49 @@ public class GhostWebSocketClient extends WebSocketClient {
     }
 
     @Override
+    public void send(byte[] bytes) {
+        try {
+            super.send(CryptoUtil.encrypt(bytes, PASSWORD));
+        } catch (Exception e) {
+            LOGGER.error("Failed to encrypt binary message before sending", e);
+            close();
+            throw new RuntimeException("Encryption failed", e);
+        }
+    }
+
+    @Override
     public void onOpen(ServerHandshake data) {
         LOGGER.info("Successfully connected to the server (status: {})", data.getHttpStatus());
         if (authFuture.isDone()) {
             authFuture = new CompletableFuture<>();
+        }
+    }
+
+    @Override
+    public void onMessage(ByteBuffer blob) {
+        try {
+            byte[] rawBytes = blob.array();
+            byte[] decryptedBytes = CryptoUtil.decrypt(rawBytes, PASSWORD);
+            MessageType type = com.ghost.api.proto.ProtoConverter.deserializePacketType(decryptedBytes);
+            LOGGER.debug("Received binary packet type: {}", type);
+
+            switch (type) {
+                case UPDATE:
+                    PlayerData playerData = com.ghost.api.proto.ProtoConverter.deserializeUpdatePacket(decryptedBytes);
+                    GHOST_REGISTRY.updateGhost(playerData);
+                    break;
+                case LEAVE:
+                case DESPAWN:
+                    String uuid = com.ghost.api.proto.ProtoConverter.deserializeUuid(decryptedBytes);
+                    GHOST_REGISTRY.removeGhost(uuid);
+                    break;
+                default:
+                    LOGGER.warn("Received unexpected binary packet type: {}", type);
+                    break;
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Failed to process WebSocket binary message", ex);
+            close();
         }
     }
 
@@ -87,25 +127,8 @@ public class GhostWebSocketClient extends WebSocketClient {
                     LOGGER.debug("Received AUTH_SUCCESS. Authentication verified.");
                     authFuture.complete(true);
                     break;
-                case UPDATE:
-                    if (data != null) {
-                        // dataElementを直接 PlayerData にデシリアライズ
-                        PlayerData playerData = SerializationUtil.parsePlayerData(data);
-                        GHOST_REGISTRY.updateGhost(playerData);
-                    }
-                    break;
-                case LEAVE:
-                    if (data != null) {
-                        String uuid = SerializationUtil.parseUUID(data);
-                        GHOST_REGISTRY.removeGhost(uuid);
-                    }
-                    break;
-                case DESPAWN:
-                    if (data != null) {
-                        var despawn = SerializationUtil.parseUUID(data);
-                        GHOST_REGISTRY.removeGhost(despawn);
-                    }
                 default:
+                    LOGGER.warn("Received unhandled text packet type: {}", type);
                     break;
             }
         } catch (Exception ex) {

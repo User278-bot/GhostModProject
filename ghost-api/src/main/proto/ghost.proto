@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+// すべての生成クラスを com.ghost.api.proto パッケージに配置
+option java_package = "com.ghost.api.proto";
+// 個別クラスとして生成（GhostProto という外部クラスにまとめない）
+option java_multiple_files = true;
+// 生成クラスを格納する外部クラス名（java_multiple_files=true なので実質未使用）
+option java_outer_classname = "GhostProto";
+
+// --- Vec3Dto に対応 ---
+// プレイヤーの3D座標（double 精度）
+message Vec3 {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+// --- Vec2Dto に対応 ---
+// プレイヤーのヨー・ピッチ（float 精度）
+message Vec2 {
+  float x = 1;
+  float y = 2;
+}
+
+// --- CustomModelDataDto に対応 ---
+// カスタムモデルデータ（1.21.2以降は複合型）
+message CustomModelData {
+  repeated float floats = 1;
+  repeated bool flags = 2;
+  repeated string strings = 3;
+  repeated int32 colors = 4;
+  int32 model = 5;
+}
+
+// --- TrimDto に対応 ---
+// アーマートリムデータ
+message Trim {
+  string material = 1;
+  string pattern = 2;
+}
+
+// --- ItemDto に対応 ---
+// アイテムのビジュアル情報
+message Item {
+  string id = 1;
+  int32 damage = 2;
+  bool has_glint = 3;
+  // -1 は「色なし」を意味する（sint32 で負数も効率的にエンコード）
+  sint32 color = 4;
+  string item_model = 5;
+  // optional: null の場合はフィールドが省略される
+  optional CustomModelData custom_model_data = 6;
+  optional Trim trim = 7;
+}
+
+// --- EquipmentDto に対応 ---
+// プレイヤーの装備セット（6スロット）
+message Equipment {
+  Item main_hand = 1;
+  Item off_hand = 2;
+  Item head = 3;
+  Item chest = 4;
+  Item legs = 5;
+  Item feet = 6;
+}
+
+// --- PlayerData に対応 ---
+// プレイヤーの全状態（毎フレーム送信される主要データ）
+message PlayerDataProto {
+  Vec3 pos = 1;
+  Vec2 rot = 2;
+  string uuid = 3;
+  string name = 4;
+  string pose = 5;
+  string dimension = 6;
+  // skinParts は byte だが protobuf は int32 で表現
+  int32 skin_parts = 7;
+  string main_arm = 8;
+  int32 swing_time = 9;
+  Equipment equipment = 10;
+  bool is_using_item = 11;
+  string active_hand = 12;
+}
+
+// --- GhostPacket に対応 ---
+// 全パケットのラッパー（type + payload バイト列）
+// 認証パケット（AUTH_*）はテキスト JSON のまま送信するため、
+// ここでは PlayerData 系（UPDATE / LEAVE / DESPAWN）のみを対象とする
+message GhostPacketProto {
+  // MessageType の ordinal を使用
+  // 0=UPDATE, 1=JOIN, 2=LEAVE, 3=DESPAWN
+  int32 type = 1;
+  // シリアライズ済み PlayerDataProto、または UUID 文字列のバイト列
+  bytes payload = 2;
+}
