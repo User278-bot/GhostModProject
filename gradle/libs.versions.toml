@@ -4,6 +4,8 @@ gson = "2.8.9"
 websocket = "1.6.0"
 slf4j = "2.0.17"
 junit = "5.10.0"
+protobuf = "4.35.1"
+protobuf-gradle-plugin = "0.10.0" # protobuf-plugin から変更して衝突を回避
 
 # Other Dependencies
 commons-cli = "1.6.0"
@@ -22,6 +24,9 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 # Commons
 commons-cli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
+
+# Protocol Buffers
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 
 # Annotations
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
