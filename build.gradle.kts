@@ -4,7 +4,7 @@ plugins {
 
 allprojects {
     group = "com.ghost"
-    version = "dev" // デフォルト値、各サブプロジェクトでオーバーライド
+    version = "0.0.0-dev" // デフォルト値、各サブプロジェクトでオーバーライド
 }
 
 
