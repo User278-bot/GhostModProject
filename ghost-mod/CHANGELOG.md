@@ -1,6 +1,5 @@
 # Changelog
 
-## v1.5.0 (2026/07/20)
+## v1.6.0-beta (2026/08/11)
 ### feat
-- Added AES-256 encryption for ghost players.
-- Added synchronization of animations while using items.
+- Switched communication method to use binary serialization, reducing packet size by up to 70%
