@@ -71,8 +71,16 @@ public class GhostSyncService {
 
     public <T> void sendPacket(GhostPacket<T> packet) {
         if (session != null && session.isOpen()) {
-            final String msg = SerializationUtil.serializePacket(packet);
-            session.send(msg);
+            if (packet.getType() == com.ghost.api.packet.MessageType.UPDATE && packet.getData() instanceof com.ghost.api.dto.PlayerData playerData) {
+                byte[] bytes = com.ghost.api.proto.ProtoConverter.serializeUpdatePacket(playerData);
+                session.send(bytes);
+            } else if ((packet.getType() == com.ghost.api.packet.MessageType.LEAVE || packet.getType() == com.ghost.api.packet.MessageType.DESPAWN) && packet.getData() instanceof String uuid) {
+                byte[] bytes = com.ghost.api.proto.ProtoConverter.serializeUuidPacket(packet.getType(), uuid);
+                session.send(bytes);
+            } else {
+                final String msg = SerializationUtil.serializePacket(packet);
+                session.send(msg);
+            }
         }
     }
 }

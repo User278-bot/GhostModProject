@@ -16,6 +16,7 @@ import org.apache.commons.cli.*;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -127,6 +128,57 @@ public class GhostModServer extends WebSocketServer {
     }
 
     @Override
+    public void onMessage(WebSocket conn, ByteBuffer message) {
+        // レート制限チェック
+        InetAddress address = conn.getRemoteSocketAddress().getAddress();
+        SimpleRateLimiter limiter = rateLimiters.computeIfAbsent(address,
+                k -> SimpleRateLimiter.create(packetsPerSecond));
+
+        if (!limiter.tryAcquire()) {
+            LOGGER.warn("Rate limit exceeded for {}", address);
+            return;
+        }
+
+        // 復号化処理
+        byte[] decryptedBytes;
+        try {
+            decryptedBytes = CryptoUtil.decrypt(message.array(), serverPassword);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to decrypt binary message from {}, closing connection.", conn.getRemoteSocketAddress());
+            conn.close(4003, "Decryption Failed");
+            return;
+        }
+
+        // 認証チェック
+        var session = sessions.get(conn);
+        if (session == null || !session.isAuthenticated()) {
+            LOGGER.warn("Received binary message from unauthenticated client: {}", conn.getRemoteSocketAddress());
+            return;
+        }
+
+        try {
+            MessageType type = com.ghost.api.proto.ProtoConverter.deserializePacketType(decryptedBytes);
+            if (type == MessageType.UPDATE) {
+                var playerData = com.ghost.api.proto.ProtoConverter.deserializeUpdatePacket(decryptedBytes);
+                if (playerData == null) {
+                    LOGGER.warn("Failed to parse PlayerData from {}", conn.getRemoteSocketAddress());
+                    return;
+                }
+                if (session.playerData() == null) {
+                    LOGGER.info("Player initialized: {}", conn.getRemoteSocketAddress());
+                } else {
+                    sendUpdatePacket(playerData, conn);
+                }
+
+                // 追跡状態（trackedPlayers）を引き継いで更新
+                sessions.put(conn, new GhostClientData(session.nonce(), true, playerData, session.trackedPlayers()));
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Error processing binary message from {}", conn.getRemoteSocketAddress(), ex);
+        }
+    }
+
+    @Override
     public void onMessage(WebSocket conn, String message) {
         // レート制限チェック
         InetAddress address = conn.getRemoteSocketAddress().getAddress();
@@ -159,34 +211,6 @@ public class GhostModServer extends WebSocketServer {
         }
 
         LOGGER.debug("Message from {}: {}", conn.getRemoteSocketAddress(), decryptedMessage);
-
-        try {
-            var packet = SerializationUtil.deserializePacket(decryptedMessage);
-            if (packet == null) {
-                return;
-            }
-
-            // 認証済みセッションでの処理
-            if (packet.getType() == MessageType.UPDATE) {
-                var playerData = SerializationUtil.parsePlayerData(packet.getData());
-                if (playerData == null) {
-                    LOGGER.warn("Failed to parse PlayerData from {}", conn.getRemoteSocketAddress());
-                    return;
-                }
-                if (session.playerData() == null) {
-                    // 初回パケット受信時はJOINパケットを送らず、UPDATEのみ（クライアント側で処理）
-                    // 何もしない、あるいはログ出力のみ
-                    LOGGER.info("Player initialized: {}", conn.getRemoteSocketAddress());
-                } else {
-                    sendUpdatePacket(playerData, conn);
-                }
-
-                // 追跡状態（trackedPlayers）を引き継いで更新
-                sessions.put(conn, new GhostClientData(session.nonce(), true, playerData, session.trackedPlayers()));
-            }
-        } catch (Exception ex) {
-            LOGGER.error("Error processing message from {}", conn.getRemoteSocketAddress(), ex);
-        }
     }
 
     private void handleAuthHandshake(WebSocket conn, String message) {
@@ -244,26 +268,23 @@ public class GhostModServer extends WebSocketServer {
     }
 
     private void sendLeavePacket(final PlayerData playerData) {
-        var leavePacket = new GhostPacket<>(MessageType.LEAVE, playerData.uuid());
-        var msg = SerializationUtil.serializePacket(leavePacket);
+        byte[] leaveBytes = com.ghost.api.proto.ProtoConverter.serializeUuidPacket(MessageType.LEAVE, playerData.uuid());
         try {
-            broadcast(CryptoUtil.encrypt(msg, serverPassword));
+            broadcast(CryptoUtil.encrypt(leaveBytes, serverPassword));
         } catch (Exception e) {
             LOGGER.error("Failed to encrypt leave packet", e);
         }
     }
 
     private void sendUpdatePacket(final PlayerData sendData, final WebSocket exclude) {
-        final var packet = new GhostPacket<>(MessageType.UPDATE, sendData);
-        final var despawnPacket = new GhostPacket<>(MessageType.DESPAWN, sendData.uuid());
-        final var update = SerializationUtil.serializePacket(packet);
-        final var despawn = SerializationUtil.serializePacket(despawnPacket);
+        final byte[] updateBytes = com.ghost.api.proto.ProtoConverter.serializeUpdatePacket(sendData);
+        final byte[] despawnBytes = com.ghost.api.proto.ProtoConverter.serializeUuidPacket(MessageType.DESPAWN, sendData.uuid());
 
-        final String encryptedUpdate;
-        final String encryptedDespawn;
+        final byte[] encryptedUpdate;
+        final byte[] encryptedDespawn;
         try {
-            encryptedUpdate = CryptoUtil.encrypt(update, serverPassword);
-            encryptedDespawn = CryptoUtil.encrypt(despawn, serverPassword);
+            encryptedUpdate = CryptoUtil.encrypt(updateBytes, serverPassword);
+            encryptedDespawn = CryptoUtil.encrypt(despawnBytes, serverPassword);
         } catch (Exception e) {
             LOGGER.error("Encryption failed for update packet", e);
             return;
@@ -286,10 +307,9 @@ public class GhostModServer extends WebSocketServer {
                         // 範囲内
                         if (tracked.add(targetUuid)) {
                             var excludePlayerData = entry.getValue().playerData();
-                            var excludePacket = new GhostPacket<>(MessageType.UPDATE, excludePlayerData);
-                            var excludeMsg = SerializationUtil.serializePacket(excludePacket);
+                            var excludeUpdateBytes = com.ghost.api.proto.ProtoConverter.serializeUpdatePacket(excludePlayerData);
                             try {
-                                exclude.send(CryptoUtil.encrypt(excludeMsg, serverPassword));
+                                exclude.send(CryptoUtil.encrypt(excludeUpdateBytes, serverPassword));
                             } catch (Exception e) {
                                 LOGGER.error("Failed to encrypt exclude update", e);
                             }
@@ -300,11 +320,10 @@ public class GhostModServer extends WebSocketServer {
                         tracked.remove(targetUuid);
                         sock.send(encryptedDespawn);
 
-                        var excludePacket = new GhostPacket<>(MessageType.DESPAWN, entryUuid);
-                        var excludeMsg = SerializationUtil.serializePacket(excludePacket);
+                        var excludeDespawnBytes = com.ghost.api.proto.ProtoConverter.serializeUuidPacket(MessageType.DESPAWN, entryUuid);
                         excludeSession.trackedPlayers().remove(entryUuid);
                         try {
-                            exclude.send(CryptoUtil.encrypt(excludeMsg, serverPassword));
+                            exclude.send(CryptoUtil.encrypt(excludeDespawnBytes, serverPassword));
                         } catch (Exception e) {
                             LOGGER.error("Failed to encrypt exclude despawn", e);
                         }

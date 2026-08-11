@@ -1,4 +1,3 @@
-import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.JavaExec
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
@@ -24,9 +23,7 @@ application {
     mainClass.set("com.ghost.server.GhostModServer")
 }
 
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
+
 
 tasks.withType<JavaExec> {
     jvmArgs = listOf("-Dfile.encoding=UTF-8")
