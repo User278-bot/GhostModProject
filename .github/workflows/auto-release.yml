@@ -49,11 +49,17 @@ jobs:
           echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
           
           # プレリリースチェック
-          if [[ "$VERSION" =~ -alpha|-beta|-rc ]]; then
+          if [[ "$VERSION" =~ -alpha ]]; then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "Detected prerelease: $RELEASE_NAME"
+            echo "release_type=alpha" >> $GITHUB_OUTPUT
+            echo "Detected alpha release: $RELEASE_NAME"
+          elif [[ "$VERSION" =~ -beta|-rc ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_type=beta" >> $GITHUB_OUTPUT
+            echo "Detected beta/rc release: $RELEASE_NAME"
           else
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "release_type=stable" >> $GITHUB_OUTPUT
             echo "Detected stable release: $RELEASE_NAME"
           fi
 
@@ -88,7 +94,7 @@ jobs:
       - name: Publish Mod to Modrinth and CurseForge
         if: steps.component.outputs.component == 'mod'
         working-directory: ghost-mod
-        run: ../gradlew publishMods
+        run: ../gradlew publishMods -Prelease_type=${{ steps.component.outputs.release_type }}
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}

@@ -130,7 +130,12 @@ publishMods {
     displayName = "${property("mod.name")} ${property("mod.version")} for ${property("mod.mc_title")}"
     version = property("mod.version") as String
     changelog = (project.parent ?: project).file("CHANGELOG.md").readText()
-    type = STABLE
+    val releaseTypeStr = (project.findProperty("release_type") as? String)?.uppercase() ?: "STABLE"
+    type = when (releaseTypeStr) {
+        "ALPHA" -> ALPHA
+        "BETA" -> BETA
+        else -> STABLE
+    }
     modLoaders.add("fabric")
 
     // トークンが未設定の場合はdryRunモード（実際のアップロードは行わない）
