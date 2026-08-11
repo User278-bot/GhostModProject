@@ -61,6 +61,8 @@ dependencies {
     // 外部ライブラリも明示的にincludeが必要（Loomのincludeは推移的ではない）
     // ghost-networkが依存しているWebSocketライブラリを含める
     include(libs.websocket)
+    // ghost-apiが依存しているProtobufライブラリを含める
+    include(libs.protobuf.java)
 }
 
 loom {
