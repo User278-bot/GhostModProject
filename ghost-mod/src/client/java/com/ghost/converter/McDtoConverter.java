@@ -26,7 +26,7 @@ import net.minecraft.core.Registry;
  *///?}
 
 //? if >=1.21.11 {
-/*import net.minecraft.resources.Identifier;
+/*import net.minecraft.resources.ResourceLocation;
  *///?} else {
 import net.minecraft.resources.ResourceLocation;
         //?}
@@ -104,7 +104,7 @@ public final class McDtoConverter {
         //?} else if <= 1.21.4 {
         /*ResourceLocation location = ResourceLocation.parse(item.id());
          *///?} else {
-        /*Identifier location = Identifier.parse(item.id());
+        /*ResourceLocation location = ResourceLocation.parse(item.id());
          *///?}
 
 
@@ -150,8 +150,8 @@ public final class McDtoConverter {
             tag.put("display", display);
 
             //?} else if <=1.21.4 {
-            // itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color(), true));
-            //?} else {
+             /*itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color(), true));
+            *///?} else {
             /*itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color()));
              *///?}
         }
