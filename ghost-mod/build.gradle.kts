@@ -178,8 +178,8 @@ publishMods {
         optional {
             slug = "modmenu"
         }
-        clientRequired = true;
-        serverRequired = false;
+        clientRequired = true
+        serverRequired = false
     }
 
     // discord {
