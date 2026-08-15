@@ -1,0 +1,60 @@
+# See https://stonecutter.kikugie.dev/wiki/config/properties#centralized-properties
+mod.id = "ghostmod"
+mod.name = "Ghost Mod"
+mod.group = "com.ghost"
+mod.version = "0.1.0"
+
+deps.fabric_loader = "0.19.3"
+loomx.loom_version = "1.17-SNAPSHOT"
+
+publish.modrinth = "tjsHZPhi"
+publish.curseforge = "1432587"
+
+["1.19.2"]
+mod.mc_dep = "1.19.2"
+mod.mc_title = "1.19.2"
+mod.mc_targets = "1.19.2"
+deps.fabric_api = "0.77.0+1.19.2"
+mod_menu_version = "4.2.0-beta.2"
+cloth_config_version = "8.3.134"
+
+["1.20.1"]
+mod.mc_dep = ">=1.20 <=1.20.1"
+mod.mc_title = "1.20.1"
+mod.mc_targets = "1.20 1.20.1"
+deps.fabric_api = "0.92.6+1.20.1"
+mod_menu_version = "7.2.2"
+cloth_config_version = "11.1.136"
+
+["1.20.6"]
+mod.mc_dep = ">=1.20.5 <=1.20.6"
+mod.mc_title = "1.20.6"
+mod.mc_targets = "1.20.5 1.20.6"
+deps.fabric_api = "0.98.0+1.20.6"
+mod_menu_version = "10.0.0"
+cloth_config_version = "14.0.129"
+
+["1.21.4"]
+mod.mc_dep = "1.21.4"
+mod.mc_title = "1.21.4"
+mod.mc_targets = "1.21.4"
+deps.fabric_api = "0.119.4+1.21.4"
+mod_menu_version = "13.0.0"
+cloth_config_version = "17.0.144"
+
+["1.21.11"]
+mod.mc_dep = "1.21.11"
+mod.mc_title = "1.21.11"
+mod.mc_targets = "1.21.11"
+deps.fabric_api = "0.141.3+1.21.11"
+mod_menu_version = "17.0.0-beta.1"
+cloth_config_version = "21.11.153"
+
+["26.1.x"]
+mod.mc_dep = "~26.1"
+mod.mc_title = "26.1"
+mod.mc_targets = "26.1 26.1.1 26.1.2"
+deps.fabric_api = "0.145.0+26.1"
+mod_menu_version = "18.0.0"
+cloth_config_version = "26.1.154"
+

@@ -12,7 +12,7 @@ import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.client.multiplayer.ClientLevel;
 //? if >=1.21.11 {
 /*import net.minecraft.client.renderer.entity.player.AvatarRenderer;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 *///?} else {
 
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
@@ -50,7 +50,7 @@ public final class EntityRegistration {
         GHOST_PLAYER = Registry.register(
         //? if >=1.21.11 {
                 /*BuiltInRegistries.ENTITY_TYPE,
-                Identifier.fromNamespaceAndPath("ghostmod", "ghost_player"),
+                ResourceLocation.fromNamespaceAndPath("ghostmod", "ghost_player"),
                 EntityType.Builder.<GhostPlayerEntity>of(
                                 (type, world) -> {
                                     GameProfile dummyProfile = new GameProfile(UUID.randomUUID(), "Ghost");
@@ -58,7 +58,7 @@ public final class EntityRegistration {
                                     return new GhostPlayerEntity((ClientLevel) world, dummyProfile, dummyData);
                                 }, MobCategory.MISC)
                         .sized(0.6f, 1.8f) // プレイヤーと同じサイズ
-                        .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath("ghostmod", "ghost_player")))
+                        .build(ResourceKey.create(Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath("ghostmod", "ghost_player")))
         *///?} else if >=1.21.4 {
                 
                 /*BuiltInRegistries.ENTITY_TYPE,

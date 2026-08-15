@@ -1,17 +1,18 @@
 pluginManagement {
     repositories {
-        maven {
-            name = "Fabric"
-            url = java.net.URI("https://maven.fabricmc.net/")
-        }
-        maven("https://maven.kikugie.dev/snapshots") { name = "KikuGie Snapshots" }
+        mavenLocal()
         mavenCentral()
         gradlePluginPortal()
+        maven("https://maven.fabricmc.net/") { name = "Fabric" }
+        maven("https://maven.kikugie.dev/releases") { name = "KikuGie Releases" }
+        maven("https://maven.kikugie.dev/snapshots") { name = "KikuGie Snapshots" }
     }
 }
 
 plugins {
-    id("dev.kikugie.stonecutter") version "0.7.11"
+    id("dev.kikugie.stonecutter") version "0.9.6"
+    id("dev.kikugie.loom-back-compat") version "0.4"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 // リポジトリの一元管理
@@ -28,7 +29,8 @@ dependencyResolutionManagement {
 stonecutter {
     create("ghost-mod") {
         // See https://stonecutter.kikugie.dev/wiki/start/#choosing-minecraft-versions
-        versions("1.19.2","1.20.1","1.20.6","1.21.4","1.21.11")
+        versions("1.19.2", "1.20.1", "1.20.6", "1.21.4", "1.21.11")
+        version("26.1.x", "26.1.2")
         vcsVersion = "1.19.2"
     }
 }
