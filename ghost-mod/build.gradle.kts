@@ -61,6 +61,8 @@ dependencies {
     // 外部ライブラリも明示的にincludeが必要（Loomのincludeは推移的ではない）
     // ghost-networkが依存しているWebSocketライブラリを含める
     include(libs.websocket)
+    // ghost-apiが依存しているProtobufライブラリを含める
+    include(libs.protobuf.java)
 }
 
 loom {
@@ -130,12 +132,17 @@ publishMods {
     displayName = "${property("mod.name")} ${property("mod.version")} for ${property("mod.mc_title")}"
     version = property("mod.version") as String
     changelog = (project.parent ?: project).file("CHANGELOG.md").readText()
-    type = STABLE
+    val releaseTypeStr = (project.findProperty("release_type") as? String)?.uppercase() ?: "STABLE"
+    type = when (releaseTypeStr) {
+        "ALPHA" -> ALPHA
+        "BETA" -> BETA
+        else -> STABLE
+    }
     modLoaders.add("fabric")
 
-    // トークンが未設定の場合はdryRunモード（実際のアップロードは行わない）
-    dryRun = providers.environmentVariable("MODRINTH_TOKEN").getOrNull() == null
-            || providers.environmentVariable("CURSEFORGE_TOKEN").getOrNull() == null
+    // トークンが未設定または空の場合はdryRunモード（実際のアップロードは行わない）
+    dryRun = providers.environmentVariable("MODRINTH_TOKEN").orNull.isNullOrBlank()
+            || providers.environmentVariable("CURSEFORGE_TOKEN").orNull.isNullOrBlank()
 
     modrinth {
         projectId = property("publish.modrinth") as String
