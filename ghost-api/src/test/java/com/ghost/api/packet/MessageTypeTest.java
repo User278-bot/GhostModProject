@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// このテスト不要説があるけど、一応残しておく
+
 class MessageTypeTest {
 
     @Test
