@@ -6,8 +6,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 //?if >= 26.1{
 /*import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 *///?}else{
- import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-//?}
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+ //?}
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 //? if >=1.21.11 {
@@ -33,7 +33,7 @@ public class GhostModKeyBindings {
                 "key.ghostmod.openConfig", // 翻訳キー
                 InputConstants.Type.KEYSYM, // キーボード入力
                 GLFW.GLFW_KEY_G, // デフォルト: Gキー
-                KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("ghostmod","keys"))
+                KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("ghostmod", "keys"))
                 // カテゴリ翻訳キー
         ));
         *///?}else if >=1.21.11 {
@@ -63,7 +63,11 @@ public class GhostModKeyBindings {
             while (openConfigKey.consumeClick()) {
                 // ワールドに入っている場合のみ設定画面を開く
                 if (client.level != null) {
-                    Minecraft.getInstance().setScreen(GhostConfigScreen.create(client.screen));
+                    //?if>=26.2{
+                    /*Minecraft.getInstance().setScreenAndShow(GhostConfigScreen.create(client.gui.screen()));
+                    *///?} else {
+                     Minecraft.getInstance().setScreen(GhostConfigScreen.create(client.screen));
+                    //?}
                 }
             }
         });

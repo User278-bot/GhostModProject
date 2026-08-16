@@ -7,10 +7,13 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.StringListEntry;
+import me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -108,10 +111,10 @@ public class GhostConfigScreen {
         // リフレクションを使用してTextFieldListEntryの保護されたtextFieldWidgetにアクセスし、
         // パスワードをマスクするためのrenderTextProviderを設定
         try {
-            java.lang.reflect.Field widgetField = me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry.class
+            Field widgetField = TextFieldListEntry.class
                     .getDeclaredField("textFieldWidget");
             widgetField.setAccessible(true);
-            net.minecraft.client.gui.components.EditBox widget = (net.minecraft.client.gui.components.EditBox) widgetField
+            EditBox widget = (EditBox) widgetField
                     .get(serverPasswordEntry);
             if (widget != null) {
                 widget
@@ -211,7 +214,11 @@ public class GhostConfigScreen {
                 pendingSnapshot = createCurrentSnapshot();
                 GhostModClient.GHOST_SYNC_SERVICE.disconnect();
             }
-            Minecraft.getInstance().setScreen(createConfigScreen(parent));
+            //? if >= 26.2 {
+            /*Minecraft.getInstance().setScreenAndShow(createConfigScreen(parent));
+            *///? } else {
+             Minecraft.getInstance().setScreen(createConfigScreen(parent));
+            //? }
         }
         this.pre_connected = connected;
     }
