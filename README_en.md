@@ -30,6 +30,8 @@ This project consists of the following modules:
 - Minecraft 1.20.6
 - Minecraft 1.21.4
 - Minecraft 1.21.11
+- Minecraft 26.1.2
+- Minecraft 26.2
 
 ## Downloads
 You can download the artifacts from the links below. The version number displayed is the latest version. If the link is incorrect, please download the latest version of each artifact from the [Releases](https://github.com/User278-bot/GhostModProject/releases) page.
@@ -59,6 +61,11 @@ By default, it listens on port `8887`. Use the `--port` option to change the por
 
 ```bash
 java -jar GhostModServer-<vesion>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
+```
+
+Other options can be found with `--help`.
+```bash
+java -jar GhostModServer-<vesion>.jar --help
 ```
 
 > [!IMPORTANT]
