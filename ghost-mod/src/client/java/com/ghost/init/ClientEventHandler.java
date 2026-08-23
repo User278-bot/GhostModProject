@@ -56,10 +56,19 @@ public class ClientEventHandler {
         });
         ClientPlayConnectionEvents.DISCONNECT.register(
                 (handler, client) -> ghostSyncService.disconnect());
+        //?if >= 26.1{
+        /*ClientTickEvents.END_LEVEL_TICK.register((world) -> {
+            playerDataSender.sendPlayerData(world);
+            ghostEntitySynchronizer.onTick(world);
+        });
+        *///?}else{
+        
         ClientTickEvents.END_WORLD_TICK.register((world) -> {
             playerDataSender.sendPlayerData(world);
             ghostEntitySynchronizer.onTick(world);
         });
+        
+        //?}
 
         // スキンカスタマイズ画面が閉じられた時に即座にデータ送信
         ScreenEvents.AFTER_INIT.register(

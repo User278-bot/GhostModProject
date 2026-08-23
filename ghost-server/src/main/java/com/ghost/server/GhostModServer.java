@@ -12,7 +12,9 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.cli.*;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -339,94 +341,114 @@ public class GhostModServer extends WebSocketServer {
                 && horizonal_distance < visibleRangeSqr;
     }
 
+    private final java.util.concurrent.atomic.AtomicBoolean isShuttingDown = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    /**
+     * 全クライアントへ切断理由 (1001: Going Away) を通知し、サーバーを正常停止します。
+     * ServerConsole や ShutdownHook から呼び出されます。
+     */
+    public void shutdown() {
+        if (!isShuttingDown.compareAndSet(false, true)) {
+            return; // 既にシャットダウン処理中または完了済み
+        }
+        LOGGER.info("Shutting down the server...");
+        for (WebSocket conn : getConnections()) {
+            conn.close(1001, "Server is shutting down");
+        }
+        try {
+            stop(1000); // 接続の終了待ち時間 (1秒)
+            LOGGER.info("Server stopped successfully.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Server shutdown was interrupted", e);
+        }
+    }
+
+    // =========================================================================
+    // エントリポイント
+    // =========================================================================
+
+    /**
+     * 起動引数の定義（Picocli）。
+     * 優先度: コマンドライン引数 > 設定ファイル > デフォルト値
+     */
+    @Command(
+            name = "GhostModServer",
+            mixinStandardHelpOptions = true,
+            description = "Ghost Mod Server - WebSocket-based ghost player synchronization server"
+    )
+    static class ServerArgs implements Runnable {
+
+        @Option(names = "--port", description = "Port number to listen on (Default: 8887)")
+        Integer port;
+
+        @Option(names = "--password", description = "Server password (Generated automatically if not specified)")
+        String password;
+
+        @Option(names = "--config", defaultValue = "server.properties", description = "Config file path")
+        String configFile;
+
+        @Option(names = "--view-distance", description = "View distance in blocks (Default: 80.0)")
+        Double viewDistance;
+
+        @Option(names = "--rate-limit", description = "Rate limit in packets/second (Default: 50.0)")
+        Double rateLimit;
+
+        @Override
+        public void run() {
+            // --- 設定ファイル読み込み ---
+            java.util.Properties props = new java.util.Properties();
+            java.io.File file = new java.io.File(configFile);
+            if (file.exists()) {
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                    props.load(fis);
+                    LOGGER.info("Loaded configuration from {}", configFile);
+                } catch (java.io.IOException e) {
+                    LOGGER.warn("Failed to load config file: {}", e.getMessage());
+                }
+            } else {
+                LOGGER.info("Config file {} not found. Using defaults.", configFile);
+            }
+
+            // --- 優先度: CLI > Properties > Default ---
+            int resolvedPort = port != null ? port
+                    : props.containsKey("port") ? Integer.parseInt(props.getProperty("port"))
+                    : 8887;
+
+            String resolvedPassword = password != null ? password
+                    : props.getProperty("password"); // null の場合は自動生成へ
+
+            double resolvedViewDistance = viewDistance != null ? viewDistance
+                    : props.containsKey("view-distance") ? Double.parseDouble(props.getProperty("view-distance"))
+                    : 5 * 16.0; // デフォルト 5 chunk
+
+            double resolvedRateLimit = rateLimit != null ? rateLimit
+                    : props.containsKey("rate-limit") ? Double.parseDouble(props.getProperty("rate-limit"))
+                    : 50.0;
+
+            // --- パスワード自動生成 ---
+            if (resolvedPassword == null || resolvedPassword.isEmpty()) {
+                int randomSuffix = (int) (Math.random() * 10000);
+                resolvedPassword = String.format("changeme%04d", randomSuffix);
+                LOGGER.warn("No password provided. Using generated password: '{}'", resolvedPassword);
+            }
+
+            // --- サーバー起動 ---
+            try {
+                GhostModServer server = new GhostModServer(resolvedPort, resolvedPassword, resolvedViewDistance, resolvedRateLimit);
+
+                // JVM 終了時のシャットダウンフック（SIGINT / プロセスキル時にも安全に停止）
+                Runtime.getRuntime().addShutdownHook(new Thread(server::shutdown, "Server-Shutdown-Hook"));
+
+                server.start(); // WebSocket サーバーを別スレッドで起動
+                new ServerConsole(server).start(); // コンソールループ（stop / Ctrl+C まで待機）
+            } catch (Exception ex) {
+                LOGGER.error("Failed to start WebSocket server", ex);
+            }
+        }
+    }
+
     public static void main(String[] args) {
-        // デフォルト設定
-        int port = 8887;
-        String password = null;
-        String configFile = "server.properties";
-        double viewDistance = 5 * 16; // デフォルト5 chunk
-        double rateLimit = 50.0; // デフォルト50パケット/秒
-
-        // --- コマンドライン引数の定義 ---
-        Options options = new Options();
-        options.addOption(Option.builder().longOpt("port").hasArg().desc("Server Port").build());
-        options.addOption(Option.builder().longOpt("password").hasArg().desc("Server Password").build());
-        options.addOption(Option.builder().longOpt("config").hasArg().desc("Config File Path").build());
-        options.addOption(Option.builder().longOpt("view-distance").hasArg().desc("View Distance (Blocks)").build());
-        options.addOption(Option.builder().longOpt("rate-limit").hasArg().desc("Rate Limit (Packets/Sec)").build());
-
-        // --- 1. 引数をパースして設定ファイルパスを取得 ---
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd;
-        try {
-            cmd = parser.parse(options, args);
-            if (cmd.hasOption("config")) {
-                configFile = cmd.getOptionValue("config");
-                LOGGER.info(configFile);
-            }
-        } catch (ParseException e) {
-            LOGGER.error("Failed to parse command line arguments: {}", e.getMessage());
-            return;
-        }
-
-        // --- 2. 設定ファイル読み込み ---
-        java.util.Properties props = new java.util.Properties();
-        java.io.File file = new java.io.File(configFile);
-        if (file.exists()) {
-            try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
-                props.load(fis);
-                LOGGER.info("Loaded configuration from {}", configFile);
-            } catch (java.io.IOException e) {
-                LOGGER.warn("Failed to load config file: {}", e.getMessage());
-            }
-        } else {
-            LOGGER.info("Config file {} not found. Using defaults.", configFile);
-        }
-
-        // --- 3. 設定の適用 (Priority: CLI > Properties > Default) ---
-
-        // Port
-        if (cmd.hasOption("port")) {
-            port = Integer.parseInt(cmd.getOptionValue("port"));
-        } else if (props.containsKey("port")) {
-            port = Integer.parseInt(props.getProperty("port"));
-        }
-
-        // Password
-        if (cmd.hasOption("password")) {
-            password = cmd.getOptionValue("password");
-        } else if (props.containsKey("password")) {
-            password = props.getProperty("password");
-        }
-
-        // 自動生成ロジック
-        if (password == null || password.isEmpty()) {
-            password = "changeme";
-            int randomSuffix = (int) (Math.random() * 10000);
-            password += String.format("%04d", randomSuffix);
-            LOGGER.warn("No password provided. Using generated password: '{}'", password);
-        }
-
-        // View Distance
-        if (cmd.hasOption("view-distance")) {
-            viewDistance = Double.parseDouble(cmd.getOptionValue("view-distance"));
-        } else if (props.containsKey("view-distance")) {
-            viewDistance = Double.parseDouble(props.getProperty("view-distance"));
-        }
-
-        // Rate Limit
-        if (cmd.hasOption("rate-limit")) {
-            rateLimit = Double.parseDouble(cmd.getOptionValue("rate-limit"));
-        } else if (props.containsKey("rate-limit")) {
-            rateLimit = Double.parseDouble(props.getProperty("rate-limit"));
-        }
-
-        // --- サーバー起動 ---
-        try {
-            GhostModServer server = new GhostModServer(port, password, viewDistance, rateLimit);
-            server.start(); // サーバーを起動
-        } catch (Exception ex) {
-            LOGGER.error("Failed to start WebSocket server", ex);
-        }
+        new CommandLine(new ServerArgs()).execute(args);
     }
 }

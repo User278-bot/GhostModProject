@@ -21,12 +21,12 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 //? if >= 1.21.11 {
-// import net.minecraft.world.phys.Vec3;
-//? }
+ /*import net.minecraft.world.phys.Vec3;
+*///? }
 import org.jetbrains.annotations.NotNull;
 //? if >=1.20.6 {
-// import java.util.Objects;
-//?}
+ /*import java.util.Objects;
+*///?}
 import java.util.concurrent.CompletableFuture;
 
 // Playerエンティティを継承すると多くの機能を使えるが、

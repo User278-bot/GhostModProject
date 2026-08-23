@@ -1,18 +1,19 @@
 plugins {
-    id("fabric-loom")
+    id("dev.kikugie.loom-back-compat")
     id("me.modmuss50.mod-publish-plugin")
 }
 
 val baseVersion = VersionResolver.resolveVersionFromTag("mod/v") ?: "dev"
 
 ext["mod.version"] = baseVersion
-version = "$baseVersion+${stonecutter.current.version}"
+version = "$baseVersion+${sc.current.version}"
 base.archivesName = property("mod.id") as String
 
 val requiredJava = when {
-    stonecutter.eval(stonecutter.current.version, ">=1.20.6") -> JavaVersion.VERSION_21
-    stonecutter.eval(stonecutter.current.version, ">=1.18") -> JavaVersion.VERSION_17
-    stonecutter.eval(stonecutter.current.version, ">=1.17") -> JavaVersion.VERSION_16
+    sc.current.parsed >= "26.1" -> JavaVersion.VERSION_25
+    sc.current.parsed >= "1.20.5" -> JavaVersion.VERSION_21
+    sc.current.parsed >= "1.18" -> JavaVersion.VERSION_17
+    sc.current.parsed >= "1.17" -> JavaVersion.VERSION_16
     else -> JavaVersion.VERSION_1_8
 }
 
@@ -40,8 +41,8 @@ dependencies {
     // fapi function removed
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
 
-    minecraft("com.mojang:minecraft:${stonecutter.current.version}")
-    mappings(loom.officialMojangMappings())
+    minecraft("com.mojang:minecraft:${sc.current.version}")
+    loomx.applyMojangMappings()
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
 
 
@@ -70,7 +71,6 @@ loom {
 
     fabricModJsonPath =
         (project.parent ?: project).file("src/main/resources/fabric.mod.json") // Useful for interface injection
-    accessWidenerPath = (project.parent ?: project).file("src/main/resources/template.accesswidener")
 
     decompilerOptions.named("vineflower") {
         options.put("mark-corresponding-synthetics", "1") // Adds names to lambdas - useful for mixins
@@ -84,9 +84,11 @@ loom {
     }
 
     runConfigs.all {
-        ideConfigGenerated(true)
-        vmArgs("-Dmixin.debug.export=true") // Exports transformed classes for debugging
-        runDir = "./run" // Shares the run directory between versions
+        preferGradleTask = true
+        generateRunConfig = true
+
+        jvmArguments.add("-Dmixin.debug.export=true") // Exports transformed classes for debugging
+        runDirectory = file("./run")  // Shares the run directory between versions
     }
 }
 
@@ -94,6 +96,11 @@ java {
     withSourcesJar()
     targetCompatibility = requiredJava
     sourceCompatibility = requiredJava
+
+    toolchain {
+        vendor = JvmVendorSpec.ADOPTIUM
+        languageVersion = JavaLanguageVersion.of(requiredJava.majorVersion)
+    }
 }
 
 tasks {
@@ -119,7 +126,8 @@ tasks {
     // Builds the version into a shared folder in `build/libs/${mod version}/`
     register<Copy>("buildAndCollect") {
         group = "build"
-        from(remapJar.map { it.archiveFile }, remapSourcesJar.map { it.archiveFile })
+        inputs.property("version", project.property("mod.version"))
+        from(loomx.modJar.flatMap { it.archiveFile }, loomx.modSourcesJar.flatMap { it.archiveFile })
         into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
         dependsOn("build")
     }
@@ -127,8 +135,8 @@ tasks {
 
 // ModrinthとCurseForgeにビルドを公開
 publishMods {
-    file = tasks.remapJar.map { it.archiveFile.get() }
-    additionalFiles.from(tasks.remapSourcesJar.map { it.archiveFile.get() })
+    file = loomx.modJar.flatMap { it.archiveFile }
+    additionalFiles.from(loomx.modSourcesJar.flatMap { it.archiveFile })
     displayName = "${property("mod.name")} ${property("mod.version")} for ${property("mod.mc_title")}"
     version = property("mod.version") as String
     changelog = (project.parent ?: project).file("CHANGELOG.md").readText()
@@ -172,8 +180,8 @@ publishMods {
         optional {
             slug = "modmenu"
         }
-        clientRequired = true;
-        serverRequired = false;
+        clientRequired = true
+        serverRequired = false
     }
 
     // discord {

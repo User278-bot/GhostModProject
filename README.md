@@ -30,6 +30,8 @@ AI Translated: English
 - Minecraft 1.20.6
 - Minecraft 1.21.4
 - Minecraft 1.21.11
+- Minecraft 26.1.2
+- Minecraft 26.2
 
 ## 成果物のダウンロード
 以下のリンクから成果物をダウンロードできます。表示されている番号が最新バージョンです。リンク先が正しくない場合は、[リリース](https://github.com/User278-bot/GhostModProject/releases)から各成果物の最新バージョンをダウンロードしてください。
@@ -59,6 +61,11 @@ java -jar GhostModServer-<vesion>.jar
 
 ```bash
 java -jar GhostModServer-<vesion>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
+```
+
+その他オプションは`--help`で確認できます。
+```bash
+java -jar GhostModServer-<vesion>.jar --help
 ```
 
 > [!IMPORTANT]

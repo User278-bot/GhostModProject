@@ -13,7 +13,10 @@ version = serverVersion
 dependencies {
     implementation(project(":ghost-network"))
     implementation(libs.websocket)
-    implementation(libs.commons.cli)
+    // コマンドラインパーサー + 対話型シェル
+    implementation(libs.picocli)
+    implementation(libs.picocli.shell.jline3)
+    implementation(libs.jline)
     runtimeOnly(libs.slf4j.simple)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.bundles.test)
@@ -40,6 +43,7 @@ tasks.withType<JavaExec> {
 
 tasks.named<JavaExec>("run") {
     jvmArgs = listOf("-Dfile.encoding=UTF-8")
+    standardInput = System.`in`
 }
 
 tasks.withType<ShadowJar> {
