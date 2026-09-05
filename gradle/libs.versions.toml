@@ -2,7 +2,7 @@
 # Common Libraries
 gson = "2.8.9"
 websocket = "1.6.0"
-slf4j = "2.0.17"
+slf4j = "2.0.18"
 junit = "5.10.0"
 protobuf = "4.35.1"
 protobuf-gradle-plugin = "0.10.0" # protobuf-plugin から変更して衝突を回避
