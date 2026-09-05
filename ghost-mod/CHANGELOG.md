@@ -1,5 +1,5 @@
 # Changelog
-## v1.6.0 (2026/08/23)
+## v1.6.0 (2026/09/05)
 ### feat
 - Switched communication method to use binary serialization, reducing packet size by up to 70%
 - Support for version 26.2
