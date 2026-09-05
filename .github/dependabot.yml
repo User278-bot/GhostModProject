@@ -5,7 +5,22 @@
 
 version: 2
 updates:
-  - package-ecosystem: "github-actions" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # GitHub Actions ワークフローの定期更新 (週次)
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Gradle 依存関係のセキュリティ更新設定
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # 通常のバージョンアップPRを作成させず、セキュリティ修正PRのみを有効化
+    open-pull-requests-limit: 0
+    labels:
+      - "dependencies"
+      - "security"
