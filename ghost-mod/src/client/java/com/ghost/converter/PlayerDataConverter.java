@@ -7,6 +7,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.PlayerModelPart;
 
+import java.util.Objects;
+
 import static com.ghost.converter.McDtoConverter.fromMc;
 
 public final class PlayerDataConverter {
@@ -30,6 +32,16 @@ public final class PlayerDataConverter {
                 fromMc(player.getItemBySlot(EquipmentSlot.LEGS)),
                 fromMc(player.getItemBySlot(EquipmentSlot.FEET)));
 
+        int swing_tick = 0;
+        //? if >=26.3 {
+        /*if (player.getCurrentSwing() != null) {
+            swing_tick = player.getCurrentSwing().durationTicks();
+        }
+
+        *///? }else{
+        swing_tick = player.swingTime;
+        //?}
+
         return new PlayerData(
                 fromMc(player.position()),
                 new Vec2Dto(player.getXRot(), player.getYHeadRot()),
@@ -37,15 +49,15 @@ public final class PlayerDataConverter {
                 player.getName().getString(),
                 player.getPose().toString(),
                 //? if >=1.21.11 {
-                 /*player.level().dimension().identifier().toString(), 
-                *///?} else if >=1.20.1 {
-                 /*player.level().dimension().location().toString(), 
-                *///?} else {
+                /*player.level().dimension().identifier().toString(),
+                 *///?} else if >=1.20.1 {
+                /*player.level().dimension().location().toString(),
+                 *///?} else {
                 player.level.dimension().location().toString(),
                 //?}
                 skinParts,
                 fromMc(player.getMainArm()),
-                player.swingTime,
+                swing_tick,
                 equipment,
                 player.isUsingItem(),
                 fromMc(player.getUsedItemHand()));
