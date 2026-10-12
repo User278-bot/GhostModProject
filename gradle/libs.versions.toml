@@ -1,6 +1,6 @@
 [versions]
 # Common Libraries
-gson = "2.8.9"
+gson = "2.14.0"
 websocket = "1.6.0"
 slf4j = "2.0.18"
 junit = "5.10.0"
