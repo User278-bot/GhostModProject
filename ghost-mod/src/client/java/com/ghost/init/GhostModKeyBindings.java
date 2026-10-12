@@ -12,8 +12,11 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 //? if >=1.21.11 {
 /*import net.minecraft.resources.ResourceLocation;
-*///?}
-import org.lwjgl.glfw.GLFW;
+*///? }
+
+//? if < 26.3 {
+ import org.lwjgl.glfw.GLFW;
+//?}
 
 /**
  * Ghost Modのキーバインドを登録するクラス。
@@ -28,7 +31,16 @@ public class GhostModKeyBindings {
      */
     public static void register() {
         // キーバインドの登録
-        //?if >= 26.1{
+        //?if >= 26.3 {
+        /*openConfigKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "key.ghostmod.openConfig", // 翻訳キー
+                InputConstants.Type.KEYBOARD, // キーボード入力
+                InputConstants.KEY_G, // デフォルト: Gキー
+                KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("ghostmod", "keys"))
+                // カテゴリ翻訳キー
+        ));
+        *///? } else if >= 26.1 {
+        
         /*openConfigKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.ghostmod.openConfig", // 翻訳キー
                 InputConstants.Type.KEYSYM, // キーボード入力
