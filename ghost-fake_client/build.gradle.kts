@@ -29,6 +29,15 @@ tasks.withType<ShadowJar> {
     // ファイル名に `-all` や `-shadow` といった接尾辞が付かないようにする
     archiveClassifier.set("")
 
+    // 配布JARにライセンスとサードパーティライセンス表記を同梱する
+    from(rootProject.file("LICENSE")) {
+        into("META-INF")
+        rename { "LICENSE_GhostModProject.txt" }
+    }
+    from(rootProject.file("THIRD_PARTY_LICENSES.txt")) {
+        into("META-INF")
+    }
+
     // 生成されるJARのマニフェストファイルに、メインクラスを指定する
     // これにより `java -jar` コマンドで直接実行できるようになる
     manifest {

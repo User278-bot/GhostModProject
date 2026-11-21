@@ -104,6 +104,21 @@ java {
 }
 
 tasks {
+    // Mod JAR / Sources JAR にライセンスとサードパーティライセンス表記を同梱する
+    named<Jar>("jar") {
+        from(rootProject.file("LICENSE")) {
+            rename { "${it}_${project.base.archivesName.get()}" }
+        }
+        from(rootProject.file("THIRD_PARTY_LICENSES.txt"))
+    }
+
+    named<Jar>("sourcesJar") {
+        from(rootProject.file("LICENSE")) {
+            rename { "${it}_${project.base.archivesName.get()}" }
+        }
+        from(rootProject.file("THIRD_PARTY_LICENSES.txt"))
+    }
+
     processResources {
         inputs.property("id", project.property("mod.id"))
         inputs.property("name", project.property("mod.name"))

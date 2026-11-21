@@ -134,4 +134,5 @@ You can launch the server, client, and FakeClient all at once using the PowerShe
 
 ## License
 This project is released under the [MIT License](LICENSE).
+For licenses of third-party libraries bundled in the binary distributions, see [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt).
 Please note that since it includes AI-generated code, it is provided "AS IS" without warranty.
