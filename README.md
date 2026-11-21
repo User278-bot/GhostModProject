@@ -134,4 +134,5 @@ PowerShellスクリプトを使用して、サーバー・クライアント・F
 
 ## ライセンス
 本プロジェクトは [MIT License](LICENSE) の下で公開されています。
+バイナリ配布物に同梱されているサードパーティライブラリのライセンスについては [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) を参照してください。
 AI生成コードを含むため、無保証（AS IS）であることをご留意ください。
