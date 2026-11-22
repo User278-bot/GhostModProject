@@ -57,17 +57,15 @@ public class ClientEventHandler {
         ClientPlayConnectionEvents.DISCONNECT.register(
                 (handler, client) -> ghostSyncService.disconnect());
         //?if >= 26.1{
-        /*ClientTickEvents.END_LEVEL_TICK.register((world) -> {
-            playerDataSender.sendPlayerData(world);
-            ghostEntitySynchronizer.onTick(world);
-        });
+        /*// ゴースト状態の反映は tickEntities() の先頭で行い、1 tick の固定遅延を防ぐ
+        ClientTickEvents.START_LEVEL_TICK.register(ghostEntitySynchronizer::onTick);
+        // 自プレイヤーのデータ送信は当 tick の移動完了後に行う
+        ClientTickEvents.END_LEVEL_TICK.register(playerDataSender::sendPlayerData);
         *///?}else{
-        
-        ClientTickEvents.END_WORLD_TICK.register((world) -> {
-            playerDataSender.sendPlayerData(world);
-            ghostEntitySynchronizer.onTick(world);
-        });
-        
+        // ゴースト状態の反映は tickEntities() の先頭で行い、1 tick の固定遅延を防ぐ
+        ClientTickEvents.START_WORLD_TICK.register(ghostEntitySynchronizer::onTick);
+        // 自プレイヤーのデータ送信は当 tick の移動完了後に行う
+        ClientTickEvents.END_WORLD_TICK.register(playerDataSender::sendPlayerData);
         //?}
 
         // スキンカスタマイズ画面が閉じられた時に即座にデータ送信
