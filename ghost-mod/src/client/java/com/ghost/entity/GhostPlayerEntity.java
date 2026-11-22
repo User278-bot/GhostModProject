@@ -216,11 +216,15 @@ public class GhostPlayerEntity extends RemotePlayer {
             //?}
         }
 
-        try {
-            Pose newPose = Pose.valueOf(data.pose());
-            this.setPose(newPose);
-        } catch (IllegalArgumentException e) {
-            // 不正なポーズ名が送られてきた場合は無視する
+        if (data.pose() != null) {
+            try {
+                Pose newPose = Pose.valueOf(data.pose());
+                this.setPose(newPose);
+                // スニーク時のネームタグ挙動（壁越し非表示・半透明化・表示距離32ブロック制限）をバニラに合わせる
+                this.setShiftKeyDown(newPose == Pose.CROUCHING);
+            } catch (IllegalArgumentException e) {
+                // 不正なポーズ名が送られてきた場合は無視する
+            }
         }
         // Skin Parts Synchronization
         this.entityData.set(Player.DATA_PLAYER_MODE_CUSTOMISATION, data.skinParts());
