@@ -7,8 +7,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.PlayerModelPart;
 
-import java.util.Objects;
-
 import static com.ghost.converter.McDtoConverter.fromMc;
 
 public final class PlayerDataConverter {
@@ -32,14 +30,16 @@ public final class PlayerDataConverter {
                 fromMc(player.getItemBySlot(EquipmentSlot.LEGS)),
                 fromMc(player.getItemBySlot(EquipmentSlot.FEET)));
 
-        int swing_tick = 0;
-        //? if >=26.3 {
-        /*if (player.getCurrentSwing() != null) {
-            swing_tick = player.getCurrentSwing().durationTicks();
-        }
 
-        *///? }else{
-        swing_tick = player.swingTime;
+        //? if >=26.3 {
+        /*// 26.3 では経過 tick が SwingState に隠蔽されたため、進行度と総継続時間から復元する
+        int swing_tick = 0;
+        var currentSwing = player.getCurrentSwing();
+        if (currentSwing != null && currentSwing.durationTicks() > 0) {
+            swing_tick = Math.round(player.getSwingAnimation(1.0F) * currentSwing.durationTicks());
+        }
+        *///?} else {
+        int swing_tick = player.swingTime;
         //?}
 
         return new PlayerData(
