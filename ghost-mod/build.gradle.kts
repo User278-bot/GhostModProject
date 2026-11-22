@@ -18,13 +18,13 @@ val requiredJava = when {
 }
 
 repositories {
+    maven("https://maven.fabricmc.net/") { name = "Fabric" }
+    maven("https://maven.shedaniel.me/")
+
     /**
      * Restricts dependency search of the given [groups] to the [maven URL][url],
      * improving the setup speed.
      */
-    maven("https://maven.fabricmc.net/") { name = "Fabric" }
-    maven("https://maven.shedaniel.me/")
-
     fun strictMaven(url: String, alias: String, vararg groups: String) = exclusiveContent {
         forRepository { maven(url) { name = alias } }
         filter { groups.forEach(::includeGroup) }
@@ -104,17 +104,20 @@ java {
 }
 
 tasks {
+    // 実行時の Task.project 参照（Gradle 10 で廃止）を避けるため設定時に取得する
+    val archiveName = base.archivesName.get()
+
     // Mod JAR / Sources JAR にライセンスとサードパーティライセンス表記を同梱する
     named<Jar>("jar") {
         from(rootProject.file("LICENSE")) {
-            rename { "${it}_${project.base.archivesName.get()}" }
+            rename { "${it}_$archiveName" }
         }
         from(rootProject.file("THIRD_PARTY_LICENSES.txt"))
     }
 
     named<Jar>("sourcesJar") {
         from(rootProject.file("LICENSE")) {
-            rename { "${it}_${project.base.archivesName.get()}" }
+            rename { "${it}_$archiveName" }
         }
         from(rootProject.file("THIRD_PARTY_LICENSES.txt"))
     }
@@ -141,6 +144,7 @@ tasks {
     // Builds the version into a shared folder in `build/libs/${mod version}/`
     register<Copy>("buildAndCollect") {
         group = "build"
+        description = "Mod の JAR とソース JAR をビルドし、ルートの build/libs/<version> へ集約する"
         inputs.property("version", project.property("mod.version"))
         from(loomx.modJar.flatMap { it.archiveFile }, loomx.modSourcesJar.flatMap { it.archiveFile })
         into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))

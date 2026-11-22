@@ -1,4 +1,3 @@
-
 plugins {
     id("ghost-java-conventions")
     id("com.google.protobuf")
@@ -18,6 +17,6 @@ dependencies {
 protobuf {
     protoc {
         // [versions] の protobuf からバージョン文字列を取得
-        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.asProvider().get()}"
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
     }
 }

@@ -26,7 +26,7 @@ object VersionResolver {
                     ?.substringAfter(prefix)
                     ?.takeIf { it.isNotEmpty() }
             } else null
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
