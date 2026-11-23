@@ -71,6 +71,7 @@ public class FakeClientMain {
                 LOGGER.debug("Sent: {}", data);
 
                 // 200ミリ秒 (5回/秒) ごとに送信
+                //noinspection BusyWait
                 Thread.sleep(200);
             }
 
