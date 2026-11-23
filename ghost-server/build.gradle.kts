@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.picocli)
     implementation(libs.picocli.shell.jline3)
     implementation(libs.jline)
+    compileOnly(libs.jetbrains.annotations)
     runtimeOnly(libs.slf4j.simple)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.bundles.test)
