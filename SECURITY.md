@@ -50,7 +50,7 @@ This project is maintained by an individual developer on a **best-effort basis**
 
 Ghost Mod Project is designed primarily for **private, small-group play among trusted friends** (e.g., exploring single-player adventure maps together). Please keep the following design assumptions and operational responsibilities in mind:
 
-- **Transport & Encryption**: Communication between the Mod and `ghost-server` uses WebSocket with CHAP authentication and application-layer AES-GCM encryption derived from the server password. However, `ghost-server` does not natively terminate TLS (`wss://`).
+- **Transport & Encryption**: Communication between the Mod and `ghost-server` uses binary Protobuf frames over WebSocket with HMAC-SHA256 CHAP authentication, protocol version validation, and application-layer AES-GCM encryption derived from the server password. However, `ghost-server` does not natively terminate TLS (`wss://`).
 - **Password Management**: Always configure a strong, unique password (`--password` or `server.properties`) when exposing the server outside a local network. Do **not** expose a server using weak passwords or the default auto-generated password.
 - **Network Exposure**: Server operators are solely responsible for port forwarding, firewall rules, and network security. When exposing a server over the internet, using a reverse proxy with TLS, a VPN, or a tunneling service is strongly recommended.
 
@@ -113,7 +113,7 @@ Mod・サーバーともに常に最新バージョンへ更新してご利用�
 
 Ghost Mod Project は、主に**友人同士など信頼できる少人数でのプライベート利用**（一人用配布マップの擬似マルチプレイ等）を前提に設計されています。運用にあたっては、以下の前提および利用者側の責任範囲をご理解ください。
 
-- **通信保護と暗号化**: Mod と `ghost-server` 間の通信は、WebSocket 上で CHAP 認証およびサーバーパスワード由来の AES-GCM によるアプリケーション層暗号化を行っています。ただし、`ghost-server` 単体では TLS（`wss://`）終端機能は提供していません。
+- **通信保護と暗号化**: Mod と `ghost-server` 間の通信は、WebSocket 上の Protobuf バイナリフレームを用いて、HMAC-SHA256 による CHAP 認証、プロトコルバージョン検証、およびサーバーパスワード由来の AES-GCM によるアプリケーション層暗号化を行っています。ただし、`ghost-server` 単体では TLS（`wss://`）終端機能は提供していません。
 - **パスワード管理**: サーバーをローカルネットワーク外へ公開する場合は、十分に長く推測されにくいパスワード（`--password` または `server.properties`）を必ず設定してください。弱いパスワードや、未指定時の自動生成パスワードのまま外部公開しないでください。
 - **ネットワーク公開**: ポート開放・ファイアウォール設定・ネットワーク構成の安全性はサーバー運用者の責任となります。インターネット越しに利用する場合は、TLS 対応リバースプロキシ、VPN、またはトンネリングサービスの併用を推奨します。
 

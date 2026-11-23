@@ -16,29 +16,37 @@ AI Translated: English
 
 - **ghost-mod**: Minecraft Mod 本体 (Fabric)。Stonecutter を使用して複数バージョンに対応しています。
 - **ghost-server**: 同期用の中継サーバー (Java Application)。
-- **ghost-fake_client**: 負荷テスト・デバッグ用のダミーライアント。
-- **ghost-api**: 共通のパケット定義やデータ構造。
+- **ghost-network**: WebSocket 同期クライアント・暗号化・認証などの共通通信モジュール。
+- **ghost-api**: 共通の Protobuf パケット定義やデータ構造。
+- **ghost-fake_client**: 負荷テスト・デバッグ用のダミークライアント。
 
 ## 動作環境
 - **Minecraft Version**: [対応バージョン](#対応バージョン)を参照
 - **Mod Loader**: Fabric
-- **Java Version**: Java 21
+- **Java Version**:
+  - **Mod (`ghost-mod`)**: Minecraft 本体の要件に準拠（1.19.2〜1.20.1: Java 17 / 1.20.5〜1.21.11: Java 21 / 26.1 以降: Java 25）
+  - **Server (`ghost-server`) / FakeClient**: Java 17 以上
 
 ## 対応バージョン
 - Minecraft 1.19.2
-- Minecraft 1.20.1
-- Minecraft 1.20.6
+- Minecraft 1.20 - 1.20.1
+- Minecraft 1.20.5 - 1.20.6
 - Minecraft 1.21.4
 - Minecraft 1.21.11
-- Minecraft 26.1.2
+- Minecraft 26.1 - 26.1.2
 - Minecraft 26.2
+- Minecraft 26.3
 
 ## 成果物のダウンロード
-以下のリンクから成果物をダウンロードできます。表示されている番号が最新バージョンです。リンク先が正しくない場合は、[リリース](https://github.com/User278-bot/GhostModProject/releases)から各成果物の最新バージョンをダウンロードしてください。
+以下のリンクから最新バージョンを確認・ダウンロードできます。各成果物は [リリース](https://github.com/User278-bot/GhostModProject/releases) ページからダウンロードしてください。
 
-[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases/tag/mod/v1.3.1)
-[![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases/tag/server/v1.3.1)
-[![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases/tag/client/v1.3.0)
+[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases)
+[![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases)
+[![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases)
+
+> [!IMPORTANT]
+> **バージョン互換性について**
+> 通信プロトコルにはバージョン検証（`protocol_version`）が導入されています。Mod と Server は **メジャー・マイナーバージョン（`vX.Y.z` の `X.Y` 部分）を揃えて使用してください**（例: Mod `v1.7.x` と Server `v1.7.x`）。パッチバージョン（`.z`）の違いには互換性があります。
 
 ## 導入方法
 
@@ -55,17 +63,17 @@ AI Translated: English
 `GhostModServer-<version>.jar` を実行して同期サーバーを立ち上げます。
 
 ```bash
-java -jar GhostModServer-<vesion>.jar
+java -jar GhostModServer-<version>.jar
 ```
-デフォルトではポート `8887` で待機します。ポートを変更したい場合は `--port` オプションを使用してください。
+デフォルトではポート `8887` で待機します。設定は `server.properties` または起動オプションで変更できます（優先順位: コマンドライン引数 > 設定ファイル > デフォルト値）。
 
 ```bash
-java -jar GhostModServer-<vesion>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
+java -jar GhostModServer-<version>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
 ```
 
-その他オプションは`--help`で確認できます。
+その他オプションは `--help` で確認できます。また、サーバー起動中はコンソールから `stop` や `help` などのコマンドを入力できます。
 ```bash
-java -jar GhostModServer-<vesion>.jar --help
+java -jar GhostModServer-<version>.jar --help
 ```
 
 > [!IMPORTANT]
@@ -106,8 +114,9 @@ java -jar GhostModServer-<vesion>.jar --help
 
 #### Mod (ghost-mod)
 バージョンごとに以下のディレクトリに出力されます。
-- `ghost-mod/versions/1.19.2/build/libs/ghostmod-<vesion>+1.19.2.jar`
-- `ghost-mod/versions/1.20.1/build/libs/ghostmod-<vesion>+1.20.1.jar`
+- `ghost-mod/versions/1.19.2/build/libs/ghostmod-<version>+1.19.2.jar`
+- `ghost-mod/versions/1.20.1/build/libs/ghostmod-<version>+1.20.1.jar`
+- `ghost-mod/versions/26.3.x/build/libs/ghostmod-<version>+26.3.jar`
 など
 
 #### Server (ghost-server)

@@ -17,7 +17,13 @@ import java.util.Objects;
  */
 public final class ProtoConverter {
 
-    /** 現行通信プロトコルバージョン（非互換変更時にインクリメントする） */
+    /**
+     * 現行通信プロトコルバージョン。
+     * アプリのリリース番号とは独立した連番で管理し、通信の非互換変更時のみインクリメントします。
+     * <ul>
+     *   <li>v1: Protobuf {@code oneof} バイナリ一本化 + HMAC-SHA256 CHAP + プロトコルバージョン検証</li>
+     * </ul>
+     */
     public static final int PROTOCOL_VERSION = 1;
 
     private ProtoConverter() {

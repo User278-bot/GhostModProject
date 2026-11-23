@@ -16,29 +16,37 @@ This project consists of the following modules:
 
 - **ghost-mod**: The main Minecraft Mod (Fabric). Supports multiple versions using Stonecutter.
 - **ghost-server**: A relay server for synchronization (Java Application).
+- **ghost-network**: Shared networking module for the WebSocket sync client, encryption, and authentication.
+- **ghost-api**: Common Protobuf packet definitions and data structures.
 - **ghost-fake_client**: A dummy client for load testing and debugging.
-- **ghost-api**: Common packet definitions and data structures.
 
 ## System Requirements
 - **Minecraft Version**: See [Supported Versions](#supported-versions)
 - **Mod Loader**: Fabric
-- **Java Version**: Java 21
+- **Java Version**:
+  - **Mod (`ghost-mod`)**: Follows Minecraft's requirements (1.19.2–1.20.1: Java 17 / 1.20.5–1.21.11: Java 21 / 26.1+: Java 25)
+  - **Server (`ghost-server`) / FakeClient**: Java 17 or higher
 
 ## Supported Versions
 - Minecraft 1.19.2
-- Minecraft 1.20.1
-- Minecraft 1.20.6
+- Minecraft 1.20 - 1.20.1
+- Minecraft 1.20.5 - 1.20.6
 - Minecraft 1.21.4
 - Minecraft 1.21.11
-- Minecraft 26.1.2
+- Minecraft 26.1 - 26.1.2
 - Minecraft 26.2
+- Minecraft 26.3
 
 ## Downloads
-You can download the artifacts from the links below. The version number displayed is the latest version. If the link is incorrect, please download the latest version of each artifact from the [Releases](https://github.com/User278-bot/GhostModProject/releases) page.
+You can check and download the latest versions from the [Releases](https://github.com/User278-bot/GhostModProject/releases) page.
 
-[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases/tag/mod/v1.3.1)
-[![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases/tag/server/v1.3.1)
-[![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases/tag/client/v1.3.0)
+[![Mod Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=mod/v*&label=Mod&color=blue)](https://github.com/User278-bot/GhostModProject/releases)
+[![Server Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=server/v*&label=Server&color=green)](https://github.com/User278-bot/GhostModProject/releases)
+[![FakeClient Version](https://img.shields.io/github/v/release/User278-bot/GhostModProject?include_prereleases&filter=client/v*&label=FakeClient&color=orange)](https://github.com/User278-bot/GhostModProject/releases)
+
+> [!IMPORTANT]
+> **Version Compatibility**
+> The communication protocol includes version validation (`protocol_version`). Please use matching **major.minor versions (`X.Y` in `vX.Y.z`)** for both the Mod and Server (e.g., Mod `v1.7.x` with Server `v1.7.x`). Different patch versions (`.z`) remain compatible.
 
 ## Installation
 
@@ -55,17 +63,17 @@ You can download the artifacts from the links below. The version number displaye
 Run `GhostModServer-<version>.jar` to start the synchronization server.
 
 ```bash
-java -jar GhostModServer-<vesion>.jar
+java -jar GhostModServer-<version>.jar
 ```
-By default, it listens on port `8887`. Use the `--port` option to change the port.
+By default, it listens on port `8887`. You can configure settings via `server.properties` or command-line options (priority: CLI arguments > config file > default values).
 
 ```bash
-java -jar GhostModServer-<vesion>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
+java -jar GhostModServer-<version>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
 ```
 
-Other options can be found with `--help`.
+Other options can be found with `--help`. While the server is running, you can also enter interactive console commands such as `stop` and `help`.
 ```bash
-java -jar GhostModServer-<vesion>.jar --help
+java -jar GhostModServer-<version>.jar --help
 ```
 
 > [!IMPORTANT]
@@ -106,8 +114,9 @@ Upon a successful build, artifacts (JAR files) are generated in the following lo
 
 #### Mod (ghost-mod)
 Output to the following directories per version:
-- `ghost-mod/versions/1.19.2/build/libs/ghostmod-<vesion>+1.19.2.jar`
-- `ghost-mod/versions/1.20.1/build/libs/ghostmod-<vesion>+1.20.1.jar`
+- `ghost-mod/versions/1.19.2/build/libs/ghostmod-<version>+1.19.2.jar`
+- `ghost-mod/versions/1.20.1/build/libs/ghostmod-<version>+1.20.1.jar`
+- `ghost-mod/versions/26.3.x/build/libs/ghostmod-<version>+26.3.jar`
 etc.
 
 #### Server (ghost-server)
