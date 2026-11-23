@@ -20,7 +20,7 @@ class ProtoConverterTest {
                 .hasGlint(true)
                 .color(0x00FF00)
                 .trim(new TrimDto("coast", "diamond"))
-                .customModelData(new CustomModelDataDto(List.of(1.0f, 2.5f), List.of(true), List.of("model1"), List.of(12345)))
+                .customModelData(new CustomModelDataDto(List.of(1.0f, 2.5f), List.of(true), List.of("model1"), List.of(12345), 777))
                 .build();
 
         EquipmentDto equipment = new EquipmentDto(
@@ -64,6 +64,8 @@ class ProtoConverterTest {
         assertEquals(original.uuid(), deserialized.uuid());
         assertEquals(original.name(), deserialized.name());
         assertEquals(original.equipment(), deserialized.equipment());
+        assertNotNull(deserialized.equipment().head().customModelData());
+        assertEquals(777, deserialized.equipment().head().customModelData().model());
     }
 
     @Test

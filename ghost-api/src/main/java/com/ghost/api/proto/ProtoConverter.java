@@ -263,7 +263,8 @@ public final class ProtoConverter {
                 cmd.getFloatsList(),
                 cmd.getFlagsList(),
                 cmd.getStringsList(),
-                cmd.getColorsList()
+                cmd.getColorsList(),
+                cmd.getModel()
         );
     }
 
