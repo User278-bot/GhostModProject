@@ -1,13 +1,11 @@
 package com.ghost.server;
 
-import com.ghost.api.dto.AuthData;
 import com.ghost.api.dto.PlayerData;
-import com.ghost.api.packet.GhostPacket;
-import com.ghost.api.packet.MessageType;
+import com.ghost.api.proto.AuthResponse;
+import com.ghost.api.proto.GhostPacketProto;
 import com.ghost.api.proto.ProtoConverter;
 import com.ghost.net.auth.ChapAuthenticator;
 import com.ghost.util.CryptoUtil;
-import com.ghost.util.SerializationUtil;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -17,14 +15,21 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import javax.crypto.SecretKey;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.List;
+import java.security.GeneralSecurityException;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Ghost Mod 用の WebSocket 同期サーバー。
+ * 設定解決は {@link ServerConfig}、レート制限は {@link RateLimiter.PerIpManager}、
+ * セッション＆視認範囲追跡は {@link VisibilityTracker} へ責務を委譲し、
+ * 本クラスは WebSocket 通信制御・暗号化・CHAP 認証に専念します。
+ */
 public class GhostModServer extends WebSocketServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GhostModServer.class);
@@ -32,28 +37,38 @@ public class GhostModServer extends WebSocketServer {
     private static final int CLOSE_AUTH_FAILED = 4001;
     private static final int CLOSE_HANDSHAKE_ERROR = 4002;
     private static final int CLOSE_DECRYPTION_FAILED = 4003;
+    private static final int CLOSE_PROTOCOL_MISMATCH = 4004;
+    private static final int CLOSE_UNSUPPORTED_FRAME = 4005;
 
-    private final ServerConfig config;
     private final String serverPassword;
-    private final VisibilityTracker<WebSocket> visibilityTracker;
+    private final SecretKey secretKey;
+    private final double visibleRange;
+    private final double packetsPerSecond;
     private final RateLimiter.PerIpManager rateLimiterManager;
+    private final VisibilityTracker<WebSocket> visibilityTracker;
     private final AtomicBoolean isShuttingDown = new AtomicBoolean(false);
 
     public GhostModServer(ServerConfig config) {
-        super(new InetSocketAddress(config.port()));
-        this.config = config;
-        this.serverPassword = config.password();
-        this.visibilityTracker = new VisibilityTracker<>(config.viewDistance());
-        this.rateLimiterManager = new RateLimiter.PerIpManager(config.rateLimit());
+        this(config.port(), config.password(), config.viewDistance(), config.rateLimit());
+    }
+
+    public GhostModServer(int port, String password, double visibleRange, double packetsPerSecond) {
+        super(new InetSocketAddress(port));
+        this.serverPassword = password;
+        this.secretKey = CryptoUtil.deriveKey(password);
+        this.visibleRange = visibleRange;
+        this.packetsPerSecond = packetsPerSecond;
+        this.rateLimiterManager = new RateLimiter.PerIpManager(packetsPerSecond);
+        this.visibilityTracker = new VisibilityTracker<>(visibleRange);
     }
 
     @Override
     public void onStart() {
         LOGGER.info("Server started on port: {}", getPort());
-        LOGGER.info("Authentication enabled using CHAP.");
-        LOGGER.info("Visibility Range: {} blocks", config.viewDistance());
-        LOGGER.info("Rate Limit: {} packets/sec", config.rateLimit());
-        LOGGER.debug("\n=== DEBUG MODE ===\n");
+        LOGGER.info("Authentication enabled using HMAC-SHA256 CHAP (protocol v{}).", ProtoConverter.PROTOCOL_VERSION);
+        LOGGER.info("Visibility Range: {} blocks", visibleRange);
+        LOGGER.info("Rate Limit: {} packets/sec", packetsPerSecond);
+        LOGGER.debug("=== DEBUG MODE ===");
         setConnectionLostTimeout(100);
     }
 
@@ -64,22 +79,12 @@ public class GhostModServer extends WebSocketServer {
         String nonce = ChapAuthenticator.generateNonce();
         visibilityTracker.registerConnection(conn, nonce);
 
-        AuthData authData = new AuthData(nonce, null);
-        GhostPacket<AuthData> challengePacket = new GhostPacket<>(MessageType.AUTH_CHALLENGE, authData);
-        try {
-            conn.send(CryptoUtil.encrypt(SerializationUtil.serializePacket(challengePacket), serverPassword));
-            LOGGER.info("Sent AUTH_CHALLENGE to {}", conn.getRemoteSocketAddress());
-        } catch (Exception e) {
-            LOGGER.error("Failed to encrypt challenge for {}", conn.getRemoteSocketAddress(), e);
-            conn.close(CLOSE_HANDSHAKE_ERROR, "Handshake Error");
-        }
+        sendEncrypted(conn, ProtoConverter.encodeAuthChallenge(nonce), "AUTH_CHALLENGE");
+        LOGGER.info("Sent AUTH_CHALLENGE to {}", conn.getRemoteSocketAddress());
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        if (conn == null) {
-            return;
-        }
         var result = visibilityTracker.removeConnection(conn);
         PlayerData disconnectedPlayer = result.disconnectedPlayer();
         if (disconnectedPlayer != null) {
@@ -103,45 +108,9 @@ public class GhostModServer extends WebSocketServer {
 
         byte[] decryptedBytes;
         try {
-            decryptedBytes = CryptoUtil.decrypt(rawBytes, serverPassword);
+            decryptedBytes = CryptoUtil.decrypt(rawBytes, secretKey);
         } catch (Exception e) {
             LOGGER.warn("Failed to decrypt binary message from {}, closing connection.", conn.getRemoteSocketAddress());
-            conn.close(CLOSE_DECRYPTION_FAILED, "Decryption Failed");
-            return;
-        }
-
-        var sessionOpt = visibilityTracker.getSession(conn);
-        if (sessionOpt.isEmpty() || !sessionOpt.get().isAuthenticated()) {
-            LOGGER.warn("Received binary message from unauthenticated client: {}", conn.getRemoteSocketAddress());
-            return;
-        }
-        GhostClientData session = sessionOpt.get();
-
-        try {
-            MessageType type = ProtoConverter.deserializePacketType(decryptedBytes);
-            if (type == MessageType.UPDATE) {
-                PlayerData playerData = ProtoConverter.deserializeUpdatePacket(decryptedBytes);
-                if (session.playerData() == null) {
-                    LOGGER.info("Player initialized: {} ({})", playerData.name(), conn.getRemoteSocketAddress());
-                }
-                dispatchPlayerUpdate(conn, playerData);
-            }
-        } catch (Exception ex) {
-            LOGGER.error("Error processing binary message from {}", conn.getRemoteSocketAddress(), ex);
-        }
-    }
-
-    @Override
-    public void onMessage(WebSocket conn, String message) {
-        if (isRateLimited(conn)) {
-            return;
-        }
-
-        String decryptedMessage;
-        try {
-            decryptedMessage = CryptoUtil.decrypt(message, serverPassword);
-        } catch (Exception e) {
-            LOGGER.warn("Failed to decrypt message from {}, closing connection.", conn.getRemoteSocketAddress());
             conn.close(CLOSE_DECRYPTION_FAILED, "Decryption Failed");
             return;
         }
@@ -151,12 +120,42 @@ public class GhostModServer extends WebSocketServer {
             return;
         }
         GhostClientData session = sessionOpt.get();
-        if (!session.isAuthenticated()) {
-            handleAuthHandshake(conn, session, decryptedMessage);
+
+        GhostPacketProto packet;
+        try {
+            packet = ProtoConverter.decode(decryptedBytes);
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to decode Protobuf packet from {}", conn.getRemoteSocketAddress(), ex);
+            if (!session.isAuthenticated()) {
+                conn.close(CLOSE_HANDSHAKE_ERROR, "Handshake Error");
+            }
             return;
         }
 
-        LOGGER.debug("Message from {}: {}", conn.getRemoteSocketAddress(), decryptedMessage);
+        if (!session.isAuthenticated()) {
+            handleAuthHandshake(conn, session, packet);
+            return;
+        }
+
+        if (packet.getPayloadCase() == GhostPacketProto.PayloadCase.UPDATE) {
+            PlayerData playerData = ProtoConverter.fromProto(packet.getUpdate());
+            if (session.playerData() == null) {
+                LOGGER.info("Player initialized: {} ({})", playerData.name(), conn.getRemoteSocketAddress());
+            }
+            dispatchPlayerUpdate(conn, playerData);
+        } else {
+            LOGGER.debug("Ignoring unsupported client packet payload: {}", packet.getPayloadCase());
+        }
+    }
+
+    @Override
+    public void onMessage(WebSocket conn, String message) {
+        if (isRateLimited(conn)) {
+            return;
+        }
+        LOGGER.warn("Received unsupported text frame from {}. Binary protocol is required.",
+                conn.getRemoteSocketAddress());
+        conn.close(CLOSE_UNSUPPORTED_FRAME, "Binary Protocol Required");
     }
 
     private boolean isRateLimited(WebSocket conn) {
@@ -172,37 +171,29 @@ public class GhostModServer extends WebSocketServer {
         return false;
     }
 
-    private void handleAuthHandshake(WebSocket conn, GhostClientData session, String message) {
-        try {
-            var packet = SerializationUtil.deserializePacket(message);
+    private void handleAuthHandshake(WebSocket conn, GhostClientData session, GhostPacketProto packet) {
+        if (packet.getPayloadCase() != GhostPacketProto.PayloadCase.AUTH_RESPONSE) {
+            LOGGER.warn("Expected AUTH_RESPONSE but received {} from {}",
+                    packet.getPayloadCase(), conn.getRemoteSocketAddress());
+            conn.close(CLOSE_HANDSHAKE_ERROR, "Unexpected Packet During Auth");
+            return;
+        }
 
-            if (packet != null && packet.getType() == MessageType.AUTH_RESPONSE) {
-                AuthData authData = SerializationUtil.parseAuthData(packet.getData());
-                String clientHash = authData != null ? authData.hash() : null;
-                String nonce = session.nonce();
+        AuthResponse response = packet.getAuthResponse();
+        if (response.getProtocolVersion() != ProtoConverter.PROTOCOL_VERSION) {
+            LOGGER.warn("Protocol version mismatch from {}: client={}, server={}",
+                    conn.getRemoteSocketAddress(), response.getProtocolVersion(), ProtoConverter.PROTOCOL_VERSION);
+            conn.close(CLOSE_PROTOCOL_MISMATCH, "Protocol Version Mismatch");
+            return;
+        }
 
-                if (ChapAuthenticator.verify(serverPassword, nonce, clientHash)) {
-                    visibilityTracker.markAuthenticated(conn);
-                    LOGGER.info("Authentication SUCCESS for {}", conn.getRemoteSocketAddress());
-
-                    GhostPacket<Void> successPacket = new GhostPacket<>(MessageType.AUTH_SUCCESS, null);
-                    try {
-                        conn.send(CryptoUtil.encrypt(SerializationUtil.serializePacket(successPacket), serverPassword));
-                    } catch (Exception e) {
-                        LOGGER.error("Failed to encrypt auth success", e);
-                    }
-                } else {
-                    LOGGER.warn("Authentication FAILED for {}. Closing connection.", conn.getRemoteSocketAddress());
-                    conn.close(CLOSE_AUTH_FAILED, "Authentication Failed");
-                }
-            } else {
-                LOGGER.warn(
-                        "Expected AUTH_RESPONSE but received different packet/invalid data from unauthenticated client: {}",
-                        conn.getRemoteSocketAddress());
-            }
-        } catch (Exception e) {
-            LOGGER.error("Auth handshake error for {}", conn.getRemoteSocketAddress(), e);
-            conn.close(CLOSE_HANDSHAKE_ERROR, "Handshake Error");
+        if (ChapAuthenticator.verify(serverPassword, session.nonce(), response.getHash())) {
+            visibilityTracker.markAuthenticated(conn);
+            LOGGER.info("Authentication SUCCESS for {}", conn.getRemoteSocketAddress());
+            sendEncrypted(conn, ProtoConverter.encodeAuthSuccess(), "AUTH_SUCCESS");
+        } else {
+            LOGGER.warn("Authentication FAILED for {}. Closing connection.", conn.getRemoteSocketAddress());
+            conn.close(CLOSE_AUTH_FAILED, "Authentication Failed");
         }
     }
 
@@ -219,96 +210,79 @@ public class GhostModServer extends WebSocketServer {
         }
     }
 
-    private void sendLeavePacket(PlayerData playerData, List<WebSocket> targets) {
-        if (targets.isEmpty()) {
+    private void sendLeavePacket(PlayerData playerData, java.util.List<WebSocket> authenticatedTargets) {
+        if (authenticatedTargets.isEmpty()) {
             return;
         }
-        byte[] leaveBytes = ProtoConverter.serializeUuidPacket(MessageType.LEAVE, playerData.uuid());
-        byte[] encryptedLeave;
         try {
-            encryptedLeave = CryptoUtil.encrypt(leaveBytes, serverPassword);
-        } catch (Exception e) {
-            LOGGER.error("Failed to encrypt leave packet", e);
-            return;
-        }
-        for (WebSocket target : targets) {
-            if (target.isOpen()) {
-                target.send(encryptedLeave);
+            byte[] encryptedLeave = CryptoUtil.encrypt(ProtoConverter.encodeLeave(playerData.uuid()), secretKey);
+            for (WebSocket target : authenticatedTargets) {
+                if (target.isOpen()) {
+                    target.send(encryptedLeave);
+                }
             }
+        } catch (GeneralSecurityException e) {
+            LOGGER.error("Failed to encrypt leave packet", e);
         }
     }
 
     private void dispatchPlayerUpdate(WebSocket sender, PlayerData sendData) {
         var result = visibilityTracker.updatePlayer(sender, sendData);
 
-        // 1. 視認範囲内のピアへ送信者の UPDATE を配信
+        // 1. 視認範囲内のピアへ送信者の UPDATE を一括配信（暗号化は 1 回だけ実行）
         if (!result.notifyUpdateTargets().isEmpty()) {
-            byte[] encryptedUpdate = encryptUpdate(sendData);
-            if (encryptedUpdate != null) {
+            try {
+                byte[] encryptedUpdate = CryptoUtil.encrypt(ProtoConverter.encodeUpdate(sendData), secretKey);
                 for (WebSocket peer : result.notifyUpdateTargets()) {
                     if (peer.isOpen()) {
                         peer.send(encryptedUpdate);
                     }
                 }
+            } catch (GeneralSecurityException e) {
+                LOGGER.error("Encryption failed for update packet", e);
             }
         }
 
-        // 2. 新規に視認範囲へ入ったピアの最新状態を送信者へバックフィル
+        // 2. 新たに視認範囲内へ入ったピアの最新状態を送信者へ返送
         for (PlayerData peerData : result.backfillToSender()) {
-            if (!sender.isOpen()) {
-                break;
-            }
-            byte[] encryptedPeerUpdate = encryptUpdate(peerData);
-            if (encryptedPeerUpdate != null) {
-                sender.send(encryptedPeerUpdate);
-            }
+            sendEncrypted(sender, ProtoConverter.encodeUpdate(peerData), "BACKFILL_UPDATE");
         }
 
-        // 3. 範囲外へ出たピアへ送信者の DESPAWN を配信（必要なときだけ遅延暗号化）
+        // 3. 範囲外に出たピアがいる場合のみ DESPAWN を遅延生成・暗号化して通知
         if (!result.notifyDespawnTargets().isEmpty()) {
-            byte[] encryptedDespawn = encryptDespawn(sendData.uuid());
-            if (encryptedDespawn != null) {
+            try {
+                byte[] encryptedDespawn = CryptoUtil.encrypt(
+                        ProtoConverter.encodeDespawn(sendData.uuid()), secretKey);
                 for (WebSocket peer : result.notifyDespawnTargets()) {
                     if (peer.isOpen()) {
                         peer.send(encryptedDespawn);
                     }
                 }
+            } catch (GeneralSecurityException e) {
+                LOGGER.error("Encryption failed for despawn packet", e);
             }
         }
 
         // 4. 範囲外になったピアの DESPAWN を送信者へ通知
-        for (String despawnPeerUuid : result.despawnToSender()) {
-            if (!sender.isOpen()) {
-                break;
-            }
-            byte[] encryptedPeerDespawn = encryptDespawn(despawnPeerUuid);
-            if (encryptedPeerDespawn != null) {
-                sender.send(encryptedPeerDespawn);
-            }
+        for (String peerUuid : result.despawnToSender()) {
+            sendEncrypted(sender, ProtoConverter.encodeDespawn(peerUuid), "PEER_DESPAWN");
         }
     }
 
-    private byte[] encryptUpdate(PlayerData data) {
-        try {
-            return CryptoUtil.encrypt(ProtoConverter.serializeUpdatePacket(data), serverPassword);
-        } catch (Exception e) {
-            LOGGER.error("Encryption failed for update packet", e);
-            return null;
+    private void sendEncrypted(WebSocket target, byte[] plainPayload, String label) {
+        if (!target.isOpen()) {
+            return;
         }
-    }
-
-    private byte[] encryptDespawn(String uuid) {
         try {
-            return CryptoUtil.encrypt(ProtoConverter.serializeUuidPacket(MessageType.DESPAWN, uuid), serverPassword);
-        } catch (Exception e) {
-            LOGGER.error("Encryption failed for despawn packet", e);
-            return null;
+            target.send(CryptoUtil.encrypt(plainPayload, secretKey));
+        } catch (GeneralSecurityException e) {
+            LOGGER.error("Failed to encrypt {} packet", label, e);
         }
     }
 
     /**
      * 全クライアントへ切断理由 (1001: Going Away) を通知し、サーバーを正常停止します。
-     * ServerConsole や ShutdownHook から呼び出されます。
+     * {@link ServerConsole} や ShutdownHook から呼び出されます。
      */
     public void shutdown() {
         if (!isShuttingDown.compareAndSet(false, true)) {
@@ -331,6 +305,10 @@ public class GhostModServer extends WebSocketServer {
     // エントリポイント
     // =========================================================================
 
+    /**
+     * 起動引数の定義（Picocli）。
+     * 優先度: コマンドライン引数 &gt; 設定ファイル &gt; デフォルト値
+     */
     @Command(
             name = "GhostModServer",
             mixinStandardHelpOptions = true,
@@ -355,22 +333,15 @@ public class GhostModServer extends WebSocketServer {
 
         @Override
         public void run() {
-            Properties props = ServerConfig.loadProperties(Path.of(configFile));
-            ServerConfig serverConfig;
             try {
-                serverConfig = ServerConfig.resolve(port, password, viewDistance, rateLimit, props);
-            } catch (IllegalArgumentException e) {
-                LOGGER.error("Invalid server configuration: {}", e.getMessage());
-                return;
-            }
+                Properties props = ServerConfig.loadProperties(Path.of(configFile));
+                ServerConfig config = ServerConfig.resolve(port, password, viewDistance, rateLimit, props);
 
-            if (serverConfig.passwordAutoGenerated()) {
-                LOGGER.warn("No password provided. Using generated password: '{}'", serverConfig.password());
-            }
+                if (config.passwordAutoGenerated()) {
+                    LOGGER.warn("No password provided. Using generated password: '{}'", config.password());
+                }
 
-            try {
-                GhostModServer server = new GhostModServer(serverConfig);
-
+                GhostModServer server = new GhostModServer(config);
                 Runtime.getRuntime().addShutdownHook(new Thread(server::shutdown, "Server-Shutdown-Hook"));
 
                 server.start();

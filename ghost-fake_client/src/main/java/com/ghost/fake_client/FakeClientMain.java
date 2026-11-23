@@ -1,36 +1,34 @@
 package com.ghost.fake_client;
 
 import com.ghost.api.dto.EquipmentDto;
-import com.ghost.net.GhostSyncService;
-import com.ghost.api.packet.GhostPacket;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.api.dto.Vec2Dto;
 import com.ghost.api.dto.Vec3Dto;
 import com.ghost.api.registry.IGhostRegistry;
-import com.ghost.util.SerializationUtil;
+import com.ghost.net.GhostSyncService;
 import com.ghost.registry.InMemoryGhostRegistry;
 import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import static com.ghost.api.packet.MessageType.UPDATE;
 
 public class FakeClientMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(FakeClientMain.class);
     private static final IGhostRegistry GHOST_REGISTRY = new InMemoryGhostRegistry();
 
     public static void main(String[] args) {
+        GhostSyncService ghostSyncService = null;
         try {
-            // --- コマンドライン引数の定義 ---
+            // コマンドライン引数の定義
             Options options = new Options();
-            options.addOption(Option.builder().longOpt("uuid").hasArg().desc("Player UUID").build());
-            options.addOption(Option.builder().longOpt("uri").hasArg().desc("Server URI").build());
-            options.addOption(Option.builder().longOpt("password").hasArg().desc("Server Password").build());
+            options.addOption(Option.builder().longOpt("uuid").hasArg().desc("Player UUID").get());
+            options.addOption(Option.builder().longOpt("uri").hasArg().desc("Server URI").get());
+            options.addOption(Option.builder().longOpt("password").hasArg().desc("Server Password").get());
 
-            // --- 引数の解析 ---
+            // 引数の解析
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd;
             try {
@@ -40,17 +38,18 @@ public class FakeClientMain {
                 return;
             }
 
-            // --- 接続情報の準備 ---
-            String playerUuid = cmd.getOptionValue("uuid", java.util.UUID.randomUUID().toString());
+            // 接続情報の準備
+            String playerUuid = cmd.getOptionValue("uuid", UUID.randomUUID().toString());
             String serverUriString = cmd.getOptionValue("uri", "ws://localhost:8887");
             String password = cmd.getOptionValue("password", "changeme");
 
             URI serverUri = new URI(serverUriString);
-            String playerName = "TestBot-" + playerUuid.substring(0, 8);
+            String shortUuid = playerUuid.substring(0, Math.min(8, playerUuid.length()));
+            String playerName = "TestBot-" + shortUuid;
             LOGGER.info("Starting test client: {} (UUID: {})", playerName, playerUuid);
 
-            // --- 依存関係の組み立て ---
-            var ghostSyncService = new GhostSyncService(GHOST_REGISTRY);
+            // 依存関係の組み立て
+            ghostSyncService = new GhostSyncService(GHOST_REGISTRY);
 
             LOGGER.info("Connecting to server: {} ...", serverUri);
 
@@ -62,36 +61,39 @@ public class FakeClientMain {
                 return;
             }
 
-            // --- メインループ：定期的にデータを送信 ---
+            // メインループ：定期的にデータを送信
             long startTime = System.currentTimeMillis();
             while (ghostSyncService.isConnected()) {
                 long elapsedTime = System.currentTimeMillis() - startTime;
 
                 PlayerData data = createDummyData(playerName, playerUuid, elapsedTime);
-                var packet = new GhostPacket<>(UPDATE, data);
-                ghostSyncService.sendPacket(packet);
+                ghostSyncService.sendPlayerUpdate(data);
+                LOGGER.debug("Sent: {}", data);
 
-                var msg = SerializationUtil.serializePacket(packet);
-                LOGGER.info("Sent: {}", msg);
-
-                // 3. 200ミリ秒 (5回/秒) ごとに送信
+                // 200ミリ秒 (5回/秒) ごとに送信
                 Thread.sleep(200);
             }
 
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            LOGGER.info("Test client interrupted.");
         } catch (Exception ex) {
             LOGGER.error("An error occurred:", ex);
         } finally {
+            if (ghostSyncService != null) {
+                ghostSyncService.disconnect();
+            }
             LOGGER.info("Test client finished.");
         }
     }
 
     /**
-     * 時間の経過と共に円を描くように動く、ダミーのPlayerDataを生成します。
+     * 時間の経過と共に円を描くように動く、ダミーの PlayerData を生成します。
      *
      * @param name       プレイヤー名
      * @param uuid       UUID
      * @param timeMillis 経過時間 (ミリ秒)
-     * @return 生成されたPlayerData
+     * @return 生成された PlayerData
      */
     private static PlayerData createDummyData(String name, String uuid, long timeMillis) {
         // 10秒で1周する円運動をシミュレート
@@ -102,13 +104,13 @@ public class FakeClientMain {
         double y = 88.0;
         double z = -90 + Math.sin(angle) * radius;
 
-        // プレイヤーの向きも円の外側を向くように計算
+        // プレイヤーの向きも円の外側を向くように計算（Vec2Dto は x=Pitch, y=Yaw）
         float yaw = (float) Math.toDegrees(-angle) + 90;
 
         Vec3Dto pos = new Vec3Dto(x, y, z);
-        Vec2Dto rot = new Vec2Dto(yaw, 0f); // pitchは0で固定
+        Vec2Dto rot = new Vec2Dto(0f, yaw);
 
-        // PlayerData DTOを直接インスタンス化
-        return new PlayerData(pos, rot, uuid, name, "STANDING", "minecraft:overworld", (byte) 127, "RIGHT", 0, new EquipmentDto(), false, "MAIN_HAND");
+        return new PlayerData(pos, rot, uuid, name, "STANDING", "minecraft:overworld", (byte) 127, "RIGHT", 0,
+                EquipmentDto.EMPTY, false, "MAIN_HAND");
     }
 }

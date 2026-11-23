@@ -7,118 +7,129 @@ import com.ghost.api.dto.Vec3Dto;
 import com.ghost.api.dto.item.ItemDto;
 import com.ghost.api.dto.item.components.CustomModelDataDto;
 import com.ghost.api.dto.item.components.TrimDto;
-import com.ghost.api.packet.MessageType;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import java.util.Objects;
+
 /**
- * DTO クラスと protobuf 生成クラス間の相互変換を行うユーティリティ。
- * <p>
- * 認証パケット（AUTH_*）は対象外で JSON テキストのまま送信される。
- * このクラスは UPDATE / LEAVE / DESPAWN パケットのシリアライズに使用する。
+ * DTO クラスと Protobuf 生成クラス間の相互変換およびパケットのエンコード／デコードを行うユーティリティ。
+ * 認証系・同期系すべてのパケットを {@link GhostPacketProto} の {@code oneof} バイナリ形式で統一します。
  */
 public final class ProtoConverter {
 
-    // GhostPacketProto.type に使用する ordinal 値（MessageType と対応）
-    public static final int TYPE_UPDATE = 0;
-    public static final int TYPE_JOIN = 1;
-    public static final int TYPE_LEAVE = 2;
-    public static final int TYPE_DESPAWN = 3;
+    /** 現行通信プロトコルバージョン（非互換変更時にインクリメントする） */
+    public static final int PROTOCOL_VERSION = 1;
 
     private ProtoConverter() {
     }
 
     // ============================================================
-    // PlayerData のシリアライズ（UPDATE / JOIN パケット用）
+    // パケット エンコード（DTO / 認証情報 → byte[]）
     // ============================================================
 
     /**
-     * PlayerData DTO を UPDATE パケットの byte[] にシリアライズする。
-     *
-     * @param data 送信対象の PlayerData
-     * @return シリアライズ済み GhostPacketProto の byte 配列
+     * PlayerData DTO を UPDATE パケットのバイト列にエンコードします。
      */
-    public static byte[] serializeUpdatePacket(PlayerData data) {
-        PlayerDataProto proto = toProto(data);
-        GhostPacketProto packet = GhostPacketProto.newBuilder()
-                .setType(TYPE_UPDATE)
-                .setPayload(proto.toByteString())
-                .build();
-        return packet.toByteArray();
+    public static byte[] encodeUpdate(PlayerData data) {
+        Objects.requireNonNull(data, "data must not be null");
+        return GhostPacketProto.newBuilder()
+                .setUpdate(toProto(data))
+                .build()
+                .toByteArray();
     }
 
     /**
-     * UPDATE パケットの byte[] から PlayerData DTO にデシリアライズする。
-     *
-     * @param bytes シリアライズ済み GhostPacketProto の byte 配列
-     * @return 変換後の PlayerData
-     * @throws InvalidProtocolBufferException 不正なバイト列の場合
+     * 切断通知（LEAVE）パケットのバイト列にエンコードします。
      */
-    public static PlayerData deserializeUpdatePacket(byte[] bytes) throws InvalidProtocolBufferException {
-        GhostPacketProto packet = GhostPacketProto.parseFrom(bytes);
-        PlayerDataProto proto = PlayerDataProto.parseFrom(packet.getPayload());
-        return fromProto(proto);
-    }
-
-    // ============================================================
-    // UUID のシリアライズ（LEAVE / DESPAWN パケット用）
-    // ============================================================
-
-    /**
-     * UUID 文字列を LEAVE または DESPAWN パケットの byte[] にシリアライズする。
-     *
-     * @param type MessageType.LEAVE または MessageType.DESPAWN
-     * @param uuid プレイヤーの UUID 文字列
-     * @return シリアライズ済み GhostPacketProto の byte 配列
-     */
-    public static byte[] serializeUuidPacket(MessageType type, String uuid) {
-        int typeInt = (type == MessageType.LEAVE) ? TYPE_LEAVE : TYPE_DESPAWN;
-        GhostPacketProto packet = GhostPacketProto.newBuilder()
-                .setType(typeInt)
-                .setPayload(com.google.protobuf.ByteString.copyFromUtf8(uuid))
-                .build();
-        return packet.toByteArray();
-    }
-
-    // ============================================================
-    // パケットタイプの識別
-    // ============================================================
-
-    /**
-     * byte[] からパケットタイプのみを取得する。
-     *
-     * @param bytes シリアライズ済み GhostPacketProto の byte 配列
-     * @return 対応する MessageType（不明な場合は UNRECOGNIZED）
-     * @throws InvalidProtocolBufferException 不正なバイト列の場合
-     */
-    public static MessageType deserializePacketType(byte[] bytes) throws InvalidProtocolBufferException {
-        GhostPacketProto packet = GhostPacketProto.parseFrom(bytes);
-        return switch (packet.getType()) {
-            case TYPE_UPDATE -> MessageType.UPDATE;
-            case TYPE_JOIN -> MessageType.JOIN;
-            case TYPE_LEAVE -> MessageType.LEAVE;
-            case TYPE_DESPAWN -> MessageType.DESPAWN;
-            default -> MessageType.UNRECOGNIZED;
-        };
+    public static byte[] encodeLeave(String uuid) {
+        Objects.requireNonNull(uuid, "uuid must not be null");
+        return GhostPacketProto.newBuilder()
+                .setLeaveUuid(uuid)
+                .build()
+                .toByteArray();
     }
 
     /**
-     * LEAVE / DESPAWN パケットから UUID 文字列を取得する。
-     *
-     * @param bytes シリアライズ済み GhostPacketProto の byte 配列
-     * @return UUID 文字列
-     * @throws InvalidProtocolBufferException 不正なバイト列の場合
+     * 視認範囲外（DESPAWN）パケットのバイト列にエンコードします。
      */
-    public static String deserializeUuid(byte[] bytes) throws InvalidProtocolBufferException {
-        GhostPacketProto packet = GhostPacketProto.parseFrom(bytes);
-        return packet.getPayload().toStringUtf8();
+    public static byte[] encodeDespawn(String uuid) {
+        Objects.requireNonNull(uuid, "uuid must not be null");
+        return GhostPacketProto.newBuilder()
+                .setDespawnUuid(uuid)
+                .build()
+                .toByteArray();
+    }
+
+    /**
+     * CHAP 認証チャレンジパケットを現行プロトコルバージョンでエンコードします。
+     */
+    public static byte[] encodeAuthChallenge(String nonce) {
+        return encodeAuthChallenge(nonce, PROTOCOL_VERSION);
+    }
+
+    /**
+     * CHAP 認証チャレンジパケットを指定プロトコルバージョンでエンコードします。
+     */
+    public static byte[] encodeAuthChallenge(String nonce, int protocolVersion) {
+        Objects.requireNonNull(nonce, "nonce must not be null");
+        return GhostPacketProto.newBuilder()
+                .setAuthChallenge(AuthChallenge.newBuilder()
+                        .setNonce(nonce)
+                        .setProtocolVersion(protocolVersion)
+                        .build())
+                .build()
+                .toByteArray();
+    }
+
+    /**
+     * CHAP 認証レスポンスパケットを現行プロトコルバージョンでエンコードします。
+     */
+    public static byte[] encodeAuthResponse(String hash) {
+        return encodeAuthResponse(hash, PROTOCOL_VERSION);
+    }
+
+    /**
+     * CHAP 認証レスポンスパケットを指定プロトコルバージョンでエンコードします。
+     */
+    public static byte[] encodeAuthResponse(String hash, int protocolVersion) {
+        Objects.requireNonNull(hash, "hash must not be null");
+        return GhostPacketProto.newBuilder()
+                .setAuthResponse(AuthResponse.newBuilder()
+                        .setHash(hash)
+                        .setProtocolVersion(protocolVersion)
+                        .build())
+                .build()
+                .toByteArray();
+    }
+
+    /**
+     * CHAP 認証成功パケットをエンコードします。
+     */
+    public static byte[] encodeAuthSuccess() {
+        return GhostPacketProto.newBuilder()
+                .setAuthSuccess(AuthSuccess.getDefaultInstance())
+                .build()
+                .toByteArray();
     }
 
     // ============================================================
-    // 内部変換メソッド: DTO → protobuf
+    // パケット デコード（byte[] → GhostPacketProto 1パス変換）
     // ============================================================
 
     /**
-     * PlayerData DTO を PlayerDataProto に変換する。
+     * バイト列を 1 パスで {@link GhostPacketProto} にデコードします。
+     * 呼び出し側は {@link GhostPacketProto#getPayloadCase()} で種別を判別できます。
+     */
+    public static GhostPacketProto decode(byte[] bytes) throws InvalidProtocolBufferException {
+        return GhostPacketProto.parseFrom(bytes);
+    }
+
+    // ============================================================
+    // 内部変換メソッド: DTO → Protobuf
+    // ============================================================
+
+    /**
+     * PlayerData DTO を PlayerDataProto に変換します。
      */
     public static PlayerDataProto toProto(PlayerData data) {
         return PlayerDataProto.newBuilder()
@@ -171,7 +182,7 @@ public final class ProtoConverter {
                 .setColor(item.color())
                 .setItemModel(item.itemModel() != null ? item.itemModel() : "");
 
-        // null の場合はフィールドを省略（optional field）
+        // null の場合は optional フィールドを省略
         if (item.customModelData() != null) {
             builder.setCustomModelData(toProto(item.customModelData()));
         }
@@ -199,11 +210,11 @@ public final class ProtoConverter {
     }
 
     // ============================================================
-    // 内部変換メソッド: protobuf → DTO
+    // 内部変換メソッド: Protobuf → DTO
     // ============================================================
 
     /**
-     * PlayerDataProto を PlayerData DTO に変換する。
+     * PlayerDataProto を PlayerData DTO に変換します。
      */
     public static PlayerData fromProto(PlayerDataProto proto) {
         return new PlayerData(

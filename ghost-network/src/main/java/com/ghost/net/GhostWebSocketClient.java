@@ -1,33 +1,48 @@
 package com.ghost.net;
 
-import com.ghost.api.dto.AuthData;
 import com.ghost.api.dto.PlayerData;
-import com.ghost.api.packet.GhostPacket;
-import com.ghost.api.packet.MessageType;
+import com.ghost.api.proto.AuthChallenge;
+import com.ghost.api.proto.GhostPacketProto;
+import com.ghost.api.proto.ProtoConverter;
 import com.ghost.api.registry.IGhostRegistry;
 import com.ghost.net.auth.ChapAuthenticator;
-import com.ghost.util.SerializationUtil;
 import com.ghost.util.CryptoUtil;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.SecretKey;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Ghost サーバーと暗号化バイナリ Protobuf で通信する WebSocket クライアント（1 接続 1 インスタンス）。
+ */
 public class GhostWebSocketClient extends WebSocketClient {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(GhostWebSocketClient.class);
-    private final IGhostRegistry GHOST_REGISTRY;
-    private final String PASSWORD;
-    private CompletableFuture<Boolean> authFuture = new CompletableFuture<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(GhostWebSocketClient.class);
 
-    public GhostWebSocketClient(URI serverURI, IGhostRegistry registry, String password) {
+    private final IGhostRegistry ghostRegistry;
+    private final String password;
+    private final SecretKey secretKey;
+    private final CompletableFuture<Boolean> authFuture = new CompletableFuture<>();
+    @Nullable
+    private final Runnable onDisconnectCallback;
+    private final AtomicBoolean disconnectNotified = new AtomicBoolean(false);
+
+    public GhostWebSocketClient(URI serverURI,
+                                IGhostRegistry registry,
+                                String password,
+                                @Nullable Runnable onDisconnectCallback) {
         super(serverURI);
-        GHOST_REGISTRY = registry;
-        PASSWORD = password;
+        this.ghostRegistry = registry;
+        this.password = password;
+        this.secretKey = CryptoUtil.deriveKey(password);
+        this.onDisconnectCallback = onDisconnectCallback;
     }
 
     public CompletableFuture<Boolean> getAuthFuture() {
@@ -35,126 +50,109 @@ public class GhostWebSocketClient extends WebSocketClient {
     }
 
     @Override
-    public void send(String text) {
-        try {
-            super.send(CryptoUtil.encrypt(text, PASSWORD));
-        } catch (Exception e) {
-            LOGGER.error("Failed to encrypt message before sending", e);
-            close();
-            throw new RuntimeException("Encryption failed", e);
-        }
-    }
-
-    @Override
     public void send(byte[] bytes) {
         try {
-            super.send(CryptoUtil.encrypt(bytes, PASSWORD));
+            super.send(CryptoUtil.encrypt(bytes, secretKey));
         } catch (Exception e) {
             LOGGER.error("Failed to encrypt binary message before sending", e);
             close();
-            throw new RuntimeException("Encryption failed", e);
+            throw new IllegalStateException("Encryption failed", e);
         }
     }
 
     @Override
     public void onOpen(ServerHandshake data) {
         LOGGER.info("Successfully connected to the server (status: {})", data.getHttpStatus());
-        if (authFuture.isDone()) {
-            authFuture = new CompletableFuture<>();
-        }
     }
 
     @Override
     public void onMessage(ByteBuffer blob) {
         try {
-            byte[] rawBytes = blob.array();
-            byte[] decryptedBytes = CryptoUtil.decrypt(rawBytes, PASSWORD);
-            MessageType type = com.ghost.api.proto.ProtoConverter.deserializePacketType(decryptedBytes);
-            LOGGER.debug("Received binary packet type: {}", type);
+            // スライスや DirectBuffer でも安全に読み出せるよう remaining() 分のみ抽出する
+            byte[] rawBytes = new byte[blob.remaining()];
+            blob.get(rawBytes);
 
-            switch (type) {
-                case UPDATE:
-                    PlayerData playerData = com.ghost.api.proto.ProtoConverter.deserializeUpdatePacket(decryptedBytes);
-                    GHOST_REGISTRY.updateGhost(playerData);
-                    break;
-                case LEAVE:
-                case DESPAWN:
-                    String uuid = com.ghost.api.proto.ProtoConverter.deserializeUuid(decryptedBytes);
-                    GHOST_REGISTRY.removeGhost(uuid);
-                    break;
-                default:
-                    LOGGER.warn("Received unexpected binary packet type: {}", type);
-                    break;
+            byte[] decryptedBytes = CryptoUtil.decrypt(rawBytes, secretKey);
+            GhostPacketProto packet = ProtoConverter.decode(decryptedBytes);
+            LOGGER.debug("Received binary packet payload: {}", packet.getPayloadCase());
+
+            switch (packet.getPayloadCase()) {
+                case UPDATE -> {
+                    PlayerData playerData = ProtoConverter.fromProto(packet.getUpdate());
+                    ghostRegistry.updateGhost(playerData);
+                }
+                case LEAVE_UUID -> ghostRegistry.removeGhost(packet.getLeaveUuid());
+                case DESPAWN_UUID -> ghostRegistry.removeGhost(packet.getDespawnUuid());
+                case AUTH_CHALLENGE -> handleAuthChallenge(packet.getAuthChallenge());
+                case AUTH_SUCCESS -> {
+                    LOGGER.debug("Received AUTH_SUCCESS. Authentication verified.");
+                    authFuture.complete(true);
+                }
+                default -> LOGGER.warn("Received unexpected binary packet payload: {}", packet.getPayloadCase());
             }
         } catch (Exception ex) {
             LOGGER.error("Failed to process WebSocket binary message", ex);
+            if (!authFuture.isDone()) {
+                authFuture.completeExceptionally(
+                        new SecurityException("Decryption or processing failed. Invalid password or protocol?", ex));
+            }
             close();
         }
     }
 
+    private void handleAuthChallenge(AuthChallenge challenge) throws Exception {
+        int serverVersion = challenge.getProtocolVersion();
+        if (serverVersion != ProtoConverter.PROTOCOL_VERSION) {
+            String msg = String.format(
+                    "Protocol version mismatch: server=%d, client=%d",
+                    serverVersion, ProtoConverter.PROTOCOL_VERSION);
+            LOGGER.error(msg);
+            authFuture.completeExceptionally(new IllegalStateException(msg));
+            close();
+            return;
+        }
+
+        String hash = ChapAuthenticator.calculateHash(password, challenge.getNonce());
+        send(ProtoConverter.encodeAuthResponse(hash));
+        LOGGER.debug("Sent AUTH_RESPONSE (protocol_version={}).", ProtoConverter.PROTOCOL_VERSION);
+    }
+
     @Override
     public void onMessage(String message) {
-        try {
-            String decryptedMessage = CryptoUtil.decrypt(message, PASSWORD);
-            var packet = SerializationUtil.deserializePacket(decryptedMessage);
-            if (packet == null) {
-                LOGGER.warn("Received invalid/malformed packet payload.");
-                close();
-                return;
-            }
-            var type = packet.getType();
-            var data = packet.getData();
-            LOGGER.debug("type: {},data: {}", type, data);
-            switch (type) {
-                case AUTH_CHALLENGE:
-                    if (data != null) {
-                        try {
-                            AuthData challenge = SerializationUtil.parseAuthData(data);
-                            String nonce = challenge.nonce();
-                            String hash = ChapAuthenticator.calculateHash(PASSWORD, nonce);
-                            AuthData response = new AuthData(null, hash);
-                            GhostPacket<AuthData> responsePacket = new GhostPacket<>(MessageType.AUTH_RESPONSE,
-                                    response);
-                            send(SerializationUtil.serializePacket(responsePacket));
-                            LOGGER.debug("Sent AUTH_RESPONSE.");
-                        } catch (Exception e) {
-                            LOGGER.error("Failed to generate auth response", e);
-                            close();
-                        }
-                    }
-                    break;
-                case AUTH_SUCCESS:
-                    LOGGER.debug("Received AUTH_SUCCESS. Authentication verified.");
-                    authFuture.complete(true);
-                    break;
-                default:
-                    LOGGER.warn("Received unhandled text packet type: {}", type);
-                    break;
-            }
-        } catch (Exception ex) {
-            LOGGER.error("Failed to process WebSocket message: {}", message, ex);
-            if (!authFuture.isDone()) {
-                authFuture.completeExceptionally(new SecurityException("Decryption or processing failed. Invalid password?", ex));
-            }
-            close();
+        LOGGER.warn("Received unsupported text WebSocket frame (binary protocol required). Closing connection.");
+        if (!authFuture.isDone()) {
+            authFuture.completeExceptionally(new IllegalStateException("Unsupported text frame from server"));
         }
+        close();
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
         LOGGER.info("Disconnected from server. code: {}, Reason: {}, Remote: {}", code, reason, remote);
-        GHOST_REGISTRY.clear();
+        ghostRegistry.clear();
         if (!authFuture.isDone()) {
             authFuture.complete(false);
         }
+        notifyDisconnectOnce();
     }
 
     @Override
     public void onError(Exception ex) {
-        LOGGER.error("An error occurred in Websocket client: ", ex);
-        GHOST_REGISTRY.clear();
+        LOGGER.error("An error occurred in WebSocket client: ", ex);
+        ghostRegistry.clear();
         if (!authFuture.isDone()) {
             authFuture.completeExceptionally(ex);
+        }
+        notifyDisconnectOnce();
+    }
+
+    private void notifyDisconnectOnce() {
+        if (onDisconnectCallback != null && disconnectNotified.compareAndSet(false, true)) {
+            try {
+                onDisconnectCallback.run();
+            } catch (Exception e) {
+                LOGGER.warn("Disconnect callback threw an exception", e);
+            }
         }
     }
 }
