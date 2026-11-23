@@ -1,6 +1,8 @@
 package com.ghost.config;
 
 import com.ghost.GhostModClient;
+import com.ghost.client.ToastNotifications;
+import com.ghost.net.GhostSyncService;
 import com.mojang.logging.LogUtils;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -12,47 +14,57 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
-import static com.ghost.client.ToastNotifications.showConnectionSuccessToast;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Ghost Modの設定画面を作成するクラス。
- * Cloth Config APIを使用し、ModMenuに依存しません。
+ * Ghost Mod の設定画面を作成するクラス。
+ * Cloth Config API を使用し、ModMenu に依存しません。
+ * 接続／切断処理は非同期に実行し、メイン描画スレッドをブロックしない設計とします。
  */
-public class GhostConfigScreen {
-    private boolean pre_connected = false;
-    // UIエントリへの参照を保持
+public final class GhostConfigScreen {
+
+    @Nullable
+    private static final Field TEXT_FIELD_WIDGET_FIELD = resolveTextFieldWidgetField();
+
+    private final GhostSyncService syncService;
+    private final GhostConfig config;
+    @Nullable
+    private GhostConfig.ConfigSnapshot pendingSnapshot;
+
     private StringListEntry serverUriEntry;
     private IntegerListEntry serverPortEntry;
     private StringListEntry serverPasswordEntry;
-    // Mementoパターン: 画面リフレッシュ時に入力値を保持するスナップショット
-    private GhostConfig.ConfigSnapshot pendingSnapshot = null;
+    private Screen activeScreen;
 
-    // シングルトンインスタンス（状態を保持するため）
-    private static final GhostConfigScreen INSTANCE = new GhostConfigScreen();
+    private GhostConfigScreen(GhostSyncService syncService,
+                              GhostConfig config,
+                              @Nullable GhostConfig.ConfigSnapshot pendingSnapshot) {
+        this.syncService = syncService;
+        this.config = config;
+        this.pendingSnapshot = pendingSnapshot;
+    }
 
     /**
-     * 設定画面を作成します（静的ファクトリメソッド）
-     * 
+     * 設定画面を作成します（静的ファクトリメソッド）。
+     *
      * @param parent 親画面
      * @return 設定画面
      */
     public static Screen create(Screen parent) {
-        // 新規に設定画面が開かれた時はpending値をクリア（キャンセル後の再オープン対応）
-        INSTANCE.pendingSnapshot = null;
-        return INSTANCE.createConfigScreen(parent);
+        return new GhostConfigScreen(
+                GhostModClient.getSyncService(),
+                GhostConfig.getInstance(),
+                null
+        ).buildScreen(parent);
     }
 
-    private Screen createConfigScreen(Screen parent) {
-        // 設定データクラスのインスタンスを取得
-        final GhostConfig config = GhostConfig.getInstance();
-
-        // 1. ConfigBuilderの初期化
+    private Screen buildScreen(Screen parent) {
         final ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
                 .setTitle(Component.translatable("title.ghostmod.config"))
@@ -60,166 +72,212 @@ public class GhostConfigScreen {
                 .setAlwaysShowTabs(false)
                 .setSavingRunnable(() -> {
                     config.save();
-                    // 保存後はpending値をクリア
                     pendingSnapshot = null;
                 });
 
-        // 2. 「Network」カテゴリを作成
         final ConfigCategory networkCategory = builder
                 .getOrCreateCategory(Component.translatable("category.ghostmod.network"));
-
-        // 3. エントリー（UI要素）を作成するためのビルダーを取得
         final ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
-        // 4. 各設定項目をカテゴリに追加していく
         // --- サーバー設定 ---
-        // エントリは保存済み設定値で作成（Cloth Configの変更検知の基準となる）
         serverUriEntry = entryBuilder.startStrField(
-                Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
+                        Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
                 .setDefaultValue("localhost")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverUri"))
                 .setSaveConsumer(config::setServerUri)
                 .build();
-        // pendingがあれば表示値を更新（変更検知が有効になりSaveボタンが活性化）
         if (pendingSnapshot != null) {
-            serverUriEntry.setValue(pendingSnapshot.serverUri());
+            setTextFieldValue(serverUriEntry, pendingSnapshot.serverUri());
         }
         networkCategory.addEntry(serverUriEntry);
 
         serverPortEntry = entryBuilder.startIntField(
-                Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
+                        Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
                 .setDefaultValue(8887)
                 .setMin(1)
                 .setMax(65535)
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverPort"))
                 .setSaveConsumer(config::setServerPort)
                 .build();
-        // pendingがあれば表示値を更新
         if (pendingSnapshot != null) {
-            serverPortEntry.setValue(String.valueOf(pendingSnapshot.serverPort()));
+            setTextFieldValue(serverPortEntry, String.valueOf(pendingSnapshot.serverPort()));
         }
         networkCategory.addEntry(serverPortEntry);
 
-        // パスワード設定
         serverPasswordEntry = entryBuilder.startStrField(
-                Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
+                        Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
                 .setDefaultValue("changeme")
                 .setTooltip(Component.translatable("tooltip.ghostmod.serverPassword"))
                 .setSaveConsumer(config::setServerPassword)
                 .build();
-
-        // リフレクションを使用してTextFieldListEntryの保護されたtextFieldWidgetにアクセスし、
-        // パスワードをマスクするためのrenderTextProviderを設定
-        try {
-            Field widgetField = TextFieldListEntry.class
-                    .getDeclaredField("textFieldWidget");
-            widgetField.setAccessible(true);
-            EditBox widget = (EditBox) widgetField
-                    .get(serverPasswordEntry);
-            if (widget != null) {
-                widget
-                //? if >=1.21.11 {
-                /*.addFormatter
-                *///?} else {
-                 .setFormatter
-                //?}
-                ((text, firstCharacterIndex) -> Component.literal("*".repeat(text.length()))
-                        .getVisualOrderText());
-            }
-        } catch (Exception e) {
-            // リフレクション失敗時は警告を出すがクラッシュはしない
-            LogUtils.getLogger().error("Failed to set password mask", e);
-        }
-
-        // pendingがあれば表示値を更新
+        applyPasswordMask(serverPasswordEntry);
         if (pendingSnapshot != null) {
-            serverPasswordEntry.setValue(pendingSnapshot.serverPassword());
+            setTextFieldValue(serverPasswordEntry, pendingSnapshot.serverPassword());
         }
         networkCategory.addEntry(serverPasswordEntry);
 
         // --- 接続管理 ---
-        // 接続状態インジケーター
+        final boolean initialConnected = syncService.isConnected();
+
         networkCategory.addEntry(entryBuilder.startTextDescription(
-                Component.translatable("option.ghostmod.status", getStatusText()))
+                        Component.translatable("option.ghostmod.status", getStatusText(initialConnected)))
                 .build());
 
-        // 接続先URI表示（接続中の場合のみ）
-        URI connectedUri = GhostModClient.GHOST_SYNC_SERVICE.getConnectedUri();
+        URI connectedUri = syncService.getConnectedUri();
         if (connectedUri != null) {
             networkCategory.addEntry(entryBuilder.startTextDescription(
-                    Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
+                            Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
                     .build());
         }
 
-        // 接続/切断ボタン
+        // トグル押下を 1 回だけ検知し、描画外（Minecraft#execute）から非同期接続／切断を開始する
+        final AtomicBoolean actionTriggered = new AtomicBoolean(false);
         var reconnectButton = entryBuilder.startBooleanToggle(
-                Component.translatable("option.ghostmod.connection"), GhostModClient.GHOST_SYNC_SERVICE.isConnected())
-                .setYesNoTextSupplier((connected) -> {
-                    connectPushButton(connected, parent);
+                        Component.translatable("option.ghostmod.connection"), initialConnected)
+                .setYesNoTextSupplier(toggleState -> {
+                    if (toggleState != initialConnected && actionTriggered.compareAndSet(false, true)) {
+                        GhostConfig.ConfigSnapshot snapshot = captureCurrentSnapshot();
+                        Minecraft.getInstance().execute(() ->
+                                triggerConnectionChange(toggleState, snapshot, parent));
+                    }
                     return Component.translatable(
-                            connected ? "option.ghostmod.connection.disconnect" : "option.ghostmod.connection.connect");
+                            initialConnected
+                                    ? "option.ghostmod.connection.disconnect"
+                                    : "option.ghostmod.connection.connect");
                 })
                 .build();
         reconnectButton.setEditable(Minecraft.getInstance().hasSingleplayerServer());
         networkCategory.addEntry(reconnectButton);
 
-        // 5. ConfigBuilderからScreenをビルドして返す
-        return builder.build();
+        this.activeScreen = builder.build();
+        return this.activeScreen;
     }
 
-    // 接続状態を示すテキストを返すヘルパーメソッド
-    private Component getStatusText() {
-        boolean isConnected = GhostModClient.GHOST_SYNC_SERVICE.isConnected();
+    private void triggerConnectionChange(boolean connect,
+                                         GhostConfig.ConfigSnapshot snapshot,
+                                         Screen parent) {
+        final Screen screenBeforeAction = this.activeScreen;
+        this.pendingSnapshot = snapshot;
+
+        if (connect) {
+            URI uri;
+            try {
+                uri = new URI(snapshot.getFullWebSocketUri());
+            } catch (Exception ex) {
+                LogUtils.getLogger().error("Invalid server URI: {}", snapshot.getFullWebSocketUri(), ex);
+                refreshIfStillShowing(screenBeforeAction, parent);
+                return;
+            }
+
+            syncService.connectAsync(uri, snapshot.serverPassword(), 3, TimeUnit.SECONDS)
+                    .whenComplete((connected, error) -> Minecraft.getInstance().execute(() -> {
+                        if (error != null) {
+                            LogUtils.getLogger().error("Connection error:", error);
+                        } else if (Boolean.TRUE.equals(connected)) {
+                            ToastNotifications.showConnectionSuccessToast();
+                            LogUtils.getLogger().info("Successfully connected to server.");
+                        } else {
+                            LogUtils.getLogger().error("Failed to connect to server.");
+                        }
+                        refreshIfStillShowing(screenBeforeAction, parent);
+                    }));
+        } else {
+            CompletableFuture.runAsync(syncService::disconnect)
+                    .whenComplete((unused, error) -> Minecraft.getInstance().execute(() -> {
+                        if (error != null) {
+                            LogUtils.getLogger().error("Disconnect error:", error);
+                        }
+                        refreshIfStillShowing(screenBeforeAction, parent);
+                    }));
+        }
+    }
+
+    private void refreshIfStillShowing(Screen expectedScreen, Screen parent) {
+        Minecraft mc = Minecraft.getInstance();
+        if (getCurrentScreen(mc) == expectedScreen) {
+            Screen refreshed = new GhostConfigScreen(syncService, config, pendingSnapshot).buildScreen(parent);
+            openScreen(mc, refreshed);
+        }
+    }
+
+    private Component getStatusText(boolean isConnected) {
         return Component
                 .translatable(isConnected ? "text.ghostmod.status.connected" : "text.ghostmod.status.disconnected")
-                .withStyle(style -> style.withColor(isConnected ? 0x55FF55 : 0xFF5555) // 緑 or 赤
-                );
+                .withStyle(style -> style.withColor(isConnected ? 0x55FF55 : 0xFF5555));
     }
 
-    // 現在のUI値からスナップショットを作成するヘルパーメソッド
-    private GhostConfig.ConfigSnapshot createCurrentSnapshot() {
-        return new GhostConfig.ConfigSnapshot(
-                serverUriEntry.getValue(),
-                serverPortEntry.getValue(),
-                serverPasswordEntry.getValue());
+    private GhostConfig.ConfigSnapshot captureCurrentSnapshot() {
+        String uriValue = serverUriEntry.getValue();
+        Integer portValue = serverPortEntry.getValue();
+        String passwordValue = serverPasswordEntry.getValue();
+
+        String safeUri = (uriValue != null && !uriValue.isBlank()) ? uriValue : config.getServerUri();
+        int safePort = (portValue != null && portValue >= 1 && portValue <= 65535) ? portValue : config.getServerPort();
+        String safePassword = passwordValue != null ? passwordValue : config.getServerPassword();
+
+        return new GhostConfig.ConfigSnapshot(safeUri, safePort, safePassword);
     }
 
-    private void connectPushButton(boolean connected, Screen parent) {
-        if (!Objects.equals(connected, this.pre_connected)) {
-            LogUtils.getLogger().info("toggle state connected: {}", connected);
-            if (connected) {
-                // 現在のUI値からスナップショットを作成
-                GhostConfig.ConfigSnapshot currentSnapshot = createCurrentSnapshot();
-                try {
-                    URI uri = new URI(currentSnapshot.getFullWebSocketUri());
-                    var isConnected = GhostModClient.GHOST_SYNC_SERVICE.connectBlocking(uri,
-                            currentSnapshot.serverPassword(), 3, TimeUnit.SECONDS);
-                    if (isConnected) {
-                        // 接続成功: トースト通知のみ、保存はしない（保存は明示的にSaveボタンで行う）
-                        showConnectionSuccessToast();
-                        pendingSnapshot = currentSnapshot;
-                        LogUtils.getLogger().info("Successfully connected to server.");
-                    } else {
-                        // 接続失敗時: 入力値を保持して画面リフレッシュ後も維持
-                        pendingSnapshot = currentSnapshot;
-                        LogUtils.getLogger().error("Failed to connect server.");
-                    }
-                } catch (Exception ex) {
-                    // エラー時も入力値を保持
-                    pendingSnapshot = currentSnapshot;
-                    LogUtils.getLogger().error("Connection error:", ex);
-                }
-            } else {
-                // 切断時も現在の入力値を保持
-                pendingSnapshot = createCurrentSnapshot();
-                GhostModClient.GHOST_SYNC_SERVICE.disconnect();
-            }
-            //? if >= 26.2 {
-            /*Minecraft.getInstance().setScreenAndShow(createConfigScreen(parent));
-            *///? } else {
-             Minecraft.getInstance().setScreen(createConfigScreen(parent));
-            //? }
+    @Nullable
+    private static Field resolveTextFieldWidgetField() {
+        try {
+            Field field = TextFieldListEntry.class.getDeclaredField("textFieldWidget");
+            field.setAccessible(true);
+            return field;
+        } catch (Exception e) {
+            LogUtils.getLogger().error("Failed to access TextFieldListEntry.textFieldWidget", e);
+            return null;
         }
-        this.pre_connected = connected;
+    }
+
+    @Nullable
+    private static EditBox getEditBox(TextFieldListEntry<?> entry) {
+        if (TEXT_FIELD_WIDGET_FIELD == null) {
+            return null;
+        }
+        try {
+            return (EditBox) TEXT_FIELD_WIDGET_FIELD.get(entry);
+        } catch (Exception e) {
+            LogUtils.getLogger().error("Failed to retrieve EditBox from TextFieldListEntry", e);
+            return null;
+        }
+    }
+
+    private static void setTextFieldValue(TextFieldListEntry<?> entry, String value) {
+        EditBox widget = getEditBox(entry);
+        if (widget != null) {
+            widget.setValue(value);
+        }
+    }
+
+    private static void applyPasswordMask(TextFieldListEntry<?> entry) {
+        EditBox widget = getEditBox(entry);
+        if (widget != null) {
+            widget
+            //? if >=1.21.11 {
+            /*.addFormatter
+            *///?} else {
+            .setFormatter
+            //?}
+            ((text, firstCharacterIndex) -> Component.literal("*".repeat(text.length()))
+                    .getVisualOrderText());
+        }
+    }
+
+    @Nullable
+    private static Screen getCurrentScreen(Minecraft mc) {
+        //? if >=26.2 {
+        /*return mc.gui.screen();
+        *///?} else {
+        return mc.screen;
+        //?}
+    }
+
+    private static void openScreen(Minecraft mc, Screen screen) {
+        //? if >=26.2 {
+        /*mc.setScreenAndShow(screen);
+        *///?} else {
+        mc.setScreen(screen);
+        //?}
     }
 }

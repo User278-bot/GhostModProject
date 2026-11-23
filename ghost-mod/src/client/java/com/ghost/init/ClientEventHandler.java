@@ -4,6 +4,7 @@ import com.ghost.client.PlayerDataSender;
 import com.ghost.client.ToastNotifications;
 import com.ghost.config.GhostConfig;
 import com.ghost.entity.GhostEntitySynchronizer;
+import com.ghost.entity.GhostSkinCache;
 import com.ghost.net.GhostSyncService;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -57,6 +58,7 @@ public class ClientEventHandler {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ghostSyncService.disconnect();
             playerDataSender.reset();
+            GhostSkinCache.clear();
         });
         //?if >= 26.1{
         /*// ゴースト状態の反映は tickEntities() の先頭で行い、1 tick の固定遅延を防ぐ
