@@ -23,8 +23,6 @@ public class GhostModClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // This entrypoint is suitable for setting up client-specific logic, such as
-        // rendering.
         LogUtils.getLogger().debug("Initializing GhostModClient...");
 
         clientEventHandler.registerEvents();
@@ -32,11 +30,3 @@ public class GhostModClient implements ClientModInitializer {
         GhostModKeyBindings.register();
     }
 }
-
-/// 現状の問題点
-/// デバッグメニューの当たり判定に表示される
-/// クライアント切断時にエンティティを消す
-/// サーバーの範囲に基づく送信
-/// /summon に登録されている
-/// スキンの解決
-/// GhostPlayerRendererの名前変更

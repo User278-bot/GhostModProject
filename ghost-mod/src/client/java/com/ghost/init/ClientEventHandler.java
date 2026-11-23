@@ -54,14 +54,16 @@ public class ClientEventHandler {
                 }
             }
         });
-        ClientPlayConnectionEvents.DISCONNECT.register(
-                (handler, client) -> ghostSyncService.disconnect());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            ghostSyncService.disconnect();
+            playerDataSender.reset();
+        });
         //?if >= 26.1{
         /*// ゴースト状態の反映は tickEntities() の先頭で行い、1 tick の固定遅延を防ぐ
         ClientTickEvents.START_LEVEL_TICK.register(ghostEntitySynchronizer::onTick);
         // 自プレイヤーのデータ送信は当 tick の移動完了後に行う
         ClientTickEvents.END_LEVEL_TICK.register(playerDataSender::sendPlayerData);
-        *///?}else{
+        *///?} else {
         // ゴースト状態の反映は tickEntities() の先頭で行い、1 tick の固定遅延を防ぐ
         ClientTickEvents.START_WORLD_TICK.register(ghostEntitySynchronizer::onTick);
         // 自プレイヤーのデータ送信は当 tick の移動完了後に行う
@@ -71,8 +73,7 @@ public class ClientEventHandler {
         // スキンカスタマイズ画面が閉じられた時に即座にデータ送信
         ScreenEvents.AFTER_INIT.register(
                 (client, screen, scaledWidth, scaledHeight) -> ScreenEvents.remove(screen).register((removedScreen) -> {
-                    // スキンカスタマイズ画面かどうかをチェック
-                    if (removedScreen.getClass().getSimpleName().equals(SkinCustomizationScreen.class.toString())) {
+                    if (removedScreen instanceof SkinCustomizationScreen) {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc.player != null && mc.level != null) {
                             // 画面が閉じられた時点で即座にプレイヤーデータを送信

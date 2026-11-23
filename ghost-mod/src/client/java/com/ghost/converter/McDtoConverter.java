@@ -21,15 +21,10 @@ import net.minecraft.world.phys.Vec3;
 
 //? if <=1.19.2 {
 import net.minecraft.core.Registry;
-        //?} else {
+//?} else {
 /*import net.minecraft.core.registries.BuiltInRegistries;
  *///?}
-
-//? if >=1.21.11 {
-/*import net.minecraft.resources.ResourceLocation;
- *///?} else {
 import net.minecraft.resources.ResourceLocation;
-        //?}
 
 @SuppressWarnings("unused")
 public final class McDtoConverter {
@@ -74,7 +69,7 @@ public final class McDtoConverter {
         return "OFF_HAND".equals(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
     }
 
-    // --- 新規追加: ItemStack変換 ---
+    // --- ItemStack 変換 ---
     public static ItemDto fromMc(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return ItemDto.ITEM_AIR;
@@ -95,22 +90,20 @@ public final class McDtoConverter {
     }
 
     public static ItemStack toMc(ItemDto item) {
-        if (item == null) {
+        if (item == null || ItemDto.ITEM_AIR.equals(item) || "minecraft:air".equals(item.id())) {
             return ItemStack.EMPTY;
-        } // 1. ID文字列から ResourceLocation を作成
+        }
 
-        //? if <= 1.20.6 {
-        ResourceLocation location = new ResourceLocation(item.id());
-        //?} else if <= 1.21.4 {
-        /*ResourceLocation location = ResourceLocation.parse(item.id());
-         *///?} else {
-        /*ResourceLocation location = ResourceLocation.parse(item.id());
-         *///?}
-
+        // 不正なアイテム ID 文字列による例外クラッシュを防ぐため tryParse を使用
+        ResourceLocation location = ResourceLocation.tryParse(item.id());
+        if (location == null) {
+            LogUtils.getLogger().warn("不正なアイテム ID をスキップしました: {}", item.id());
+            return ItemStack.EMPTY;
+        }
 
         //? if <= 1.19.2 {
         Item mcItem = Registry.ITEM.get(location);
-        //?} else if <= 1.20.6 {
+        //?} elif <= 1.20.6 {
         /*Item mcItem = BuiltInRegistries.ITEM.get(location);
          *///?} else {
         /*Item mcItem = BuiltInRegistries.ITEM.getValue(location);
@@ -149,7 +142,7 @@ public final class McDtoConverter {
             display.putInt("color", item.color());
             tag.put("display", display);
 
-            //?} else if <=1.21.4 {
+            //?} elif <=1.21.4 {
              /*itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color(), true));
             *///?} else {
             /*itemStack.set(DataComponents.DYED_COLOR, new DyedItemColor(item.color()));
@@ -158,9 +151,9 @@ public final class McDtoConverter {
         if (item.customModelData() != null && !item.customModelData().isEmpty()) {
             //? if <=1.20.1 {
             tag.putInt("CustomModelData", item.customModelData().model());
-            //?} else if <= 1.20.6 {
-            // itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(item.customModelData().model()));
-            //?} else {
+            //?} elif <= 1.20.6 {
+            /*itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(item.customModelData().model()));
+            *///?} else {
             /*itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(
                     item.customModelData().floats(),
                     item.customModelData().flags(),
@@ -169,7 +162,6 @@ public final class McDtoConverter {
             );
             *///?}
         }
-        // 3. ItemStack を生成
         return itemStack;
     }
 }

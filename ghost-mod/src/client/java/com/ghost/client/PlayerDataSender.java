@@ -10,7 +10,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import org.jetbrains.annotations.Nullable;
 
 public class PlayerDataSender {
-    private static final int SEND_INTERVAL = 1;
     private static final int FORCE_SEND_INTERVAL = 40;
 
     @Nullable
@@ -21,24 +20,32 @@ public class PlayerDataSender {
         this.ghostSyncService = ghostSyncService;
     }
 
+    /**
+     * 前回送信済みデータのキャッシュをリセットします。
+     * 切断・再接続時に初回状態を確実に再送するために使用します。
+     */
+    public void reset() {
+        lastSentData = null;
+    }
+
     public void sendPlayerData(ClientLevel world) {
-        // sendPlayer の引数が直感的ではない可能性。一応全ての情報は Minecraft のインスタンスから取得可能ではある
+        // 未接続時は毎 tick の DTO 変換・装備シリアライズ処理自体をスキップする
+        if (!ghostSyncService.isConnected()) {
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return;
         }
 
-        final PlayerData current_data = PlayerDataConverter.fromPlayer(mc.player);
-        // 1. 状態が変化したかどうかを判定
-        final boolean isStateChanged = hasPlayerStateChanged(current_data) && world.getGameTime() % SEND_INTERVAL == 0;
-
-        // 2. 強制送信のタイミングかどうかを判定
+        final PlayerData currentData = PlayerDataConverter.fromPlayer(mc.player);
+        final boolean isStateChanged = hasPlayerStateChanged(currentData);
         final boolean isForceSendTime = (world.getGameTime() % FORCE_SEND_INTERVAL == 0);
 
         if (isStateChanged || isForceSendTime) {
-            final var packet = new GhostPacket<>(MessageType.UPDATE, current_data);
+            final var packet = new GhostPacket<>(MessageType.UPDATE, currentData);
             ghostSyncService.sendPacket(packet);
-            lastSentData = current_data;
+            lastSentData = currentData;
         }
     }
 
@@ -47,7 +54,6 @@ public class PlayerDataSender {
         if (lastSentData == null) {
             return true;
         }
-
         return !lastSentData.equals(currentData);
     }
 }
