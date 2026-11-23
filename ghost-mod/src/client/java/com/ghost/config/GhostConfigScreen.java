@@ -7,6 +7,7 @@ import com.mojang.logging.LogUtils;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.StringListEntry;
 import me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry;
@@ -39,6 +40,7 @@ public final class GhostConfigScreen {
 
     private StringListEntry serverUriEntry;
     private IntegerListEntry serverPortEntry;
+    private BooleanListEntry useTlsEntry;
     private StringListEntry serverPasswordEntry;
     private Screen activeScreen;
 
@@ -104,6 +106,15 @@ public final class GhostConfigScreen {
         }
         networkCategory.addEntry(serverPortEntry);
 
+        boolean initialUseTls = pendingSnapshot != null ? pendingSnapshot.useTls() : config.isUseTls();
+        useTlsEntry = entryBuilder.startBooleanToggle(
+                        Component.translatable("option.ghostmod.useTls"), initialUseTls)
+                .setDefaultValue(false)
+                .setTooltip(Component.translatable("tooltip.ghostmod.useTls"))
+                .setSaveConsumer(config::setUseTls)
+                .build();
+        networkCategory.addEntry(useTlsEntry);
+
         serverPasswordEntry = entryBuilder.startStrField(
                         Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
                 .setDefaultValue("changeme")
@@ -162,9 +173,10 @@ public final class GhostConfigScreen {
         if (connect) {
             URI uri;
             try {
-                uri = new URI(snapshot.getFullWebSocketUri());
+                uri = snapshot.toWebSocketUri();
             } catch (Exception ex) {
-                LogUtils.getLogger().error("Invalid server URI: {}", snapshot.getFullWebSocketUri(), ex);
+                LogUtils.getLogger().error("Invalid server URI: host='{}', port={}, useTls={}",
+                        snapshot.serverUri(), snapshot.serverPort(), snapshot.useTls(), ex);
                 refreshIfStillShowing(screenBeforeAction, parent);
                 return;
             }
@@ -209,13 +221,15 @@ public final class GhostConfigScreen {
     private GhostConfig.ConfigSnapshot captureCurrentSnapshot() {
         String uriValue = serverUriEntry.getValue();
         Integer portValue = serverPortEntry.getValue();
+        Boolean tlsValue = useTlsEntry.getValue();
         String passwordValue = serverPasswordEntry.getValue();
 
         String safeUri = (uriValue != null && !uriValue.isBlank()) ? uriValue : config.getServerUri();
         int safePort = (portValue != null && portValue >= 1 && portValue <= 65535) ? portValue : config.getServerPort();
+        boolean safeTls = tlsValue != null ? tlsValue : config.isUseTls();
         String safePassword = passwordValue != null ? passwordValue : config.getServerPassword();
 
-        return new GhostConfig.ConfigSnapshot(safeUri, safePort, safePassword);
+        return new GhostConfig.ConfigSnapshot(safeUri, safePort, safeTls, safePassword);
     }
 
     @Nullable

@@ -68,13 +68,51 @@ java -jar GhostModServer-<version>.jar
 デフォルトではポート `8887` で待機します。設定は `server.properties` または起動オプションで変更できます（優先順位: コマンドライン引数 > 設定ファイル > デフォルト値）。
 
 ```bash
-java -jar GhostModServer-<version>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
+java -jar GhostModServer-<version>.jar --port 9000 --bind 0.0.0.0 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate> --trusted-proxy 127.0.0.1
 ```
 
 その他オプションは `--help` で確認できます。また、サーバー起動中はコンソールから `stop` や `help` などのコマンドを入力できます。
 ```bash
 java -jar GhostModServer-<version>.jar --help
 ```
+
+#### リバースプロキシ（Nginx 等）で TLS (`wss://`) 化する場合
+インターネットへ公開する場合や大規模に運用する場合は、Nginx 等のリバースプロキシで **TLS 終端** および **新規接続頻度・同時接続数制限** を行い、`ghost-server` をループバックに限定して稼働させる構成を推奨します。
+
+1. `ghost-server` をローカル待受＋信頼済みプロキシ指定で起動（`server.properties` では `bind-address=127.0.0.1`、`trusted-proxies=127.0.0.1`）：
+   ```bash
+   java -jar GhostModServer-<version>.jar --bind 127.0.0.1 --port 8887 --trusted-proxy 127.0.0.1 --password <password>
+   ```
+   - `ghost-server` は WebSocket 1 接続単位のフレームレート制限（`--rate-limit`）を担当し、`--trusted-proxy` に一致するプロキシからの接続のみ `X-Forwarded-For` / `X-Real-IP` を信頼して実クライアント IP をログに記録します。
+2. Nginx 側の設定例（WebSocket プロキシ＋接続制限）：
+   ```nginx
+   limit_req_zone  $binary_remote_addr zone=ghost_handshake:10m rate=5r/s;
+   limit_conn_zone $binary_remote_addr zone=ghost_conn:10m;
+
+   server {
+       listen 443 ssl;
+       server_name ghost.example.com;
+
+       ssl_certificate     /path/to/fullchain.pem;
+       ssl_certificate_key /path/to/privkey.pem;
+
+       location / {
+           limit_req  zone=ghost_handshake burst=10 nodelay;
+           limit_conn ghost_conn 5;
+
+           proxy_pass http://127.0.0.1:8887;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_read_timeout 3600s;
+           proxy_send_timeout 3600s;
+       }
+   }
+   ```
+3. Mod 側の設定画面で、サーバーアドレスにドメイン（例: `ghost.example.com` やパス付き `ghost.example.com/ghost`）、ポートに `443` を入力し、**「TLS を使用 (`wss://`)」を ON** にします（`wss://ghost.example.com` のようにスキーム付きで直接入力することも可能です）。
 
 > [!IMPORTANT]
 > LAN以外（離れた友達と遊ぶ場合など）では、サーバーを外部に公開する必要があります。
@@ -89,7 +127,7 @@ java -jar GhostModServer-<version>.jar --help
 1.  サーバーを起動しておきます（ローカルで遊ぶ場合は自分のPCで、離れた友達と遊ぶ場合はVPSなどで）。
 2.  Modを導入した状態で Minecraft を起動します。
 3.  Mod Menu またはショートカットキー（デフォルトではＧキー）から **Ghost Mod** の設定画面を開きます。
-4.  サーバーのアドレス・ポート、パスワードを入力して保存します。
+4.  サーバーのアドレス・ポート、パスワードを入力して保存します（TLS 化されたリバースプロキシ経由で接続する場合は「TLS を使用 (`wss://`)」をオンにします）。
 
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/6b8b27db-694b-4c3d-bd01-b5a3b891d6a7)
 ![Minecraft_ 1 20 1 2025_12_21 8_51_29](https://github.com/user-attachments/assets/00ecd29f-e7f0-49da-a643-8b6072ca7cdf)

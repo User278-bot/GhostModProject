@@ -1,11 +1,13 @@
 package com.ghost.config;
 
+import com.ghost.util.WebSocketUriBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -16,6 +18,7 @@ public class GhostConfig {
     // 設定項目のデフォルト値を定義
     private String serverUri = "localhost";
     private int serverPort = 8887;
+    private boolean useTls = false;
     private String serverPassword = "changeme";
 
     // --- シングルトンパターンでインスタンスを管理 ---
@@ -47,6 +50,14 @@ public class GhostConfig {
         this.serverPort = serverPort;
     }
 
+    public boolean isUseTls() {
+        return useTls;
+    }
+
+    public void setUseTls(boolean useTls) {
+        this.useTls = useTls;
+    }
+
     public String getServerPassword() {
         return serverPassword;
     }
@@ -55,9 +66,11 @@ public class GhostConfig {
         this.serverPassword = serverPassword;
     }
 
-    // 組み立てた完全なURIを取得するヘルパーメソッド
-    public String getFullWebSocketUri() {
-        return "ws://" + getServerUri() + ":" + getServerPort();
+    /**
+     * 現在の設定から WebSocket 接続用の {@link URI} を構築します。
+     */
+    public URI toWebSocketUri() {
+        return WebSocketUriBuilder.build(getServerUri(), getServerPort(), isUseTls());
     }
 
     // --- ファイル永続化メソッド ---
@@ -109,6 +122,7 @@ public class GhostConfig {
     private void restoreFrom(GhostConfig config) {
         this.serverPort = (config.serverPort >= 1 && config.serverPort <= 65535) ? config.serverPort : 8887;
         this.serverUri = (config.serverUri != null && !config.serverUri.isBlank()) ? config.serverUri : "localhost";
+        this.useTls = config.useTls;
         this.serverPassword = config.serverPassword != null ? config.serverPassword : "changeme";
     }
 
@@ -116,12 +130,12 @@ public class GhostConfig {
      * 設定値を保持する不変のスナップショット。
      * 編集中の設定値を一時的に保持し、接続テストなどに使用します。
      */
-    public record ConfigSnapshot(String serverUri, int serverPort, String serverPassword) {
+    public record ConfigSnapshot(String serverUri, int serverPort, boolean useTls, String serverPassword) {
         /**
-         * WebSocket 接続用の完全な URI を組み立てます。
+         * WebSocket 接続用の {@link URI} を構築します。
          */
-        public String getFullWebSocketUri() {
-            return "ws://" + serverUri + ":" + serverPort;
+        public URI toWebSocketUri() {
+            return WebSocketUriBuilder.build(serverUri, serverPort, useTls);
         }
     }
 }

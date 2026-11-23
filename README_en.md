@@ -68,13 +68,51 @@ java -jar GhostModServer-<version>.jar
 By default, it listens on port `8887`. You can configure settings via `server.properties` or command-line options (priority: CLI arguments > config file > default values).
 
 ```bash
-java -jar GhostModServer-<version>.jar --port 9000 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate>
+java -jar GhostModServer-<version>.jar --port 9000 --bind 0.0.0.0 --password <password> --config <filename> --view-distance <distance> --rate-limit <rate> --trusted-proxy 127.0.0.1
 ```
 
 Other options can be found with `--help`. While the server is running, you can also enter interactive console commands such as `stop` and `help`.
 ```bash
 java -jar GhostModServer-<version>.jar --help
 ```
+
+#### TLS (`wss://`) Deployment with a Reverse Proxy (e.g., Nginx)
+When exposing the server over the internet or running at scale, we recommend terminating **TLS** and enforcing **connection rate / concurrency limits** at a reverse proxy such as Nginx while binding `ghost-server` to loopback only.
+
+1. Start `ghost-server` bound to loopback with trusted proxy configured (or set `bind-address=127.0.0.1` and `trusted-proxies=127.0.0.1` in `server.properties`):
+   ```bash
+   java -jar GhostModServer-<version>.jar --bind 127.0.0.1 --port 8887 --trusted-proxy 127.0.0.1 --password <password>
+   ```
+   - `ghost-server` enforces per-connection WebSocket frame rate limiting (`--rate-limit`), and resolves real client IPs from `X-Forwarded-For` / `X-Real-IP` for logging **only** when the peer matches `--trusted-proxy`.
+2. Example Nginx configuration (WebSocket proxy + connection limits):
+   ```nginx
+   limit_req_zone  $binary_remote_addr zone=ghost_handshake:10m rate=5r/s;
+   limit_conn_zone $binary_remote_addr zone=ghost_conn:10m;
+
+   server {
+       listen 443 ssl;
+       server_name ghost.example.com;
+
+       ssl_certificate     /path/to/fullchain.pem;
+       ssl_certificate_key /path/to/privkey.pem;
+
+       location / {
+           limit_req  zone=ghost_handshake burst=10 nodelay;
+           limit_conn ghost_conn 5;
+
+           proxy_pass http://127.0.0.1:8887;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_read_timeout 3600s;
+           proxy_send_timeout 3600s;
+       }
+   }
+   ```
+3. In the Mod settings screen, enter your domain (e.g., `ghost.example.com` or `ghost.example.com/ghost`), set port `443`, and turn **Use TLS (`wss://`) ON** (explicit scheme URIs such as `wss://ghost.example.com` are also supported).
 
 > [!IMPORTANT]
 > For non-LAN play (e.g., playing with distant friends), you must expose the server to the internet.
@@ -89,7 +127,7 @@ java -jar GhostModServer-<version>.jar --help
 1.  Start the server (on your PC for local play, or on a VPS/etc. for distant play).
 2.  Launch Minecraft with the Mod installed.
 3.  Open the **Ghost Mod** settings screen via Mod Menu or using the shortcut key (default: G key).
-4.  Enter the server address, port, and password, then save.
+4.  Enter the server address, port, and password, then save (enable **Use TLS (`wss://`)** when connecting through a TLS-terminating reverse proxy).
 
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/6b8b27db-694b-4c3d-bd01-b5a3b891d6a7)
 ![Minecraft_ 1 20 1 2025_12_21 8_51_29](https://github.com/user-attachments/assets/00ecd29f-e7f0-49da-a643-8b6072ca7cdf)

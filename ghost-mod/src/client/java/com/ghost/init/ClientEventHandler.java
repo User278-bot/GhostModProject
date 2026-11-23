@@ -40,7 +40,7 @@ public class ClientEventHandler {
                 LogUtils.getLogger().info("Joined a single player world. Auto-connecting to GhostServer...");
                 try {
                     GhostConfig config = GhostConfig.getInstance();
-                    URI serverUri = new URI(config.getFullWebSocketUri());
+                    URI serverUri = config.toWebSocketUri();
                     ghostSyncService.connectAsync(serverUri, config.getServerPassword(), 3, TimeUnit.SECONDS)
                             .thenAccept(isConnected -> {
                                 if (Boolean.TRUE.equals(isConnected)) {
