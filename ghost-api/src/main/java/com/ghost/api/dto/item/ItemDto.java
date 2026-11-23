@@ -9,7 +9,6 @@ import java.util.Objects;
  * アイテムのビジュアル情報を転送するための軽量な不変クラス。
  * Builderパターンを採用し、対象のMinecraftバージョンに存在するデータのみを安全に構築可能。
  */
-@SuppressWarnings({"unused", "ClassCanBeRecord"})
 public final class ItemDto {
 
     private final String id;
@@ -22,7 +21,6 @@ public final class ItemDto {
 
     public static final ItemDto ITEM_AIR = new Builder("minecraft:air").build();
 
-    // デフォルトコンストラクタ（Gson等のデシリアライズ用）
     public ItemDto() {
         this(new Builder("minecraft:air"));
     }
@@ -32,7 +30,7 @@ public final class ItemDto {
         this.damage = builder.damage;
         this.hasGlint = builder.hasGlint;
         this.color = builder.color;
-        this.itemModel = builder.itemModel;
+        this.itemModel = builder.itemModel != null ? builder.itemModel : "";
         this.customModelData = builder.customModelData;
         this.trim = builder.trim;
     }
@@ -96,7 +94,7 @@ public final class ItemDto {
         }
 
         public Builder itemModel(String itemModel) {
-            this.itemModel = itemModel;
+            this.itemModel = itemModel != null ? itemModel : "";
             return this;
         }
 

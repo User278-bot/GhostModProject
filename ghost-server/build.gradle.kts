@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     id("ghost-java-conventions")
-    id("com.gradleup.shadow") version "9.2.2"
+    id("com.gradleup.shadow") version "9.6.1"
     application
 }
 
@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.picocli)
     implementation(libs.picocli.shell.jline3)
     implementation(libs.jline)
+    compileOnly(libs.jetbrains.annotations)
     runtimeOnly(libs.slf4j.simple)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.bundles.test)
@@ -32,7 +33,7 @@ tasks.withType<JavaExec> {
     jvmArgs = listOf("-Dfile.encoding=UTF-8")
     doFirst {
         // IntelliJがデバッグ実行時に差し込むJDWPエージェントが含まれているかチェック
-        val isDebugExecute = jvmArgs?.any { it.contains("-agentlib:jdwp") } == true
+        val isDebugExecute = jvmArgs.any { it.contains("-agentlib:jdwp") }
 
         if (isDebugExecute) {
             println("🐛 デバッグモードを検知: slf4j-simple のログレベルを DEBUG に切り替えます")

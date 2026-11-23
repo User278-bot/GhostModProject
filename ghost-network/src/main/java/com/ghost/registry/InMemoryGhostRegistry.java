@@ -14,13 +14,16 @@ public class InMemoryGhostRegistry implements IGhostRegistry {
 
     @Override
     public void updateGhost(PlayerData data) {
-        if (data != null && !data.uuid().isEmpty()) {
+        if (data != null && data.uuid() != null && !data.uuid().isBlank()) {
             ghosts.put(data.uuid(), data);
         }
     }
 
     @Override
     public Optional<PlayerData> removeGhost(String uuid) {
+        if (uuid == null) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(ghosts.remove(uuid));
     }
 
@@ -31,6 +34,9 @@ public class InMemoryGhostRegistry implements IGhostRegistry {
 
     @Override
     public Optional<PlayerData> getGhost(String uuid) {
+        if (uuid == null) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(ghosts.get(uuid));
     }
 

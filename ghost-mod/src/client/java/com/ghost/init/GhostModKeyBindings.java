@@ -39,8 +39,7 @@ public class GhostModKeyBindings {
                 KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("ghostmod", "keys"))
                 // カテゴリ翻訳キー
         ));
-        *///? } else if >= 26.1 {
-        
+        *///?} elif >= 26.1 {
         /*openConfigKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.ghostmod.openConfig", // 翻訳キー
                 InputConstants.Type.KEYSYM, // キーボード入力
@@ -48,17 +47,15 @@ public class GhostModKeyBindings {
                 KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("ghostmod", "keys"))
                 // カテゴリ翻訳キー
         ));
-        *///?}else if >=1.21.11 {
-        
+        *///?} elif >= 1.21.11 {
         /*openConfigKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.ghostmod.openConfig", // 翻訳キー
                 InputConstants.Type.KEYSYM, // キーボード入力
                 GLFW.GLFW_KEY_G, // デフォルト: Gキー
-                KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("ghostmod","keys"))
+                KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("ghostmod", "keys"))
                 // カテゴリ翻訳キー
         ));
-         
-        *///?}else{
+        *///?} else {
         
         openConfigKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.ghostmod.openConfig", // 翻訳キー

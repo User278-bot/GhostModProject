@@ -20,7 +20,7 @@ class InMemoryGhostRegistryTest {
     private InMemoryGhostRegistry registry;
 
     /**
-     * @BeforeEach: 各テストメソッド（@Test）が実行される「前」に毎回呼ばれます。
+     * {@code @BeforeEach}: 各テストメソッド（{@code @Test}）が実行される「前」に毎回呼ばれます。
      * ここでテスト対象のインスタンスを初期化することで、
      * 常にクリーンな状態でテストを開始できます。
      */
@@ -30,7 +30,7 @@ class InMemoryGhostRegistryTest {
     }
 
     /**
-     * @Test: このメソッドがテストケースであることを示します。
+     * {@code @Test}: このメソッドがテストケースであることを示します。
      * メソッド名は「何をテストしているか」が分かるように命名するのが一般的です。
      */
     @Test
@@ -121,6 +121,14 @@ class InMemoryGhostRegistryTest {
 
         // 検証 (Assert)
         Assertions.assertTrue(registry.getAllGhosts().isEmpty(), "clear後は全員消えるべき");
+    }
+
+    @Test
+    void nullInputs_AreSafelyIgnoredWithoutThrowing() {
+        registry.updateGhost(null);
+        Assertions.assertTrue(registry.getAllGhosts().isEmpty());
+        Assertions.assertTrue(registry.removeGhost(null).isEmpty());
+        Assertions.assertTrue(registry.getGhost(null).isEmpty());
     }
 
     // --- ヘルパーメソッド ---

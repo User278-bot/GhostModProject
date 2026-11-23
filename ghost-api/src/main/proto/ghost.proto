@@ -82,14 +82,32 @@ message PlayerDataProto {
   string active_hand = 12;
 }
 
-// --- GhostPacket に対応 ---
-// 全パケットのラッパー（type + payload バイト列）
-// 認証パケット（AUTH_*）はテキスト JSON のまま送信するため、
-// ここでは PlayerData 系（UPDATE / LEAVE / DESPAWN）のみを対象とする
+// --- 認証系メッセージ（CHAP + プロトコルバージョン検証） ---
+// サーバーからクライアントへ送信するチャレンジ
+message AuthChallenge {
+  string nonce = 1;
+  uint32 protocol_version = 2;
+}
+
+// クライアントからサーバーへ返送する HMAC-SHA256 レスポンス
+message AuthResponse {
+  string hash = 1;
+  uint32 protocol_version = 2;
+}
+
+// サーバーからクライアントへ送信する認証成功通知
+message AuthSuccess {}
+
+// --- 全パケットの統合ラッパー ---
+// 認証パケットを含めすべての通信を Protobuf バイナリ一本に統一し、
+// 1 回の parseFrom で種別判定とペイロード復元を完了する
 message GhostPacketProto {
-  // MessageType の ordinal を使用
-  // 0=UPDATE, 1=JOIN, 2=LEAVE, 3=DESPAWN
-  int32 type = 1;
-  // シリアライズ済み PlayerDataProto、または UUID 文字列のバイト列
-  bytes payload = 2;
+  oneof payload {
+    PlayerDataProto update = 1;
+    string leave_uuid = 2;
+    string despawn_uuid = 3;
+    AuthChallenge auth_challenge = 4;
+    AuthResponse auth_response = 5;
+    AuthSuccess auth_success = 6;
+  }
 }

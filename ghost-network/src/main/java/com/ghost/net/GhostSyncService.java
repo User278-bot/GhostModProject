@@ -1,85 +1,154 @@
 package com.ghost.net;
 
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.proto.ProtoConverter;
 import com.ghost.api.registry.IGhostRegistry;
-import com.ghost.api.packet.GhostPacket;
-import com.ghost.util.SerializationUtil;
-
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-@SuppressWarnings("unused")
+/**
+ * Ghost サーバーとの接続ライフサイクルおよびパケット送信をスレッド安全に管理するサービス。
+ */
 public class GhostSyncService {
-    @Nullable
-    private GhostWebSocketClient session = null;
-    private final IGhostRegistry ghostRegistry;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GhostSyncService.class);
 
+    private final Object connectionLock = new Object();
+    @Nullable
+    private volatile GhostWebSocketClient session = null;
+    private final IGhostRegistry ghostRegistry;
+    private final List<Runnable> disconnectListeners = new CopyOnWriteArrayList<>();
+
     public GhostSyncService(IGhostRegistry ghostRegistry) {
-        this.ghostRegistry = ghostRegistry;
+        this.ghostRegistry = Objects.requireNonNull(ghostRegistry, "ghostRegistry must not be null");
     }
 
+    /**
+     * サーバー切断時に呼び出されるリスナーを登録します。
+     */
+    public void addDisconnectListener(Runnable listener) {
+        Objects.requireNonNull(listener, "listener must not be null");
+        disconnectListeners.add(listener);
+    }
+
+    /**
+     * 非同期でサーバーへ接続・認証を行います。
+     */
     public CompletableFuture<Boolean> connectAsync(URI serverURI, String password, long timeout, TimeUnit unit) {
         return CompletableFuture.supplyAsync(() -> this.connectBlocking(serverURI, password, timeout, unit));
     }
 
-    public boolean connectBlocking(URI servverURI, String password, long timeout, TimeUnit unit) {
-        if (this.isConnected()) {
-            LOGGER.warn("Already connected");
-            assert session != null;
+    /**
+     * サーバーへ接続し、CHAP 認証が完了するまで待機します。
+     *
+     * @return 接続および認証が成功した場合は true、失敗・タイムアウト時は false
+     */
+    public boolean connectBlocking(URI serverURI, String password, long timeout, TimeUnit unit) {
+        synchronized (connectionLock) {
+            closeCurrentSessionLocked();
+
+            GhostWebSocketClient newSession = new GhostWebSocketClient(
+                    serverURI, ghostRegistry, password, this::notifyDisconnectListeners);
+            this.session = newSession;
+
+            boolean authenticated = false;
             try {
-                session.closeBlocking();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                boolean connected = newSession.connectBlocking(timeout, unit);
+                if (!connected) {
+                    LOGGER.warn("Timed out or failed to establish WebSocket connection to {}", serverURI);
+                    return false;
+                }
+                authenticated = Boolean.TRUE.equals(newSession.getAuthFuture().get(timeout, unit));
+                if (!authenticated) {
+                    LOGGER.warn("Authentication rejected by server: {}", serverURI);
+                }
+                return authenticated;
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                LOGGER.warn("Connection attempt interrupted: {}", serverURI, ex);
+                return false;
+            } catch (Exception ex) {
+                LOGGER.error("Failed to connect or authenticate to {}", serverURI, ex);
+                return false;
+            } finally {
+                if (!authenticated) {
+                    newSession.close();
+                    if (this.session == newSession) {
+                        this.session = null;
+                    }
+                    ghostRegistry.clear();
+                }
             }
         }
-        session = new GhostWebSocketClient(servverURI, ghostRegistry, password);
-        try {
-            // 認証完了も待つ
-            return session.connectBlocking(timeout, unit) && session.getAuthFuture().get(timeout, unit);
-        } catch (Exception ex) {
-            LOGGER.error("Failed to connect or authenticate:", ex);
-            session.close();
-            session = null;
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public void disconnect() {
-        if (session != null && session.isOpen()) {
-            session.close();
-            session = null;
-        }
-    }
-
-    public boolean isConnected() {
-        return session != null && session.isOpen();
     }
 
     /**
-     * 現在接続中のサーバーURIを取得します。
-     * 接続していない場合はnullを返します。
+     * 現在の接続（接続試行中を含む）を切断し、ゴーストレジストリをクリアします。
+     */
+    public void disconnect() {
+        synchronized (connectionLock) {
+            closeCurrentSessionLocked();
+        }
+    }
+
+    private void closeCurrentSessionLocked() {
+        GhostWebSocketClient current = this.session;
+        this.session = null;
+        if (current != null) {
+            try {
+                if (current.isOpen()) {
+                    current.closeBlocking();
+                } else {
+                    current.close();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                current.close();
+            } catch (Exception e) {
+                LOGGER.debug("Error while closing previous session", e);
+            }
+        }
+        ghostRegistry.clear();
+    }
+
+    public boolean isConnected() {
+        GhostWebSocketClient current = this.session;
+        return current != null && current.isOpen();
+    }
+
+    /**
+     * 現在接続中のサーバー URI を取得します。未接続の場合は null を返します。
      */
     @Nullable
     public URI getConnectedUri() {
-        return session != null && session.isOpen() ? session.getURI() : null;
+        GhostWebSocketClient current = this.session;
+        return current != null && current.isOpen() ? current.getURI() : null;
     }
 
-    public <T> void sendPacket(GhostPacket<T> packet) {
-        if (session != null && session.isOpen()) {
-            if (packet.getType() == com.ghost.api.packet.MessageType.UPDATE && packet.getData() instanceof com.ghost.api.dto.PlayerData playerData) {
-                byte[] bytes = com.ghost.api.proto.ProtoConverter.serializeUpdatePacket(playerData);
-                session.send(bytes);
-            } else if ((packet.getType() == com.ghost.api.packet.MessageType.LEAVE || packet.getType() == com.ghost.api.packet.MessageType.DESPAWN) && packet.getData() instanceof String uuid) {
-                byte[] bytes = com.ghost.api.proto.ProtoConverter.serializeUuidPacket(packet.getType(), uuid);
-                session.send(bytes);
-            } else {
-                final String msg = SerializationUtil.serializePacket(packet);
-                session.send(msg);
+    /**
+     * 自プレイヤーの状態（UPDATE パケット）をサーバーへ送信します。
+     */
+    public void sendPlayerUpdate(PlayerData playerData) {
+        GhostWebSocketClient current = this.session;
+        if (current != null && current.isOpen()) {
+            current.send(ProtoConverter.encodeUpdate(playerData));
+        }
+    }
+
+    private void notifyDisconnectListeners() {
+        for (Runnable listener : disconnectListeners) {
+            try {
+                listener.run();
+            } catch (Exception e) {
+                LOGGER.warn("Disconnect listener threw an exception", e);
             }
         }
     }

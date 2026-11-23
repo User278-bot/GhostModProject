@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class GhostEntitySynchronizer {
     private final IGhostRegistry ghostRegistry;
     private static final AtomicInteger nextEntityId = new AtomicInteger(Integer.MIN_VALUE / 2);
+    /** 前回の tick で同期対象ゴーストが存在していたかどうか（0 体定常時の走査スキップ用） */
+    private boolean hadGhostsLastTick = false;
 
     public GhostEntitySynchronizer(IGhostRegistry ghostRegistry) {
         this.ghostRegistry = ghostRegistry;
@@ -21,27 +23,32 @@ public class GhostEntitySynchronizer {
     private void updateGhosts(ClientLevel level, Map<String, GhostPlayerEntity> existingGhosts,
                               Collection<PlayerData> latestGhosts) {
         for (PlayerData data : latestGhosts) {
-            if (existingGhosts.containsKey(data.uuid())) {
-                // 既にエンティティが存在する場合 -> 状態を更新
-                GhostPlayerEntity ghost = existingGhosts.get(data.uuid());
-                ghost.updateFromData(data);
-
-                // 処理済みのゴーストをマップから削除
-                existingGhosts.remove(data.uuid());
+            GhostPlayerEntity existing = existingGhosts.remove(data.uuid());
+            if (existing != null) {
+                // 既にエンティティが存在する場合は状態を更新
+                existing.updateFromData(data);
             } else {
-                // エンティティが存在しない場合 -> 新しくスポーン
+                // エンティティが存在しない場合は新しくスポーン
+                UUID parsedUuid;
+                try {
+                    parsedUuid = UUID.fromString(data.uuid());
+                } catch (IllegalArgumentException e) {
+                    LogUtils.getLogger().warn("不正な UUID のゴーストデータをスキップしました: {}", data.uuid());
+                    continue;
+                }
+
                 LogUtils.getLogger().debug("Spawning new ghost: uuid={}, name={}", data.uuid(), data.name());
 
-                var newGameProfile = new GameProfile(UUID.fromString(data.uuid()), data.name());
+                var newGameProfile = new GameProfile(parsedUuid, data.name());
                 GhostPlayerEntity newGhost = new GhostPlayerEntity(level, newGameProfile, data);
 
-                // エンティティIDとUUIDをセット
+                // クライアントサイド専用エンティティのため負の ID を割り当て
                 int uniqueId = nextEntityId.getAndDecrement();
-                newGhost.setId(uniqueId); // クライアントサイドエンティティは負のIDを使うのが一般的
+                newGhost.setId(uniqueId);
 
-                /*? >=1.20.6 {*/
+                //? if >=1.20.6 {
                 /*level.addEntity(newGhost);
-                 *//*?} else {*/
+                 *///?} else {
                 level.addPlayer(newGhost.getId(), newGhost);
                 //?}
                 LogUtils.getLogger().debug("Added ghost to level: id={}, uuid={}", newGhost.getId(),
@@ -53,7 +60,7 @@ public class GhostEntitySynchronizer {
     private void removeGhosts(Map<String, GhostPlayerEntity> ghostsToRemove) {
         for (GhostPlayerEntity ghostToRemove : ghostsToRemove.values()) {
             LogUtils.getLogger().debug("Removing ghost: uuid={}", ghostToRemove.getGhostUuid());
-            ghostToRemove.discard(); // or .remove()
+            ghostToRemove.discard();
         }
     }
 
@@ -61,21 +68,28 @@ public class GhostEntitySynchronizer {
         if (level == null)
             return;
 
-        // 現在ワールドにいるゴーストエンティティを一旦すべて集める
+        // GhostRegistry から最新のゴースト情報を取得
+        Collection<PlayerData> latestGhosts = ghostRegistry.getAllGhosts();
+
+        // 同期対象が 0 体かつ前回の tick でも 0 体だった場合は、全エンティティ走査をスキップ
+        if (latestGhosts.isEmpty() && !hadGhostsLastTick) {
+            return;
+        }
+
+        // 現在ワールドにいるゴーストエンティティを収集
         Map<String, GhostPlayerEntity> existingGhosts = new HashMap<>();
         for (Entity entity : level.entitiesForRendering()) {
-            if (entity instanceof GhostPlayerEntity) {
-                existingGhosts.put(((GhostPlayerEntity) entity).getGhostUuid(), (GhostPlayerEntity) entity);
+            if (entity instanceof GhostPlayerEntity ghost) {
+                existingGhosts.put(ghost.getGhostUuid(), ghost);
             }
         }
 
-        // GhostRegistryから最新のゴースト情報を取得
-        Collection<PlayerData> latestGhosts = ghostRegistry.getAllGhosts();
-
-        // Registryの情報を元に、エンティティを更新または新規スポーン
+        // Registry の情報を元に、エンティティを更新または新規スポーン
         updateGhosts(level, existingGhosts, latestGhosts);
 
-        // Registryに存在しなくなった（または距離外判定された）ゴーストエンティティをワールドから削除
+        // Registry に存在しなくなった（または距離外判定された）ゴーストエンティティをワールドから削除
         removeGhosts(existingGhosts);
+
+        hadGhostsLastTick = !latestGhosts.isEmpty();
     }
 }

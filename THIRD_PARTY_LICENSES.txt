@@ -9,49 +9,37 @@ are distributed are set forth below.
 SUMMARY OF BUNDLED THIRD-PARTY LIBRARIES
 ================================================================================
 
-1. Google Gson (com.google.code.gson:gson)
-   - License: Apache License, Version 2.0
-   - Copyright (c) 2008 Google Inc.
-   - Bundled in: GhostModServer, GhostFakeClient
-   - URL: https://github.com/google/gson
-
-2. Google Error Prone Annotations (com.google.errorprone:error_prone_annotations)
-   - License: Apache License, Version 2.0
-   - Copyright (c) Google Inc.
-   - Bundled in: GhostModServer, GhostFakeClient (transitive dependency of Gson)
-   - URL: https://github.com/google/error-prone
-
-3. Protocol Buffers (com.google.protobuf:protobuf-java)
+1. Protocol Buffers (com.google.protobuf:protobuf-java)
    - License: 3-Clause BSD License
    - Copyright 2008 Google Inc.
    - Bundled in: GhostMod, GhostModServer, GhostFakeClient
    - URL: https://github.com/protocolbuffers/protobuf
 
-4. Java-WebSocket (org.java-websocket:Java-WebSocket)
+2. Java-WebSocket (org.java-websocket:Java-WebSocket)
    - License: MIT License
    - Copyright (c) 2010-2020 Nathan Rajlich
    - Bundled in: GhostMod, GhostModServer, GhostFakeClient
    - URL: https://github.com/TooTallNate/Java-WebSocket
 
-5. SLF4J (org.slf4j:slf4j-api, org.slf4j:slf4j-simple)
+3. SLF4J (org.slf4j:slf4j-api, org.slf4j:slf4j-simple)
    - License: MIT License
    - Copyright (c) 2004-2022 QOS.ch Sarl (Switzerland)
    - Bundled in: GhostModServer, GhostFakeClient
    - URL: https://www.slf4j.org/
 
-6. Picocli (info.picocli:picocli, info.picocli:picocli-shell-jline3)
+4. Picocli (info.picocli:picocli, info.picocli:picocli-shell-jline3)
    - License: Apache License, Version 2.0
    - Copyright (c) Remko Popma and contributors
    - Bundled in: GhostModServer
    - URL: https://github.com/remkop/picocli
 
-7. JLine (org.jline:jline)
+5. JLine (org.jline:jline)
    - License: 3-Clause BSD License
    - Copyright (c) 2002-2023, the original author or authors.
    - Bundled in: GhostModServer
    - URL: https://github.com/jline/jline3
 
-8. Apache Commons CLI (commons-cli:commons-cli)
+6. Apache Commons CLI (commons-cli:commons-cli)
    - License: Apache License, Version 2.0
    - Copyright 2002-2026 The Apache Software Foundation
    - Bundled in: GhostFakeClient
@@ -199,8 +187,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 --------------------------------------------------------------------------------
 Apache License, Version 2.0
-(Applies to: Google Gson, Google Error Prone Annotations, Picocli,
- Apache Commons CLI)
+(Applies to: Picocli, Apache Commons CLI)
 --------------------------------------------------------------------------------
                                  Apache License
                            Version 2.0, January 2004

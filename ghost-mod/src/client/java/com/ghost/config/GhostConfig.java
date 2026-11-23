@@ -107,29 +107,9 @@ public class GhostConfig {
     }
 
     private void restoreFrom(GhostConfig config) {
-        this.serverPort = config.serverPort;
-        this.serverUri = config.serverUri;
-        this.serverPassword = config.serverPassword;
-    }
-
-    // --- Mementoパターン: スナップショット機能 ---
-
-    /**
-     * 現在の設定状態をスナップショットとして取得します。
-     * 設定画面での編集作業中に一時的な値を保持するために使用します。
-     */
-    public ConfigSnapshot createSnapshot() {
-        return new ConfigSnapshot(serverUri, serverPort, serverPassword);
-    }
-
-    /**
-     * スナップショットから設定を復元します。
-     * 接続成功時などに一時的な値を永続化する前に呼び出します。
-     */
-    public void restoreFrom(ConfigSnapshot snapshot) {
-        this.serverUri = snapshot.serverUri();
-        this.serverPort = snapshot.serverPort();
-        this.serverPassword = snapshot.serverPassword();
+        this.serverPort = (config.serverPort >= 1 && config.serverPort <= 65535) ? config.serverPort : 8887;
+        this.serverUri = (config.serverUri != null && !config.serverUri.isBlank()) ? config.serverUri : "localhost";
+        this.serverPassword = config.serverPassword != null ? config.serverPassword : "changeme";
     }
 
     /**
@@ -138,7 +118,7 @@ public class GhostConfig {
      */
     public record ConfigSnapshot(String serverUri, int serverPort, String serverPassword) {
         /**
-         * WebSocket接続用の完全なURIを組み立てます。
+         * WebSocket 接続用の完全な URI を組み立てます。
          */
         public String getFullWebSocketUri() {
             return "ws://" + serverUri + ":" + serverPort;

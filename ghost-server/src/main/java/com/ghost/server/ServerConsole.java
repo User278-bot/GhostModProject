@@ -51,7 +51,6 @@ public class ServerConsole {
      */
     @Command(
             name = "",
-            mixinStandardHelpOptions = false,
             description = "Ghost Server Console",
             subcommands = {
                     StopCommand.class,
@@ -162,7 +161,7 @@ public class ServerConsole {
                     server.shutdown();
                     running.set(false);
                 } else if (!trimmed.isEmpty()) {
-                    LOGGER.warn("Unknown command: '{}'. Type 'stop' or 'help'.", trimmed);
+                    LOGGER.warn("Unknown command: '{}'. Type 'stop' to shutdown.", trimmed);
                 }
             }
         } catch (IOException e) {

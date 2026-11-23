@@ -1,26 +1,33 @@
 package com.ghost.api.proto;
 
-import com.ghost.api.dto.*;
+import com.ghost.api.dto.EquipmentDto;
+import com.ghost.api.dto.PlayerData;
+import com.ghost.api.dto.Vec2Dto;
+import com.ghost.api.dto.Vec3Dto;
 import com.ghost.api.dto.item.ItemDto;
 import com.ghost.api.dto.item.components.CustomModelDataDto;
 import com.ghost.api.dto.item.components.TrimDto;
-import com.ghost.api.packet.MessageType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * {@link ProtoConverter} の oneof 全パケット種別および DTO 往復変換を検証するユニットテスト。
+ */
 class ProtoConverterTest {
 
     @Test
-    void testPlayerDataSerializationAndDeserialization() throws Exception {
+    void updatePacket_RoundTripPreservesAllFieldsIncludingCustomModelDataModel() throws Exception {
         ItemDto head = new ItemDto.Builder("minecraft:diamond_helmet")
                 .damage(10)
                 .hasGlint(true)
                 .color(0x00FF00)
                 .trim(new TrimDto("coast", "diamond"))
-                .customModelData(new CustomModelDataDto(List.of(1.0f, 2.5f), List.of(true), List.of("model1"), List.of(12345)))
+                .customModelData(new CustomModelDataDto(
+                        List.of(1.0f, 2.5f), List.of(true), List.of("model1"), List.of(12345), 777))
+                .itemModel("minecraft:custom_helmet")
                 .build();
 
         EquipmentDto equipment = new EquipmentDto(
@@ -47,37 +54,49 @@ class ProtoConverterTest {
                 "MAIN_HAND"
         );
 
-        // 1. UPDATE パケットのシリアライズ
-        byte[] serialized = ProtoConverter.serializeUpdatePacket(original);
+        byte[] serialized = ProtoConverter.encodeUpdate(original);
         assertNotNull(serialized);
         assertTrue(serialized.length > 0);
 
-        // 2. パケットタイプのデシリアライズ確認
-        MessageType messageType = ProtoConverter.deserializePacketType(serialized);
-        assertEquals(MessageType.UPDATE, messageType);
+        // 1 パスデコードで UPDATE 種別と全フィールドが復元されること
+        GhostPacketProto decoded = ProtoConverter.decode(serialized);
+        assertEquals(GhostPacketProto.PayloadCase.UPDATE, decoded.getPayloadCase());
 
-        // 3. PlayerData のデシリアライズ確認
-        PlayerData deserialized = ProtoConverter.deserializeUpdatePacket(serialized);
-        assertEquals(original, deserialized);
-        assertEquals(original.pos(), deserialized.pos());
-        assertEquals(original.rot(), deserialized.rot());
-        assertEquals(original.uuid(), deserialized.uuid());
-        assertEquals(original.name(), deserialized.name());
-        assertEquals(original.equipment(), deserialized.equipment());
+        PlayerData restored = ProtoConverter.fromProto(decoded.getUpdate());
+        assertEquals(original, restored);
+        assertNotNull(restored.equipment().head().customModelData());
+        assertEquals(777, restored.equipment().head().customModelData().model());
     }
 
     @Test
-    void testUuidPacketSerializationAndDeserialization() throws Exception {
+    void leaveAndDespawnPackets_RoundTrip() throws Exception {
         String uuid = "abcdef12-3456-7890-abcd-ef1234567890";
 
-        // LEAVE
-        byte[] leaveBytes = ProtoConverter.serializeUuidPacket(MessageType.LEAVE, uuid);
-        assertEquals(MessageType.LEAVE, ProtoConverter.deserializePacketType(leaveBytes));
-        assertEquals(uuid, ProtoConverter.deserializeUuid(leaveBytes));
+        GhostPacketProto leavePacket = ProtoConverter.decode(ProtoConverter.encodeLeave(uuid));
+        assertEquals(GhostPacketProto.PayloadCase.LEAVE_UUID, leavePacket.getPayloadCase());
+        assertEquals(uuid, leavePacket.getLeaveUuid());
 
-        // DESPAWN
-        byte[] despawnBytes = ProtoConverter.serializeUuidPacket(MessageType.DESPAWN, uuid);
-        assertEquals(MessageType.DESPAWN, ProtoConverter.deserializePacketType(despawnBytes));
-        assertEquals(uuid, ProtoConverter.deserializeUuid(despawnBytes));
+        GhostPacketProto despawnPacket = ProtoConverter.decode(ProtoConverter.encodeDespawn(uuid));
+        assertEquals(GhostPacketProto.PayloadCase.DESPAWN_UUID, despawnPacket.getPayloadCase());
+        assertEquals(uuid, despawnPacket.getDespawnUuid());
+    }
+
+    @Test
+    void authPackets_RoundTripAndProtocolVersion() throws Exception {
+        // AUTH_CHALLENGE（デフォルトバージョン）
+        GhostPacketProto challenge = ProtoConverter.decode(ProtoConverter.encodeAuthChallenge("nonce-abc"));
+        assertEquals(GhostPacketProto.PayloadCase.AUTH_CHALLENGE, challenge.getPayloadCase());
+        assertEquals("nonce-abc", challenge.getAuthChallenge().getNonce());
+        assertEquals(ProtoConverter.PROTOCOL_VERSION, challenge.getAuthChallenge().getProtocolVersion());
+
+        // AUTH_RESPONSE（明示バージョン指定）
+        GhostPacketProto response = ProtoConverter.decode(ProtoConverter.encodeAuthResponse("hmac-xyz", 2));
+        assertEquals(GhostPacketProto.PayloadCase.AUTH_RESPONSE, response.getPayloadCase());
+        assertEquals("hmac-xyz", response.getAuthResponse().getHash());
+        assertEquals(2, response.getAuthResponse().getProtocolVersion());
+
+        // AUTH_SUCCESS
+        GhostPacketProto success = ProtoConverter.decode(ProtoConverter.encodeAuthSuccess());
+        assertEquals(GhostPacketProto.PayloadCase.AUTH_SUCCESS, success.getPayloadCase());
     }
 }
