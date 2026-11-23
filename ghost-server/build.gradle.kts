@@ -64,9 +64,10 @@ tasks.withType<ShadowJar> {
         into("META-INF")
     }
 
-    // 生成されるJARのマニフェストファイルに、メインクラスを指定する
-    // これにより `java -jar` コマンドで直接実行できるようになる
+    // 生成されるJARのマニフェストファイルに、メインクラスおよびネイティブアクセス許可を指定する
+    // これにより `java -jar` コマンドで直接実行でき、Java 24 以降での JLine FFM 警告も抑止される
     manifest {
         attributes["Main-Class"] = "com.ghost.server.GhostModServer"
+        attributes["Enable-Native-Access"] = "ALL-UNNAMED"
     }
 }
