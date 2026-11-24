@@ -2,7 +2,7 @@
 # Common Libraries
 gson = "2.14.0"
 websocket = "1.6.0"
-slf4j = "2.0.19"
+slf4j = "2.0.20"
 junit = "5.10.0"
 protobuf = "4.35.1"
 
