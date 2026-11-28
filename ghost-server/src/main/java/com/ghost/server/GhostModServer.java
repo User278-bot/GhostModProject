@@ -15,19 +15,22 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import org.jetbrains.annotations.Nullable;
+
 import javax.crypto.SecretKey;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Ghost Mod 用の WebSocket 同期サーバー。
- * 設定解決は {@link ServerConfig}、レート制限は {@link RateLimiter.PerIpManager}、
- * セッション＆視認範囲追跡は {@link VisibilityTracker} へ責務を委譲し、
+ * 設定解決は {@link ServerConfig}、プロキシ経由の実クライアント IP 解決は {@link ClientIpResolver}、
+ * 接続単位のフレームレート制限は {@link RateLimiter}、セッション＆視認範囲追跡は {@link VisibilityTracker} へ責務を委譲し、
  * 本クラスは WebSocket 通信制御・暗号化・CHAP 認証に専念します。
  */
 public class GhostModServer extends WebSocketServer {
@@ -40,47 +43,68 @@ public class GhostModServer extends WebSocketServer {
     private static final int CLOSE_PROTOCOL_MISMATCH = 4004;
     private static final int CLOSE_UNSUPPORTED_FRAME = 4005;
 
+    /**
+     * WebSocket 1 接続ごとに紐付ける実行時コンテキスト。
+     * コネクションのライフサイクルと連動し、切断時に自動的に解放されます。
+     */
+    private record ConnectionContext(@Nullable InetAddress clientAddress, RateLimiter rateLimiter) {
+    }
+
+    private final String bindAddress;
     private final String serverPassword;
     private final SecretKey secretKey;
     private final double visibleRange;
     private final double packetsPerSecond;
-    private final RateLimiter.PerIpManager rateLimiterManager;
+    private final List<String> trustedProxies;
+    private final ClientIpResolver clientIpResolver;
     private final VisibilityTracker<WebSocket> visibilityTracker;
     private final AtomicBoolean isShuttingDown = new AtomicBoolean(false);
 
     public GhostModServer(ServerConfig config) {
-        this(config.port(), config.password(), config.viewDistance(), config.rateLimit());
-    }
-
-    public GhostModServer(int port, String password, double visibleRange, double packetsPerSecond) {
-        super(new InetSocketAddress(port));
-        this.serverPassword = password;
-        this.secretKey = CryptoUtil.deriveKey(password);
-        this.visibleRange = visibleRange;
-        this.packetsPerSecond = packetsPerSecond;
-        this.rateLimiterManager = new RateLimiter.PerIpManager(packetsPerSecond);
-        this.visibilityTracker = new VisibilityTracker<>(visibleRange);
+        super(new InetSocketAddress(config.bindAddress(), config.port()));
+        this.bindAddress = config.bindAddress();
+        this.serverPassword = config.password();
+        this.secretKey = CryptoUtil.deriveKey(config.password());
+        this.visibleRange = config.viewDistance();
+        this.packetsPerSecond = config.rateLimit();
+        this.trustedProxies = config.trustedProxies();
+        this.clientIpResolver = new ClientIpResolver(config.trustedProxies());
+        this.visibilityTracker = new VisibilityTracker<>(config.viewDistance());
     }
 
     @Override
     public void onStart() {
-        LOGGER.info("Server started on port: {}", getPort());
+        LOGGER.info("Server started on {}:{}", bindAddress, getPort());
         LOGGER.info("Authentication enabled using HMAC-SHA256 CHAP (protocol v{}).", ProtoConverter.PROTOCOL_VERSION);
         LOGGER.info("Visibility Range: {} blocks", visibleRange);
-        LOGGER.info("Rate Limit: {} packets/sec", packetsPerSecond);
+        LOGGER.info("Rate Limit: {} packets/sec (per connection)", packetsPerSecond);
+        if (!trustedProxies.isEmpty()) {
+            LOGGER.info("Trusted Proxies: {}", String.join(", ", trustedProxies));
+        }
         LOGGER.debug("=== DEBUG MODE ===");
         setConnectionLostTimeout(100);
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        LOGGER.info("New connection from: {}", conn.getRemoteSocketAddress());
+        InetSocketAddress remoteAddr = conn.getRemoteSocketAddress();
+        InetAddress peerAddress = remoteAddr != null ? remoteAddr.getAddress() : null;
+        InetAddress resolvedClientIp = peerAddress != null
+                ? clientIpResolver.resolve(
+                        peerAddress,
+                        handshake.getFieldValue("X-Forwarded-For"),
+                        handshake.getFieldValue("X-Real-IP"))
+                : null;
+        conn.setAttachment(new ConnectionContext(resolvedClientIp, new RateLimiter(packetsPerSecond)));
+
+        String endpoint = formatClientEndpoint(conn);
+        LOGGER.info("New connection from: {}", endpoint);
 
         String nonce = ChapAuthenticator.generateNonce();
         visibilityTracker.registerConnection(conn, nonce);
 
         sendEncrypted(conn, ProtoConverter.encodeAuthChallenge(nonce), "AUTH_CHALLENGE");
-        LOGGER.info("Sent AUTH_CHALLENGE to {}", conn.getRemoteSocketAddress());
+        LOGGER.info("Sent AUTH_CHALLENGE to {}", endpoint);
     }
 
     @Override
@@ -89,10 +113,10 @@ public class GhostModServer extends WebSocketServer {
         PlayerData disconnectedPlayer = result.disconnectedPlayer();
         if (disconnectedPlayer != null) {
             LOGGER.info("Player {} disconnected: {} (Code: {}, Reason: {}, Remote: {})",
-                    disconnectedPlayer.name(), conn.getRemoteSocketAddress(), code, reason, remote);
+                    disconnectedPlayer.name(), formatClientEndpoint(conn), code, reason, remote);
             sendLeavePacket(disconnectedPlayer, result.authenticatedNotifyTargets());
         } else {
-            LOGGER.debug("Disconnected client without active player state: {}", conn.getRemoteSocketAddress());
+            LOGGER.debug("Disconnected client without active player state: {}", formatClientEndpoint(conn));
         }
     }
 
@@ -110,7 +134,7 @@ public class GhostModServer extends WebSocketServer {
         try {
             decryptedBytes = CryptoUtil.decrypt(rawBytes, secretKey);
         } catch (Exception e) {
-            LOGGER.warn("Failed to decrypt binary message from {}, closing connection.", conn.getRemoteSocketAddress());
+            LOGGER.warn("Failed to decrypt binary message from {}, closing connection.", formatClientEndpoint(conn));
             conn.close(CLOSE_DECRYPTION_FAILED, "Decryption Failed");
             return;
         }
@@ -125,7 +149,7 @@ public class GhostModServer extends WebSocketServer {
         try {
             packet = ProtoConverter.decode(decryptedBytes);
         } catch (Exception ex) {
-            LOGGER.warn("Failed to decode Protobuf packet from {}", conn.getRemoteSocketAddress(), ex);
+            LOGGER.warn("Failed to decode Protobuf packet from {}", formatClientEndpoint(conn), ex);
             if (!session.isAuthenticated()) {
                 conn.close(CLOSE_HANDSHAKE_ERROR, "Handshake Error");
             }
@@ -140,7 +164,7 @@ public class GhostModServer extends WebSocketServer {
         if (packet.getPayloadCase() == GhostPacketProto.PayloadCase.UPDATE) {
             PlayerData playerData = ProtoConverter.fromProto(packet.getUpdate());
             if (session.playerData() == null) {
-                LOGGER.info("Player initialized: {} ({})", playerData.name(), conn.getRemoteSocketAddress());
+                LOGGER.info("Player initialized: {} ({})", playerData.name(), formatClientEndpoint(conn));
             }
             dispatchPlayerUpdate(conn, playerData);
         } else {
@@ -154,27 +178,43 @@ public class GhostModServer extends WebSocketServer {
             return;
         }
         LOGGER.warn("Received unsupported text frame from {}. Binary protocol is required.",
-                conn.getRemoteSocketAddress());
+                formatClientEndpoint(conn));
         conn.close(CLOSE_UNSUPPORTED_FRAME, "Binary Protocol Required");
     }
 
     private boolean isRateLimited(WebSocket conn) {
-        InetSocketAddress remoteAddr = conn.getRemoteSocketAddress();
-        if (remoteAddr == null || remoteAddr.getAddress() == null) {
+        ConnectionContext context = conn.getAttachment();
+        if (context == null) {
             return true;
         }
-        InetAddress address = remoteAddr.getAddress();
-        if (!rateLimiterManager.tryAcquire(address)) {
-            LOGGER.warn("Rate limit exceeded for {}", address);
+        if (!context.rateLimiter().tryAcquire()) {
+            LOGGER.warn("Rate limit exceeded for {}", formatClientEndpoint(conn));
             return true;
         }
         return false;
     }
 
+    /**
+     * ログ出力用のクライアント識別文字列を返します。
+     * 信頼済みプロキシ経由で実クライアント IP が解決された場合はプロキシ経路も併記します。
+     */
+    private String formatClientEndpoint(WebSocket conn) {
+        InetSocketAddress remoteAddr = conn.getRemoteSocketAddress();
+        ConnectionContext context = conn.getAttachment();
+        if (context != null && context.clientAddress() != null) {
+            InetAddress peer = remoteAddr != null ? remoteAddr.getAddress() : null;
+            if (!context.clientAddress().equals(peer)) {
+                return context.clientAddress().getHostAddress() + " (via " + remoteAddr + ")";
+            }
+            return remoteAddr.toString();
+        }
+        return String.valueOf(remoteAddr);
+    }
+
     private void handleAuthHandshake(WebSocket conn, GhostClientData session, GhostPacketProto packet) {
         if (packet.getPayloadCase() != GhostPacketProto.PayloadCase.AUTH_RESPONSE) {
             LOGGER.warn("Expected AUTH_RESPONSE but received {} from {}",
-                    packet.getPayloadCase(), conn.getRemoteSocketAddress());
+                    packet.getPayloadCase(), formatClientEndpoint(conn));
             conn.close(CLOSE_HANDSHAKE_ERROR, "Unexpected Packet During Auth");
             return;
         }
@@ -182,17 +222,17 @@ public class GhostModServer extends WebSocketServer {
         AuthResponse response = packet.getAuthResponse();
         if (response.getProtocolVersion() != ProtoConverter.PROTOCOL_VERSION) {
             LOGGER.warn("Protocol version mismatch from {}: client={}, server={}",
-                    conn.getRemoteSocketAddress(), response.getProtocolVersion(), ProtoConverter.PROTOCOL_VERSION);
+                    formatClientEndpoint(conn), response.getProtocolVersion(), ProtoConverter.PROTOCOL_VERSION);
             conn.close(CLOSE_PROTOCOL_MISMATCH, "Protocol Version Mismatch");
             return;
         }
 
         if (ChapAuthenticator.verify(serverPassword, session.nonce(), response.getHash())) {
             visibilityTracker.markAuthenticated(conn);
-            LOGGER.info("Authentication SUCCESS for {}", conn.getRemoteSocketAddress());
+            LOGGER.info("Authentication SUCCESS for {}", formatClientEndpoint(conn));
             sendEncrypted(conn, ProtoConverter.encodeAuthSuccess(), "AUTH_SUCCESS");
         } else {
-            LOGGER.warn("Authentication FAILED for {}. Closing connection.", conn.getRemoteSocketAddress());
+            LOGGER.warn("Authentication FAILED for {}. Closing connection.", formatClientEndpoint(conn));
             conn.close(CLOSE_AUTH_FAILED, "Authentication Failed");
         }
     }
@@ -200,7 +240,7 @@ public class GhostModServer extends WebSocketServer {
     @Override
     public void onError(WebSocket conn, Exception ex) {
         if (conn != null) {
-            LOGGER.error("An error occurred on connection {}:", conn.getRemoteSocketAddress(), ex);
+            LOGGER.error("An error occurred on connection {}:", formatClientEndpoint(conn), ex);
             var result = visibilityTracker.removeConnection(conn);
             if (result.disconnectedPlayer() != null) {
                 sendLeavePacket(result.disconnectedPlayer(), result.authenticatedNotifyTargets());
@@ -319,6 +359,9 @@ public class GhostModServer extends WebSocketServer {
         @Option(names = "--port", description = "Port number to listen on (Default: 8887)")
         Integer port;
 
+        @Option(names = "--bind", description = "Bind address to listen on (Default: 0.0.0.0)")
+        String bindAddress;
+
         @Option(names = "--password", description = "Server password (Generated automatically if not specified)")
         String password;
 
@@ -328,14 +371,22 @@ public class GhostModServer extends WebSocketServer {
         @Option(names = "--view-distance", description = "View distance in blocks (Default: 80.0)")
         Double viewDistance;
 
-        @Option(names = "--rate-limit", description = "Rate limit in packets/second (Default: 50.0)")
+        @Option(names = "--rate-limit", description = "Rate limit in packets/second per connection (Default: 50.0)")
         Double rateLimit;
+
+        @Option(
+                names = "--trusted-proxy",
+                split = ",",
+                description = "Trusted reverse proxy IP or CIDR (comma-separated or repeatable)"
+        )
+        List<String> trustedProxies;
 
         @Override
         public void run() {
             try {
                 Properties props = ServerConfig.loadProperties(Path.of(configFile));
-                ServerConfig config = ServerConfig.resolve(port, password, viewDistance, rateLimit, props);
+                ServerConfig config = ServerConfig.resolve(
+                        port, bindAddress, password, viewDistance, rateLimit, trustedProxies, props);
 
                 if (config.passwordAutoGenerated()) {
                     LOGGER.warn("No password provided. Using generated password: '{}'", config.password());

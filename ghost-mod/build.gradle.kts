@@ -66,6 +66,10 @@ dependencies {
     include(libs.protobuf.java)
 }
 
+val trustStorePath = providers.gradleProperty("trustStore")
+    .map { rootProject.file(it).absolutePath.replace('\\', '/') }
+val trustStorePassword = providers.gradleProperty("trustStorePassword")
+
 loom {
     splitEnvironmentSourceSets()
 
@@ -88,6 +92,13 @@ loom {
         generateRunConfig = true
 
         jvmArguments.add("-Dmixin.debug.export=true") // Exports transformed classes for debugging
+        // WSS（自己署名証明書）テスト用: Gradle プロパティ指定時のみクライアント JVM に TrustStore を渡す
+        if (trustStorePath.isPresent) {
+            jvmArguments.add("-Djavax.net.ssl.trustStore=${trustStorePath.get()}")
+        }
+        if (trustStorePassword.isPresent) {
+            jvmArguments.add("-Djavax.net.ssl.trustStorePassword=${trustStorePassword.get()}")
+        }
         runDirectory = file("./run")  // Shares the run directory between versions
     }
 }

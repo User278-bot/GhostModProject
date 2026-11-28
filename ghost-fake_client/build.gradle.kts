@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.JavaExec
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
@@ -19,6 +20,21 @@ dependencies {
 
 application {
     mainClass.set("com.ghost.fake_client.FakeClientMain")
+}
+
+val trustStorePath = providers.gradleProperty("trustStore")
+    .map { rootProject.file(it).absolutePath.replace('\\', '/') }
+val trustStorePassword = providers.gradleProperty("trustStorePassword")
+
+tasks.named<JavaExec>("run") {
+    jvmArgs("-Dfile.encoding=UTF-8")
+    // WSS（自己署名証明書）テスト用: Gradle プロパティ指定時のみ実行プロセスに TrustStore を渡す
+    if (trustStorePath.isPresent) {
+        systemProperty("javax.net.ssl.trustStore", trustStorePath.get())
+    }
+    if (trustStorePassword.isPresent) {
+        systemProperty("javax.net.ssl.trustStorePassword", trustStorePassword.get())
+    }
 }
 
 tasks.withType<ShadowJar> {

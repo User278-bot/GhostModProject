@@ -5,6 +5,7 @@ import com.ghost.client.ToastNotifications;
 import com.ghost.config.GhostConfig;
 import com.ghost.entity.GhostEntitySynchronizer;
 import com.ghost.entity.GhostSkinCache;
+import com.ghost.net.ConnectionResult.FailureReason;
 import com.ghost.net.GhostSyncService;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -32,27 +33,45 @@ public class ClientEventHandler {
         this.playerDataSender = new PlayerDataSender(this.ghostSyncService);
         // サーバー都合の切断時にも前回送信状態をリセットし、再接続直後の即時同期を保証する
         this.ghostSyncService.addDisconnectListener(this.playerDataSender::reset);
+        // 通信確立後にサーバー停止等で予期せず切断された場合はトーストで通知する
+        this.ghostSyncService.addUnexpectedDisconnectListener(() -> {
+            Minecraft mc = Minecraft.getInstance();
+            mc.execute(() -> {
+                if (mc.level != null && mc.isLocalServer()) {
+                    ToastNotifications.showUnexpectedDisconnectToast();
+                }
+            });
+        });
     }
 
     public void registerEvents() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (client.isLocalServer()) {
                 LogUtils.getLogger().info("Joined a single player world. Auto-connecting to GhostServer...");
+                GhostConfig config = GhostConfig.getInstance();
+                final URI serverUri;
                 try {
-                    GhostConfig config = GhostConfig.getInstance();
-                    URI serverUri = new URI(config.getFullWebSocketUri());
-                    ghostSyncService.connectAsync(serverUri, config.getServerPassword(), 3, TimeUnit.SECONDS)
-                            .thenAccept(isConnected -> {
-                                if (Boolean.TRUE.equals(isConnected)) {
-                                    client.execute(ToastNotifications::showConnectionSuccessToast);
-                                }
-                            }).exceptionally(e -> {
-                                LogUtils.getLogger().error("Failed to connect to GhostServer asynchronously", e);
-                                return null;
-                            });
+                    serverUri = config.toWebSocketUri();
                 } catch (Exception ex) {
-                    LogUtils.getLogger().error("Failed to auto-connect to GhostServer.", ex);
+                    LogUtils.getLogger().error("Invalid server configuration for auto-connect.", ex);
+                    client.execute(() -> ToastNotifications.showConnectionFailureToast(FailureReason.INVALID_URI));
+                    return;
                 }
+
+                ghostSyncService.connectWithResultAsync(serverUri, config.getServerPassword(), 3, TimeUnit.SECONDS)
+                        .whenComplete((result, error) -> client.execute(() -> {
+                            if (error != null) {
+                                LogUtils.getLogger().error("Failed to connect to GhostServer asynchronously", error);
+                                ToastNotifications.showConnectionFailureToast(FailureReason.CONNECTION_ERROR);
+                            } else if (result != null && result.connected()) {
+                                ToastNotifications.showConnectionSuccessToast(serverUri);
+                            } else {
+                                FailureReason reason = result != null
+                                        ? result.failureReason()
+                                        : FailureReason.CONNECTION_ERROR;
+                                ToastNotifications.showConnectionFailureToast(reason);
+                            }
+                        }));
             }
         });
 

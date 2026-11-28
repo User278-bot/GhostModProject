@@ -85,3 +85,9 @@ MODRINTH_DESCRIPTION.md
 ghost-mod/src/main/resources/assets/ghostmod/icon (Custom).png
 ghost-mod/src/main/resources/assets/ghostmod/icon (pseudo-multiplay).png
 build_log.txt
+/styles.css
+/script.js
+/index.html
+/tls-test/
+/.run/ghost-project_GhostMod 1.21.4 [WSS runClient].run.xml
+/.run/ghost-project_ghost-fake_client [WSS fakeRun].run.xml
