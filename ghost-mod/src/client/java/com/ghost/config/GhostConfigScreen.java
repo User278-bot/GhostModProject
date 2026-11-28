@@ -2,15 +2,18 @@ package com.ghost.config;
 
 import com.ghost.GhostModClient;
 import com.ghost.client.ToastNotifications;
+import com.ghost.net.ConnectionResult.FailureReason;
 import com.ghost.net.GhostSyncService;
+import com.ghost.util.WebSocketUriBuilder;
+import com.ghost.util.WebSocketUriBuilder.UrlValidationError;
 import com.mojang.logging.LogUtils;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
-import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.StringListEntry;
 import me.shedaniel.clothconfig2.gui.entries.TextFieldListEntry;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -19,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,21 +39,33 @@ public final class GhostConfigScreen {
 
     private final GhostSyncService syncService;
     private final GhostConfig config;
+    private final GhostConfig.ConfigSnapshot initialSavedSnapshot;
     @Nullable
     private GhostConfig.ConfigSnapshot pendingSnapshot;
+    @Nullable
+    private FailureReason lastFailureReason;
+    private boolean connecting;
+    private boolean manuallyDisconnected;
 
     private StringListEntry serverUriEntry;
     private IntegerListEntry serverPortEntry;
-    private BooleanListEntry useTlsEntry;
     private StringListEntry serverPasswordEntry;
     private Screen activeScreen;
 
     private GhostConfigScreen(GhostSyncService syncService,
                               GhostConfig config,
-                              @Nullable GhostConfig.ConfigSnapshot pendingSnapshot) {
+                              GhostConfig.ConfigSnapshot initialSavedSnapshot,
+                              @Nullable GhostConfig.ConfigSnapshot pendingSnapshot,
+                              @Nullable FailureReason lastFailureReason,
+                              boolean connecting,
+                              boolean manuallyDisconnected) {
         this.syncService = syncService;
         this.config = config;
+        this.initialSavedSnapshot = initialSavedSnapshot;
         this.pendingSnapshot = pendingSnapshot;
+        this.lastFailureReason = lastFailureReason;
+        this.connecting = connecting;
+        this.manuallyDisconnected = manuallyDisconnected;
     }
 
     /**
@@ -59,10 +75,15 @@ public final class GhostConfigScreen {
      * @return 設定画面
      */
     public static Screen create(Screen parent) {
+        GhostConfig cfg = GhostConfig.getInstance();
         return new GhostConfigScreen(
                 GhostModClient.getSyncService(),
-                GhostConfig.getInstance(),
-                null
+                cfg,
+                cfg.toSnapshot(),
+                null,
+                null,
+                false,
+                false
         ).buildScreen(parent);
     }
 
@@ -72,80 +93,49 @@ public final class GhostConfigScreen {
                 .setTitle(Component.translatable("title.ghostmod.config"))
                 .setDoesConfirmSave(false)
                 .setAlwaysShowTabs(false)
-                .setSavingRunnable(() -> {
-                    config.save();
-                    pendingSnapshot = null;
-                });
+                .setSavingRunnable(this::onSaveConfig);
 
         final ConfigCategory networkCategory = builder
                 .getOrCreateCategory(Component.translatable("category.ghostmod.network"));
         final ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
-        // --- サーバー設定 ---
-        serverUriEntry = entryBuilder.startStrField(
-                        Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
-                .setDefaultValue("localhost")
-                .setTooltip(Component.translatable("tooltip.ghostmod.serverUri"))
-                .setSaveConsumer(config::setServerUri)
-                .build();
-        if (pendingSnapshot != null) {
-            setTextFieldValue(serverUriEntry, pendingSnapshot.serverUri());
-        }
-        networkCategory.addEntry(serverUriEntry);
-
-        serverPortEntry = entryBuilder.startIntField(
-                        Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
-                .setDefaultValue(8887)
-                .setMin(1)
-                .setMax(65535)
-                .setTooltip(Component.translatable("tooltip.ghostmod.serverPort"))
-                .setSaveConsumer(config::setServerPort)
-                .build();
-        if (pendingSnapshot != null) {
-            setTextFieldValue(serverPortEntry, String.valueOf(pendingSnapshot.serverPort()));
-        }
-        networkCategory.addEntry(serverPortEntry);
-
-        boolean initialUseTls = pendingSnapshot != null ? pendingSnapshot.useTls() : config.isUseTls();
-        useTlsEntry = entryBuilder.startBooleanToggle(
-                        Component.translatable("option.ghostmod.useTls"), initialUseTls)
-                .setDefaultValue(false)
-                .setTooltip(Component.translatable("tooltip.ghostmod.useTls"))
-                .setSaveConsumer(config::setUseTls)
-                .build();
-        networkCategory.addEntry(useTlsEntry);
-
-        serverPasswordEntry = entryBuilder.startStrField(
-                        Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
-                .setDefaultValue("changeme")
-                .setTooltip(Component.translatable("tooltip.ghostmod.serverPassword"))
-                .setSaveConsumer(config::setServerPassword)
-                .build();
-        applyPasswordMask(serverPasswordEntry);
-        if (pendingSnapshot != null) {
-            setTextFieldValue(serverPasswordEntry, pendingSnapshot.serverPassword());
-        }
-        networkCategory.addEntry(serverPasswordEntry);
-
-        // --- 接続管理 ---
+        // --- 1. 接続ステータス表示 ---
         final boolean initialConnected = syncService.isConnected();
+        final boolean inSingleplayer = Minecraft.getInstance().hasSingleplayerServer();
 
         networkCategory.addEntry(entryBuilder.startTextDescription(
                         Component.translatable("option.ghostmod.status", getStatusText(initialConnected)))
                 .build());
 
         URI connectedUri = syncService.getConnectedUri();
-        if (connectedUri != null) {
+        if (!connecting && initialConnected && connectedUri != null) {
             networkCategory.addEntry(entryBuilder.startTextDescription(
-                            Component.translatable("option.ghostmod.connectedUri", connectedUri.toString()))
+                            Component.translatable("option.ghostmod.connectedUri", connectedUri.toString())
+                                    .withStyle(ChatFormatting.GRAY))
+                    .build());
+        } else if (!connecting && !initialConnected && lastFailureReason != null) {
+            networkCategory.addEntry(entryBuilder.startTextDescription(
+                            Component.translatable(
+                                            "option.ghostmod.failureReason",
+                                            ToastNotifications.getFailureReasonComponent(lastFailureReason))
+                                    .withStyle(ChatFormatting.RED))
                     .build());
         }
 
+        // --- 2. 接続コントロール ---
         // トグル押下を 1 回だけ検知し、描画外（Minecraft#execute）から非同期接続／切断を開始する
         final AtomicBoolean actionTriggered = new AtomicBoolean(false);
         var reconnectButton = entryBuilder.startBooleanToggle(
                         Component.translatable("option.ghostmod.connection"), initialConnected)
+                .setTooltip(Component.translatable(
+                        inSingleplayer
+                                ? "tooltip.ghostmod.connection"
+                                : "tooltip.ghostmod.connection.unavailable"))
                 .setYesNoTextSupplier(toggleState -> {
+                    if (connecting) {
+                        return Component.translatable("option.ghostmod.connection.connecting")
+                                .withStyle(ChatFormatting.YELLOW);
+                    }
                     if (toggleState != initialConnected && actionTriggered.compareAndSet(false, true)) {
                         GhostConfig.ConfigSnapshot snapshot = captureCurrentSnapshot();
                         Minecraft.getInstance().execute(() ->
@@ -157,11 +147,111 @@ public final class GhostConfigScreen {
                                     : "option.ghostmod.connection.connect");
                 })
                 .build();
-        reconnectButton.setEditable(Minecraft.getInstance().hasSingleplayerServer());
+        reconnectButton.setEditable(inSingleplayer && !connecting);
         networkCategory.addEntry(reconnectButton);
+
+        // --- 3. サーバー設定（URL / ポート / パスワード） ---
+        serverUriEntry = entryBuilder.startStrField(
+                        Component.translatable("option.ghostmod.serverUri"), config.getServerUri())
+                .setDefaultValue(GhostConfig.DEFAULT_SERVER_URI)
+                .setTooltip(
+                        Component.translatable("tooltip.ghostmod.serverUri.line1"),
+                        Component.translatable("tooltip.ghostmod.serverUri.line2"))
+                .setErrorSupplier(GhostConfigScreen::validateServerUri)
+                .setSaveConsumer(val -> config.setServerUri(val != null ? val.trim() : GhostConfig.DEFAULT_SERVER_URI))
+                .build();
+        if (pendingSnapshot != null) {
+            setTextFieldValue(serverUriEntry, pendingSnapshot.serverUri());
+        }
+        networkCategory.addEntry(serverUriEntry);
+
+        serverPortEntry = entryBuilder.startIntField(
+                        Component.translatable("option.ghostmod.serverPort"), config.getServerPort())
+                .setDefaultValue(GhostConfig.DEFAULT_SERVER_PORT)
+                .setMin(1)
+                .setMax(65535)
+                .setTooltip(
+                        Component.translatable("tooltip.ghostmod.serverPort.line1"),
+                        Component.translatable("tooltip.ghostmod.serverPort.line2"))
+                .setSaveConsumer(config::setServerPort)
+                .build();
+        if (pendingSnapshot != null) {
+            setTextFieldValue(serverPortEntry, String.valueOf(pendingSnapshot.serverPort()));
+        }
+        networkCategory.addEntry(serverPortEntry);
+
+        serverPasswordEntry = entryBuilder.startStrField(
+                        Component.translatable("option.ghostmod.serverPassword"), config.getServerPassword())
+                .setDefaultValue(GhostConfig.DEFAULT_SERVER_PASSWORD)
+                .setTooltip(Component.translatable("tooltip.ghostmod.serverPassword"))
+                .setSaveConsumer(config::setServerPassword)
+                .build();
+        applyPasswordMask(serverPasswordEntry);
+        if (pendingSnapshot != null) {
+            setTextFieldValue(serverPasswordEntry, pendingSnapshot.serverPassword());
+        }
+        networkCategory.addEntry(serverPasswordEntry);
 
         this.activeScreen = builder.build();
         return this.activeScreen;
+    }
+
+    private void onSaveConfig() {
+        config.save();
+        pendingSnapshot = null;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (!mc.hasSingleplayerServer() || connecting) {
+            return;
+        }
+
+        GhostConfig.ConfigSnapshot savedSnapshot = config.toSnapshot();
+        boolean configChanged = !savedSnapshot.equals(initialSavedSnapshot);
+
+        final URI targetUri;
+        try {
+            targetUri = savedSnapshot.toWebSocketUri();
+        } catch (Exception ex) {
+            LogUtils.getLogger().error("Invalid server configuration on save.", ex);
+            ToastNotifications.showConnectionFailureToast(FailureReason.INVALID_URI);
+            return;
+        }
+
+        boolean uriDiffersFromActive = syncService.isConnected()
+                && !targetUri.equals(syncService.getConnectedUri());
+
+        // シングルプレイ中に設定が変更された場合（または保存値と現在の接続先が異なる場合）は自動で（再）接続する
+        if (configChanged || uriDiffersFromActive) {
+            syncService.connectWithResultAsync(targetUri, savedSnapshot.serverPassword(), 3, TimeUnit.SECONDS)
+                    .whenComplete((result, error) -> mc.execute(() -> {
+                        if (error != null) {
+                            LogUtils.getLogger().error("Connection error after saving config:", error);
+                            ToastNotifications.showConnectionFailureToast(FailureReason.CONNECTION_ERROR);
+                        } else if (result != null && result.connected()) {
+                            ToastNotifications.showConnectionSuccessToast(targetUri);
+                        } else {
+                            FailureReason reason = result != null
+                                    ? result.failureReason()
+                                    : FailureReason.CONNECTION_ERROR;
+                            ToastNotifications.showConnectionFailureToast(reason);
+                        }
+                    }));
+        }
+    }
+
+    private static Optional<Component> validateServerUri(String value) {
+        return WebSocketUriBuilder.validateUrlInput(value)
+                .map(GhostConfigScreen::toValidationErrorMessage);
+    }
+
+    private static Component toValidationErrorMessage(UrlValidationError error) {
+        String key = switch (error) {
+            case EMPTY -> "error.ghostmod.url.empty";
+            case UNSUPPORTED_SCHEME -> "error.ghostmod.url.unsupportedScheme";
+            case PORT_IN_URL -> "error.ghostmod.url.portInUrl";
+            case INVALID_HOST -> "error.ghostmod.url.invalidHost";
+        };
+        return Component.translatable(key);
     }
 
     private void triggerConnectionChange(boolean connect,
@@ -171,29 +261,48 @@ public final class GhostConfigScreen {
         this.pendingSnapshot = snapshot;
 
         if (connect) {
-            URI uri;
+            this.manuallyDisconnected = false;
+            final URI uri;
             try {
                 uri = snapshot.toWebSocketUri();
             } catch (Exception ex) {
-                LogUtils.getLogger().error("Invalid server URI: host='{}', port={}, useTls={}",
-                        snapshot.serverUri(), snapshot.serverPort(), snapshot.useTls(), ex);
+                LogUtils.getLogger().error("Invalid server URI: url='{}', port={}",
+                        snapshot.serverUri(), snapshot.serverPort(), ex);
+                this.lastFailureReason = FailureReason.INVALID_URI;
+                ToastNotifications.showConnectionFailureToast(FailureReason.INVALID_URI);
                 refreshIfStillShowing(screenBeforeAction, parent);
                 return;
             }
 
-            syncService.connectAsync(uri, snapshot.serverPassword(), 3, TimeUnit.SECONDS)
-                    .whenComplete((connected, error) -> Minecraft.getInstance().execute(() -> {
+            this.connecting = true;
+            this.lastFailureReason = null;
+            final Screen connectingScreen = refreshIfStillShowing(screenBeforeAction, parent);
+            final Screen screenToWatch = connectingScreen != null ? connectingScreen : screenBeforeAction;
+
+            syncService.connectWithResultAsync(uri, snapshot.serverPassword(), 3, TimeUnit.SECONDS)
+                    .whenComplete((result, error) -> Minecraft.getInstance().execute(() -> {
+                        this.connecting = false;
                         if (error != null) {
                             LogUtils.getLogger().error("Connection error:", error);
-                        } else if (Boolean.TRUE.equals(connected)) {
-                            ToastNotifications.showConnectionSuccessToast();
-                            LogUtils.getLogger().info("Successfully connected to server.");
+                            this.lastFailureReason = FailureReason.CONNECTION_ERROR;
+                            ToastNotifications.showConnectionFailureToast(FailureReason.CONNECTION_ERROR);
+                        } else if (result != null && result.connected()) {
+                            this.lastFailureReason = null;
+                            ToastNotifications.showConnectionSuccessToast(uri);
+                            LogUtils.getLogger().info("Successfully connected to server: {}", uri);
                         } else {
-                            LogUtils.getLogger().error("Failed to connect to server.");
+                            FailureReason reason = result != null
+                                    ? result.failureReason()
+                                    : FailureReason.CONNECTION_ERROR;
+                            this.lastFailureReason = reason;
+                            ToastNotifications.showConnectionFailureToast(reason);
+                            LogUtils.getLogger().warn("Failed to connect to server: {} (reason={})", uri, reason);
                         }
-                        refreshIfStillShowing(screenBeforeAction, parent);
+                        refreshIfStillShowing(screenToWatch, parent);
                     }));
         } else {
+            this.manuallyDisconnected = true;
+            this.lastFailureReason = null;
             CompletableFuture.runAsync(syncService::disconnect)
                     .whenComplete((unused, error) -> Minecraft.getInstance().execute(() -> {
                         if (error != null) {
@@ -204,15 +313,30 @@ public final class GhostConfigScreen {
         }
     }
 
-    private void refreshIfStillShowing(Screen expectedScreen, Screen parent) {
+    @Nullable
+    private Screen refreshIfStillShowing(Screen expectedScreen, Screen parent) {
         Minecraft mc = Minecraft.getInstance();
         if (getCurrentScreen(mc) == expectedScreen) {
-            Screen refreshed = new GhostConfigScreen(syncService, config, pendingSnapshot).buildScreen(parent);
+            Screen refreshed = new GhostConfigScreen(
+                    syncService,
+                    config,
+                    initialSavedSnapshot,
+                    pendingSnapshot,
+                    lastFailureReason,
+                    connecting,
+                    manuallyDisconnected
+            ).buildScreen(parent);
             openScreen(mc, refreshed);
+            return refreshed;
         }
+        return null;
     }
 
     private Component getStatusText(boolean isConnected) {
+        if (connecting) {
+            return Component.translatable("text.ghostmod.status.connecting")
+                    .withStyle(style -> style.withColor(0xFFFF55));
+        }
         return Component
                 .translatable(isConnected ? "text.ghostmod.status.connected" : "text.ghostmod.status.disconnected")
                 .withStyle(style -> style.withColor(isConnected ? 0x55FF55 : 0xFF5555));
@@ -221,15 +345,13 @@ public final class GhostConfigScreen {
     private GhostConfig.ConfigSnapshot captureCurrentSnapshot() {
         String uriValue = serverUriEntry.getValue();
         Integer portValue = serverPortEntry.getValue();
-        Boolean tlsValue = useTlsEntry.getValue();
         String passwordValue = serverPasswordEntry.getValue();
 
-        String safeUri = (uriValue != null && !uriValue.isBlank()) ? uriValue : config.getServerUri();
+        String safeUri = uriValue != null ? uriValue.trim() : config.getServerUri();
         int safePort = (portValue != null && portValue >= 1 && portValue <= 65535) ? portValue : config.getServerPort();
-        boolean safeTls = tlsValue != null ? tlsValue : config.isUseTls();
         String safePassword = passwordValue != null ? passwordValue : config.getServerPassword();
 
-        return new GhostConfig.ConfigSnapshot(safeUri, safePort, safeTls, safePassword);
+        return new GhostConfig.ConfigSnapshot(safeUri, safePort, safePassword);
     }
 
     @Nullable

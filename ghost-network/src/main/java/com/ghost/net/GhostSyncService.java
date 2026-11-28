@@ -3,6 +3,7 @@ package com.ghost.net;
 import com.ghost.api.dto.PlayerData;
 import com.ghost.api.proto.ProtoConverter;
 import com.ghost.api.registry.IGhostRegistry;
+import com.ghost.net.ConnectionResult.FailureReason;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,13 +28,14 @@ public class GhostSyncService {
     private volatile GhostWebSocketClient session = null;
     private final IGhostRegistry ghostRegistry;
     private final List<Runnable> disconnectListeners = new CopyOnWriteArrayList<>();
+    private final List<Runnable> unexpectedDisconnectListeners = new CopyOnWriteArrayList<>();
 
     public GhostSyncService(IGhostRegistry ghostRegistry) {
         this.ghostRegistry = Objects.requireNonNull(ghostRegistry, "ghostRegistry must not be null");
     }
 
     /**
-     * サーバー切断時に呼び出されるリスナーを登録します。
+     * サーバー切断時（手動・自動問わず）に呼び出されるリスナーを登録します。
      */
     public void addDisconnectListener(Runnable listener) {
         Objects.requireNonNull(listener, "listener must not be null");
@@ -40,10 +43,21 @@ public class GhostSyncService {
     }
 
     /**
-     * 非同期でサーバーへ接続・認証を行います。
+     * 認証・接続確立後に、ユーザー操作ではなくサーバー停止や通信断などで予期せず切断された際に呼び出されるリスナーを登録します。
      */
-    public CompletableFuture<Boolean> connectAsync(URI serverURI, String password, long timeout, TimeUnit unit) {
-        return CompletableFuture.supplyAsync(() -> this.connectBlocking(serverURI, password, timeout, unit));
+    public void addUnexpectedDisconnectListener(Runnable listener) {
+        Objects.requireNonNull(listener, "listener must not be null");
+        unexpectedDisconnectListeners.add(listener);
+    }
+
+    /**
+     * 非同期でサーバーへ接続・認証を行い、失敗理由を含む {@link ConnectionResult} を返します。
+     */
+    public CompletableFuture<ConnectionResult> connectWithResultAsync(URI serverURI,
+                                                                      String password,
+                                                                      long timeout,
+                                                                      TimeUnit unit) {
+        return CompletableFuture.supplyAsync(() -> this.connectWithResultBlocking(serverURI, password, timeout, unit));
     }
 
     /**
@@ -52,34 +66,72 @@ public class GhostSyncService {
      * @return 接続および認証が成功した場合は true、失敗・タイムアウト時は false
      */
     public boolean connectBlocking(URI serverURI, String password, long timeout, TimeUnit unit) {
+        return connectWithResultBlocking(serverURI, password, timeout, unit).connected();
+    }
+
+    /**
+     * サーバーへ接続し、CHAP 認証が完了するまで待機して詳細結果を返します。
+     */
+    public ConnectionResult connectWithResultBlocking(URI serverURI, String password, long timeout, TimeUnit unit) {
+        if (serverURI == null) {
+            return ConnectionResult.failure(FailureReason.INVALID_URI);
+        }
+
         synchronized (connectionLock) {
             closeCurrentSessionLocked();
 
             GhostWebSocketClient newSession = new GhostWebSocketClient(
-                    serverURI, ghostRegistry, password, this::notifyDisconnectListeners);
+                    serverURI,
+                    ghostRegistry,
+                    password,
+                    this::notifyDisconnectListeners,
+                    this::notifyUnexpectedDisconnectListeners);
             this.session = newSession;
 
             boolean authenticated = false;
             try {
                 boolean connected = newSession.connectBlocking(timeout, unit);
                 if (!connected) {
-                    LOGGER.warn("Timed out or failed to establish WebSocket connection to {}", serverURI);
-                    return false;
+                    FailureReason reason = newSession.getFailureReason();
+                    if (reason == FailureReason.NONE) {
+                        reason = FailureReason.UNREACHABLE;
+                    }
+                    LOGGER.warn("Failed to establish WebSocket connection to {} (reason={})", serverURI, reason);
+                    return ConnectionResult.failure(reason);
                 }
+
                 authenticated = Boolean.TRUE.equals(newSession.getAuthFuture().get(timeout, unit));
-                if (!authenticated) {
-                    LOGGER.warn("Authentication rejected by server: {}", serverURI);
+                if (authenticated) {
+                    return ConnectionResult.success();
                 }
-                return authenticated;
+
+                FailureReason reason = newSession.getFailureReason();
+                if (reason == FailureReason.NONE) {
+                    reason = FailureReason.AUTH_FAILED;
+                }
+                LOGGER.warn("Authentication rejected by server: {} (reason={})", serverURI, reason);
+                return ConnectionResult.failure(reason);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 LOGGER.warn("Connection attempt interrupted: {}", serverURI, ex);
-                return false;
+                return ConnectionResult.failure(FailureReason.CONNECTION_ERROR);
+            } catch (TimeoutException ex) {
+                FailureReason reason = newSession.getFailureReason();
+                if (reason == FailureReason.NONE) {
+                    reason = FailureReason.UNREACHABLE;
+                }
+                LOGGER.warn("Timed out waiting for authentication from {} (reason={})", serverURI, reason);
+                return ConnectionResult.failure(reason);
             } catch (Exception ex) {
-                LOGGER.error("Failed to connect or authenticate to {}", serverURI, ex);
-                return false;
+                FailureReason reason = newSession.getFailureReason();
+                if (reason == FailureReason.NONE) {
+                    reason = GhostWebSocketClient.classifyException(ex, true);
+                }
+                LOGGER.error("Failed to connect or authenticate to {} (reason={})", serverURI, reason, ex);
+                return ConnectionResult.failure(reason);
             } finally {
                 if (!authenticated) {
+                    newSession.markLocalDisconnect();
                     newSession.close();
                     if (this.session == newSession) {
                         this.session = null;
@@ -103,6 +155,7 @@ public class GhostSyncService {
         GhostWebSocketClient current = this.session;
         this.session = null;
         if (current != null) {
+            current.markLocalDisconnect();
             try {
                 if (current.isOpen()) {
                     current.closeBlocking();
@@ -149,6 +202,16 @@ public class GhostSyncService {
                 listener.run();
             } catch (Exception e) {
                 LOGGER.warn("Disconnect listener threw an exception", e);
+            }
+        }
+    }
+
+    private void notifyUnexpectedDisconnectListeners() {
+        for (Runnable listener : unexpectedDisconnectListeners) {
+            try {
+                listener.run();
+            } catch (Exception e) {
+                LOGGER.warn("Unexpected disconnect listener threw an exception", e);
             }
         }
     }

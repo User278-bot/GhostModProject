@@ -112,7 +112,7 @@ When exposing the server over the internet or running at scale, we recommend ter
        }
    }
    ```
-3. In the Mod settings screen, enter your domain (e.g., `ghost.example.com` or `ghost.example.com/ghost`), set port `443`, and turn **Use TLS (`wss://`) ON** (explicit scheme URIs such as `wss://ghost.example.com` are also supported).
+3. In the Mod settings screen, enter your `wss://` URL in **Server URL** (e.g., `wss://ghost.example.com` or `wss://ghost.example.com/ghost`), set **Port** to `443` (or your proxy listening port), and save.
 
 > [!IMPORTANT]
 > For non-LAN play (e.g., playing with distant friends), you must expose the server to the internet.
@@ -127,7 +127,7 @@ When exposing the server over the internet or running at scale, we recommend ter
 1.  Start the server (on your PC for local play, or on a VPS/etc. for distant play).
 2.  Launch Minecraft with the Mod installed.
 3.  Open the **Ghost Mod** settings screen via Mod Menu or using the shortcut key (default: G key).
-4.  Enter the server address, port, and password, then save (enable **Use TLS (`wss://`)** when connecting through a TLS-terminating reverse proxy).
+4.  Enter the **Server URL** (`ws://...` for plain WebSocket or `wss://...` for a TLS-terminating reverse proxy; defaults to `ws://` if omitted), **Port**, and **Password**, then save.
 
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/6b8b27db-694b-4c3d-bd01-b5a3b891d6a7)
 ![Minecraft_ 1 20 1 2025_12_21 8_51_29](https://github.com/user-attachments/assets/00ecd29f-e7f0-49da-a643-8b6072ca7cdf)

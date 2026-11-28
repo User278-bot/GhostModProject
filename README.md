@@ -112,7 +112,7 @@ java -jar GhostModServer-<version>.jar --help
        }
    }
    ```
-3. Mod 側の設定画面で、サーバーアドレスにドメイン（例: `ghost.example.com` やパス付き `ghost.example.com/ghost`）、ポートに `443` を入力し、**「TLS を使用 (`wss://`)」を ON** にします（`wss://ghost.example.com` のようにスキーム付きで直接入力することも可能です）。
+3. Mod 側の設定画面で、**サーバー URL** に `wss://` 付きのアドレス（例: `wss://ghost.example.com` やパス付き `wss://ghost.example.com/ghost`）、**ポート** に `443`（またはプロキシの待受ポート）を入力して保存します。
 
 > [!IMPORTANT]
 > LAN以外（離れた友達と遊ぶ場合など）では、サーバーを外部に公開する必要があります。
@@ -127,7 +127,7 @@ java -jar GhostModServer-<version>.jar --help
 1.  サーバーを起動しておきます（ローカルで遊ぶ場合は自分のPCで、離れた友達と遊ぶ場合はVPSなどで）。
 2.  Modを導入した状態で Minecraft を起動します。
 3.  Mod Menu またはショートカットキー（デフォルトではＧキー）から **Ghost Mod** の設定画面を開きます。
-4.  サーバーのアドレス・ポート、パスワードを入力して保存します（TLS 化されたリバースプロキシ経由で接続する場合は「TLS を使用 (`wss://`)」をオンにします）。
+4.  **サーバー URL**（通常は `ws://...`、TLS プロキシ経由は `wss://...`。プロトコル省略時は `ws://` として解釈されます）、**ポート**、**パスワード**を入力して保存します。
 
 ![Minecraft_ 1 19 2 2025_12_07 15_25_20](https://github.com/user-attachments/assets/6b8b27db-694b-4c3d-bd01-b5a3b891d6a7)
 ![Minecraft_ 1 20 1 2025_12_21 8_51_29](https://github.com/user-attachments/assets/00ecd29f-e7f0-49da-a643-8b6072ca7cdf)

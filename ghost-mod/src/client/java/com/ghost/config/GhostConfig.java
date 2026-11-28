@@ -12,14 +12,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class GhostConfig {
+    public static final String DEFAULT_SERVER_URI = "ws://localhost";
+    public static final int DEFAULT_SERVER_PORT = 8887;
+    public static final String DEFAULT_SERVER_PASSWORD = "changeme";
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("ghostmod.json");
 
     // 設定項目のデフォルト値を定義
-    private String serverUri = "localhost";
-    private int serverPort = 8887;
-    private boolean useTls = false;
-    private String serverPassword = "changeme";
+    private String serverUri = DEFAULT_SERVER_URI;
+    private int serverPort = DEFAULT_SERVER_PORT;
+    private String serverPassword = DEFAULT_SERVER_PASSWORD;
 
     // --- シングルトンパターンでインスタンスを管理 ---
     private static final GhostConfig INSTANCE = new GhostConfig();
@@ -50,14 +53,6 @@ public class GhostConfig {
         this.serverPort = serverPort;
     }
 
-    public boolean isUseTls() {
-        return useTls;
-    }
-
-    public void setUseTls(boolean useTls) {
-        this.useTls = useTls;
-    }
-
     public String getServerPassword() {
         return serverPassword;
     }
@@ -67,23 +62,30 @@ public class GhostConfig {
     }
 
     /**
+     * 現在の設定値を不変スナップショットとして取得します。
+     */
+    public ConfigSnapshot toSnapshot() {
+        return new ConfigSnapshot(serverUri, serverPort, serverPassword);
+    }
+
+    /**
      * 現在の設定から WebSocket 接続用の {@link URI} を構築します。
      */
     public URI toWebSocketUri() {
-        return WebSocketUriBuilder.build(getServerUri(), getServerPort(), isUseTls());
+        return WebSocketUriBuilder.build(getServerUri(), getServerPort());
     }
 
     // --- ファイル永続化メソッド ---
 
     /**
-     * 現在の設定をJSONファイルに保存します
+     * 現在の設定を JSON ファイルに保存します。
      */
     public void save() {
         try {
             // 設定ディレクトリが存在しない場合は作成
             Files.createDirectories(CONFIG_FILE.getParent());
 
-            // 設定をJSON形式でファイルに書き出し
+            // 設定を JSON 形式でファイルに書き出し
             String json = GSON.toJson(this);
             Files.writeString(CONFIG_FILE, json);
 
@@ -94,7 +96,7 @@ public class GhostConfig {
     }
 
     /**
-     * JSONファイルから設定を読み込みます。
+     * JSON ファイルから設定を読み込みます。
      * ファイルが存在しない場合はデフォルト値を使用します。
      */
     public void load() {
@@ -120,22 +122,27 @@ public class GhostConfig {
     }
 
     private void restoreFrom(GhostConfig config) {
-        this.serverPort = (config.serverPort >= 1 && config.serverPort <= 65535) ? config.serverPort : 8887;
-        this.serverUri = (config.serverUri != null && !config.serverUri.isBlank()) ? config.serverUri : "localhost";
-        this.useTls = config.useTls;
-        this.serverPassword = config.serverPassword != null ? config.serverPassword : "changeme";
+        this.serverPort = (config.serverPort >= 1 && config.serverPort <= 65535)
+                ? config.serverPort
+                : DEFAULT_SERVER_PORT;
+        this.serverUri = (config.serverUri != null && !config.serverUri.isBlank())
+                ? config.serverUri.trim()
+                : DEFAULT_SERVER_URI;
+        this.serverPassword = config.serverPassword != null
+                ? config.serverPassword
+                : DEFAULT_SERVER_PASSWORD;
     }
 
     /**
      * 設定値を保持する不変のスナップショット。
-     * 編集中の設定値を一時的に保持し、接続テストなどに使用します。
+     * 編集中の設定値を一時的に保持し、接続操作や差分比較に使用します。
      */
-    public record ConfigSnapshot(String serverUri, int serverPort, boolean useTls, String serverPassword) {
+    public record ConfigSnapshot(String serverUri, int serverPort, String serverPassword) {
         /**
          * WebSocket 接続用の {@link URI} を構築します。
          */
         public URI toWebSocketUri() {
-            return WebSocketUriBuilder.build(serverUri, serverPort, useTls);
+            return WebSocketUriBuilder.build(serverUri, serverPort);
         }
     }
 }
